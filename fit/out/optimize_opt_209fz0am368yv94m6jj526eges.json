@@ -1,0 +1,1356 @@
+{
+ "optimization": {
+  "id": "opt_209fz0am368yv94m6jj526eges",
+  "name": "ad-tep 20261013T063520Z",
+  "org_id": "org_4460ne2c1b9bbv8b1e27fhj1m1",
+  "blueprint_id": "blp_0z4r73zx0j84pb1zk0r4ra61n9",
+  "primary": "anomaly.macro_f1",
+  "objective": "macro_f1",
+  "search_space": {
+   "parameters": {
+    "n_neighbors": {
+     "kind": "value",
+     "spec": {
+      "type": "categorical",
+      "values": [
+       5,
+       10
+      ]
+     }
+    }
+   }
+  },
+  "overrides": {
+   "values": {
+    "data_columns": [
+     "xmeas_1",
+     "xmeas_2",
+     "xmeas_3",
+     "xmeas_4",
+     "xmeas_5",
+     "xmeas_6",
+     "xmeas_7",
+     "xmeas_8",
+     "xmeas_9",
+     "xmeas_10",
+     "xmeas_11",
+     "xmeas_12",
+     "xmeas_13",
+     "xmeas_14",
+     "xmeas_15",
+     "xmeas_16",
+     "xmeas_17",
+     "xmeas_18",
+     "xmeas_19",
+     "xmeas_20",
+     "xmeas_21",
+     "xmeas_22",
+     "xmv_1",
+     "xmv_2",
+     "xmv_3",
+     "xmv_4",
+     "xmv_5",
+     "xmv_6",
+     "xmv_7",
+     "xmv_8",
+     "xmv_9",
+     "xmv_10",
+     "xmv_11"
+    ],
+    "feature_names": [
+     "std",
+     "range",
+     "slope",
+     "median"
+    ],
+    "metric": "l2",
+    "pca_components": 16,
+    "step_size": 8,
+    "threshold": 1.215,
+    "timestamp_column": "timestamp",
+    "window_size": 48
+   },
+   "models": {}
+  },
+  "budget": {
+   "max_trials": 2
+  },
+  "training_examples": [
+   {
+    "name": "tep_ref_normal_sim001",
+    "ordinal": 1,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim001-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "4kzR2Q=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim002",
+    "ordinal": 2,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim002-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "6C/+UQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim003",
+    "ordinal": 3,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim003-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "VwdoVw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim004",
+    "ordinal": 4,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim004-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "pLiBWA=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim005",
+    "ordinal": 5,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim005-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "wu17eQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim006",
+    "ordinal": 6,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim006-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "bPBsqA=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim007",
+    "ordinal": 7,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim007-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "G1yiWA=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim008",
+    "ordinal": 8,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim008-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "tmTKKw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim009",
+    "ordinal": 9,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim009-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "imtx8A=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim010",
+    "ordinal": 10,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim010-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "zO8u9Q=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim011",
+    "ordinal": 11,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim011-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "gClVsQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim012",
+    "ordinal": 12,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim012-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "X47xaw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim013",
+    "ordinal": 13,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim013-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "eyDF5g=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim014",
+    "ordinal": 14,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim014-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "T9Fa2Q=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim015",
+    "ordinal": 15,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim015-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "etQOQA=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim016",
+    "ordinal": 16,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim016-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "/PTaFA=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim017",
+    "ordinal": 17,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim017-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "gaNA4g=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim018",
+    "ordinal": 18,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim018-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "vvQItg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim019",
+    "ordinal": 19,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim019-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "1ERu1w=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim020",
+    "ordinal": 20,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim020-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "5NCf4w=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim021",
+    "ordinal": 21,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim021-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "vWlGeA=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim022",
+    "ordinal": 22,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim022-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "2ilGvw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim023",
+    "ordinal": 23,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim023-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "kelsWg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim024",
+    "ordinal": 24,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim024-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "6wQPfQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim025",
+    "ordinal": 25,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim025-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "9G/cHw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim026",
+    "ordinal": 26,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim026-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "VAKbGg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim027",
+    "ordinal": 27,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim027-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "kBlQhQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim028",
+    "ordinal": 28,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim028-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "px3Iog=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim029",
+    "ordinal": 29,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim029-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "gYO5xg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim030",
+    "ordinal": 30,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim030-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "QBLVXg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim031",
+    "ordinal": 31,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim031-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "qAYwXg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim032",
+    "ordinal": 32,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim032-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "g4kQzw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim033",
+    "ordinal": 33,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim033-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "WzkE8g=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim034",
+    "ordinal": 34,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim034-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "FTGldA=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim035",
+    "ordinal": 35,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim035-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "A8bPpw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim036",
+    "ordinal": 36,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim036-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "TquiCQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim037",
+    "ordinal": 37,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim037-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "xhjmgw=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim038",
+    "ordinal": 38,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim038-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "u0bKQg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim039",
+    "ordinal": 39,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim039-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "zW2sgg=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_ref_normal_sim040",
+    "ordinal": 40,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim040-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "Mw2X3Q=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "constant": "normal"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   }
+  ],
+  "validation_examples": [
+   {
+    "name": "tep_eval_slice_01",
+    "ordinal": 1,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__validation__tep_eval_slice_01-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "idiiCQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "column": "label"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   },
+   {
+    "name": "tep_val_normal",
+    "ordinal": 2,
+    "inputs": [
+     {
+      "type": "file",
+      "id": "ad-tep-qs-data__roles__validation__tep_val_normal-20261013T063514Z.csv",
+      "format": "csv",
+      "crc32c": "g6tZdQ=="
+     }
+    ],
+    "ground_truth": {
+     "anomaly": {
+      "from": {
+       "column": "label"
+      },
+      "downsampling": "last_record"
+     }
+    }
+   }
+  ],
+  "best_trial_id": "otr_10jmfqnatn8q3vc8rh9d4e03a2",
+  "best_trial": {
+   "id": "otr_10jmfqnatn8q3vc8rh9d4e03a2",
+   "optimization_id": "opt_209fz0am368yv94m6jj526eges",
+   "trial_number": 2,
+   "trial_values": {
+    "models": {},
+    "values": {
+     "n_neighbors": 5
+    }
+   },
+   "metrics_report": {
+    "schema_version": "v2",
+    "primary": {
+     "target": "anomaly",
+     "name": "macro_f1",
+     "value": 0.854715956717214,
+     "aggregation": "pooled"
+    },
+    "example_count": 2,
+    "examples_failed": 0,
+    "examples_partial": 0,
+    "ground_truth_records_rejected": 0,
+    "targets": {
+     "anomaly": {
+      "pairing": "by_time",
+      "items": 3710,
+      "items_failed": 0,
+      "aggregate": {
+       "accuracy": 0.8377358490566038,
+       "detection_precision": 0.9886003799873336,
+       "detection_recall": 0.7805,
+       "foreground_macro_f1": 0.872310701313216,
+       "macro_f1": 0.854715956717214
+      },
+      "per_example": {
+       "accuracy": {
+        "mean": 0.8667027125947245,
+        "excluded": 0,
+        "stderr": 0.0814144422169909,
+        "min": 0.7852882703777336,
+        "median": 0.8667027125947245,
+        "max": 0.9481171548117154,
+        "p90": 0.9318342663683172
+       },
+       "detection_precision": {
+        "mean": 0.49967989756722153,
+        "excluded": 0,
+        "stderr": 0.49967989756722153,
+        "min": 0.0,
+        "median": 0.49967989756722153,
+        "max": 0.9993597951344432,
+        "p90": 0.8994238156209988
+       },
+       "detection_recall": {
+        "mean": 0.7805,
+        "excluded": 1,
+        "stderr": null,
+        "min": 0.7805,
+        "median": 0.7805,
+        "max": 0.7805,
+        "p90": 0.7805
+       },
+       "foreground_macro_f1": {
+        "mean": 0.4382369455362156,
+        "excluded": 0,
+        "stderr": 0.4382369455362156,
+        "min": 0.0,
+        "median": 0.4382369455362156,
+        "max": 0.8764738910724312,
+        "p90": 0.7888265019651881
+       },
+       "macro_f1": {
+        "mean": 0.6137761866404174,
+        "excluded": 0,
+        "stderr": 0.12709233784316656,
+        "min": 0.4866838487972509,
+        "median": 0.6137761866404174,
+        "max": 0.740868524483584,
+        "p90": 0.7154500569149507
+       }
+      },
+      "type": "binary",
+      "class_names": [
+       "anomaly",
+       "normal"
+      ],
+      "per_class": {
+       "precision": [
+        0.9886003799873336,
+        0.7789526686807654
+       ],
+       "recall": [
+        0.7805,
+        0.9046783625730994
+       ],
+       "f1": [
+        0.872310701313216,
+        0.837121212121212
+       ],
+       "support": [
+        2000,
+        1710
+       ]
+      },
+      "confusion_matrix": [
+       [
+        1561,
+        439
+       ],
+       [
+        18,
+        1547
+       ]
+      ],
+      "missed": [
+       0,
+       145
+      ],
+      "false_alarms": [
+       0,
+       0
+      ],
+      "outcomes": {
+       "matched": 3565,
+       "missed": 145,
+       "false_alarms": 0,
+       "unscored": 0,
+       "failed": 0
+      },
+      "positive": "anomaly"
+     }
+    }
+   },
+   "objective_value": 0.854715956717214,
+   "feasible": true,
+   "status": "completed",
+   "created_at": "2026-10-13T06:35:20.600962Z",
+   "completed_at": "2026-10-13T06:40:46.216544Z"
+  },
+  "status": "completed",
+  "progress": {
+   "pending": 0,
+   "running": 0,
+   "completed": 2,
+   "failed": 0,
+   "cancelled": 0,
+   "infeasible": 0
+  },
+  "created_by": "usr_4805ybgs8j9m6av1rg4q2fv3kn",
+  "created_at": "2026-10-13T06:35:20.600962Z",
+  "started_at": "2026-10-13T06:35:20.658239Z",
+  "completed_at": "2026-10-13T06:40:49.704155Z"
+ },
+ "trials": [
+  {
+   "id": "otr_10jmfqnatn8q3vc8rh9d4e03a2",
+   "optimization_id": "opt_209fz0am368yv94m6jj526eges",
+   "trial_number": 2,
+   "trial_values": {
+    "models": {},
+    "values": {
+     "n_neighbors": 5
+    }
+   },
+   "metrics_report": {
+    "schema_version": "v2",
+    "primary": {
+     "target": "anomaly",
+     "name": "macro_f1",
+     "value": 0.854715956717214,
+     "aggregation": "pooled"
+    },
+    "example_count": 2,
+    "examples_failed": 0,
+    "examples_partial": 0,
+    "ground_truth_records_rejected": 0,
+    "targets": {
+     "anomaly": {
+      "pairing": "by_time",
+      "items": 3710,
+      "items_failed": 0,
+      "aggregate": {
+       "accuracy": 0.8377358490566038,
+       "detection_precision": 0.9886003799873336,
+       "detection_recall": 0.7805,
+       "foreground_macro_f1": 0.872310701313216,
+       "macro_f1": 0.854715956717214
+      },
+      "per_example": {
+       "accuracy": {
+        "mean": 0.8667027125947245,
+        "excluded": 0,
+        "stderr": 0.0814144422169909,
+        "min": 0.7852882703777336,
+        "median": 0.8667027125947245,
+        "max": 0.9481171548117154,
+        "p90": 0.9318342663683172
+       },
+       "detection_precision": {
+        "mean": 0.49967989756722153,
+        "excluded": 0,
+        "stderr": 0.49967989756722153,
+        "min": 0.0,
+        "median": 0.49967989756722153,
+        "max": 0.9993597951344432,
+        "p90": 0.8994238156209988
+       },
+       "detection_recall": {
+        "mean": 0.7805,
+        "excluded": 1,
+        "stderr": null,
+        "min": 0.7805,
+        "median": 0.7805,
+        "max": 0.7805,
+        "p90": 0.7805
+       },
+       "foreground_macro_f1": {
+        "mean": 0.4382369455362156,
+        "excluded": 0,
+        "stderr": 0.4382369455362156,
+        "min": 0.0,
+        "median": 0.4382369455362156,
+        "max": 0.8764738910724312,
+        "p90": 0.7888265019651881
+       },
+       "macro_f1": {
+        "mean": 0.6137761866404174,
+        "excluded": 0,
+        "stderr": 0.12709233784316656,
+        "min": 0.4866838487972509,
+        "median": 0.6137761866404174,
+        "max": 0.740868524483584,
+        "p90": 0.7154500569149507
+       }
+      },
+      "type": "binary",
+      "class_names": [
+       "anomaly",
+       "normal"
+      ],
+      "per_class": {
+       "precision": [
+        0.9886003799873336,
+        0.7789526686807654
+       ],
+       "recall": [
+        0.7805,
+        0.9046783625730994
+       ],
+       "f1": [
+        0.872310701313216,
+        0.837121212121212
+       ],
+       "support": [
+        2000,
+        1710
+       ]
+      },
+      "confusion_matrix": [
+       [
+        1561,
+        439
+       ],
+       [
+        18,
+        1547
+       ]
+      ],
+      "missed": [
+       0,
+       145
+      ],
+      "false_alarms": [
+       0,
+       0
+      ],
+      "outcomes": {
+       "matched": 3565,
+       "missed": 145,
+       "false_alarms": 0,
+       "unscored": 0,
+       "failed": 0
+      },
+      "positive": "anomaly"
+     }
+    }
+   },
+   "objective_value": 0.854715956717214,
+   "feasible": true,
+   "status": "completed",
+   "created_at": "2026-10-13T06:35:20.600962Z",
+   "completed_at": "2026-10-13T06:40:46.216544Z"
+  },
+  {
+   "id": "otr_7mnk556s5z8w29rrsn7c1w9wps",
+   "optimization_id": "opt_209fz0am368yv94m6jj526eges",
+   "trial_number": 1,
+   "trial_values": {
+    "models": {},
+    "values": {
+     "n_neighbors": 10
+    }
+   },
+   "metrics_report": {
+    "schema_version": "v2",
+    "primary": {
+     "target": "anomaly",
+     "name": "macro_f1",
+     "value": 0.8540102708865409,
+     "aggregation": "pooled"
+    },
+    "example_count": 2,
+    "examples_failed": 0,
+    "examples_partial": 0,
+    "ground_truth_records_rejected": 0,
+    "targets": {
+     "anomaly": {
+      "pairing": "by_time",
+      "items": 3710,
+      "items_failed": 0,
+      "aggregate": {
+       "accuracy": 0.8369272237196765,
+       "detection_precision": 0.9974160206718348,
+       "detection_recall": 0.772,
+       "foreground_macro_f1": 0.870349492671928,
+       "macro_f1": 0.8540102708865409
+      },
+      "per_example": {
+       "accuracy": {
+        "mean": 0.8689611286257352,
+        "excluded": 0,
+        "stderr": 0.09003468727384645,
+        "min": 0.7789264413518887,
+        "median": 0.8689611286257352,
+        "max": 0.9589958158995816,
+        "p90": 0.9409888784448124
+       },
+       "detection_precision": {
+        "mean": 0.5,
+        "excluded": 0,
+        "stderr": 0.5,
+        "min": 0.0,
+        "median": 0.5,
+        "max": 1.0,
+        "p90": 0.9
+       },
+       "detection_recall": {
+        "mean": 0.772,
+        "excluded": 1,
+        "stderr": null,
+        "min": 0.772,
+        "median": 0.772,
+        "max": 0.772,
+        "p90": 0.772
+       },
+       "foreground_macro_f1": {
+        "mean": 0.435665914221219,
+        "excluded": 0,
+        "stderr": 0.435665914221219,
+        "min": 0.0,
+        "median": 0.435665914221219,
+        "max": 0.871331828442438,
+        "p90": 0.7841986455981942
+       },
+       "macro_f1": {
+        "mean": 0.6123115503290575,
+        "excluded": 0,
+        "stderr": 0.12277716331496091,
+        "min": 0.4895343870140966,
+        "median": 0.6123115503290575,
+        "max": 0.7350887136440184,
+        "p90": 0.7105332809810262
+       }
+      },
+      "type": "binary",
+      "class_names": [
+       "anomaly",
+       "normal"
+      ],
+      "per_class": {
+       "precision": [
+        0.9974160206718348,
+        0.7739216658403569
+       ],
+       "recall": [
+        0.772,
+        0.9128654970760234
+       ],
+       "f1": [
+        0.870349492671928,
+        0.8376710491011538
+       ],
+       "support": [
+        2000,
+        1710
+       ]
+      },
+      "confusion_matrix": [
+       [
+        1544,
+        456
+       ],
+       [
+        4,
+        1561
+       ]
+      ],
+      "missed": [
+       0,
+       145
+      ],
+      "false_alarms": [
+       0,
+       0
+      ],
+      "outcomes": {
+       "matched": 3565,
+       "missed": 145,
+       "false_alarms": 0,
+       "unscored": 0,
+       "failed": 0
+      },
+      "positive": "anomaly"
+     }
+    }
+   },
+   "objective_value": 0.8540102708865409,
+   "feasible": true,
+   "status": "completed",
+   "created_at": "2026-10-13T06:35:20.600962Z",
+   "completed_at": "2026-10-13T06:39:10.713076Z"
+  }
+ ]
+}

@@ -1,0 +1,501 @@
+{
+ "label_column": "label",
+ "labels": [
+  "normal",
+  "anomaly"
+ ],
+ "onset_sample": 160,
+ "channels": [
+  "xmeas_1",
+  "xmeas_2",
+  "xmeas_3",
+  "xmeas_4",
+  "xmeas_5",
+  "xmeas_6",
+  "xmeas_7",
+  "xmeas_8",
+  "xmeas_9",
+  "xmeas_10",
+  "xmeas_11",
+  "xmeas_12",
+  "xmeas_13",
+  "xmeas_14",
+  "xmeas_15",
+  "xmeas_16",
+  "xmeas_17",
+  "xmeas_18",
+  "xmeas_19",
+  "xmeas_20",
+  "xmeas_21",
+  "xmeas_22",
+  "xmv_1",
+  "xmv_2",
+  "xmv_3",
+  "xmv_4",
+  "xmv_5",
+  "xmv_6",
+  "xmv_7",
+  "xmv_8",
+  "xmv_9",
+  "xmv_10",
+  "xmv_11"
+ ],
+ "library": [
+  {
+   "file": "library/tep_ref_normal_sim001.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     1
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim002.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     2
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim003.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     3
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim004.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     4
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim005.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     5
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim006.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     6
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim007.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     7
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim008.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     8
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim009.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     9
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim010.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     10
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim011.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     11
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim012.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     12
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim013.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     13
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim014.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     14
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim015.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     15
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim016.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     16
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim017.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     17
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim018.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     18
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim019.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     19
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim020.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     20
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim021.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     21
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim022.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     22
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim023.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     23
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim024.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     24
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim025.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     25
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim026.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     26
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim027.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     27
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim028.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     28
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim029.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     29
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim030.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     30
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim031.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     31
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim032.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     32
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim033.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     33
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim034.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     34
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim035.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     35
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim036.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     36
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim037.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     37
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim038.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     38
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim039.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     39
+    ]
+   ]
+  },
+  {
+   "file": "library/tep_ref_normal_sim040.csv",
+   "rows": 500,
+   "sims": [
+    [
+     0,
+     40
+    ]
+   ]
+  }
+ ],
+ "validation": [
+  {
+   "file": "validation/tep_eval_slice_01.csv",
+   "labels": "labels/tep_eval_slice_01_labels.csv",
+   "normal": 4160,
+   "anomaly": 16000
+  },
+  {
+   "file": "validation/tep_val_normal.csv",
+   "labels": "labels/tep_val_normal_labels.csv",
+   "normal": 9600,
+   "anomaly": 0
+  }
+ ],
+ "test": [
+  {
+   "file": "test/tep_eval_slice_02.csv",
+   "labels": "labels/tep_eval_slice_02_labels.csv",
+   "normal": 4160,
+   "anomaly": 16000
+  },
+  {
+   "file": "test/tep_eval_slice_03.csv",
+   "labels": "labels/tep_eval_slice_03_labels.csv",
+   "normal": 4160,
+   "anomaly": 16000
+  },
+  {
+   "file": "test/tep_eval_slice_04.csv",
+   "labels": "labels/tep_eval_slice_04_labels.csv",
+   "normal": 4160,
+   "anomaly": 16000
+  }
+ ],
+ "delivery": [
+  {
+   "file": "delivery/tep_val_normal.csv",
+   "labels": "labels/tep_val_normal_labels.csv"
+  },
+  {
+   "file": "delivery/tep_full_chunk_001.csv",
+   "labels": "labels/tep_full_chunk_001_labels.csv"
+  },
+  {
+   "file": "delivery/tep_full_chunk_002.csv",
+   "labels": "labels/tep_full_chunk_002_labels.csv"
+  },
+  {
+   "file": "delivery/tep_full_chunk_003.csv",
+   "labels": "labels/tep_full_chunk_003_labels.csv"
+  },
+  {
+   "file": "delivery/tep_full_chunk_004.csv",
+   "labels": "labels/tep_full_chunk_004_labels.csv"
+  }
+ ]
+}

@@ -1,0 +1,1164 @@
+{
+  "sample_seconds": 180,
+  "seam_gap_seconds": 86400,
+  "onset_sample_testing": 160,
+  "channels": [
+    "xmeas_1",
+    "xmeas_2",
+    "xmeas_3",
+    "xmeas_4",
+    "xmeas_5",
+    "xmeas_6",
+    "xmeas_7",
+    "xmeas_8",
+    "xmeas_9",
+    "xmeas_10",
+    "xmeas_11",
+    "xmeas_12",
+    "xmeas_13",
+    "xmeas_14",
+    "xmeas_15",
+    "xmeas_16",
+    "xmeas_17",
+    "xmeas_18",
+    "xmeas_19",
+    "xmeas_20",
+    "xmeas_21",
+    "xmeas_22",
+    "xmv_1",
+    "xmv_2",
+    "xmv_3",
+    "xmv_4",
+    "xmv_5",
+    "xmv_6",
+    "xmv_7",
+    "xmv_8",
+    "xmv_9",
+    "xmv_10",
+    "xmv_11"
+  ],
+  "dropped_constant_channels": [],
+  "reference_files": [
+    {
+      "path": "data/prepared/tep_ref_normal_sim001.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim002.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim003.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          3
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim004.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim005.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim006.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          6
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim007.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim008.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          8
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim009.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim010.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim011.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          11
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim012.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          12
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim013.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          13
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim014.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          14
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim015.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          15
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim016.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          16
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim017.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          17
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim018.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          18
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim019.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          19
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim020.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          20
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim021.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          21
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim022.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          22
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim023.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          23
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim024.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          24
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim025.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          25
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim026.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          26
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim027.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          27
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim028.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          28
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim029.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          29
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim030.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          30
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim031.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          31
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim032.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          32
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim033.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          33
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim034.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          34
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim035.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          35
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim036.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          36
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim037.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          37
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim038.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          38
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim039.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          39
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_ref_normal_sim040.csv",
+      "rows": 500,
+      "segments": 1,
+      "seams": [],
+      "source": "ff_train",
+      "sims": [
+        [
+          0,
+          40
+        ]
+      ]
+    }
+  ],
+  "val_normal": {
+    "path": "data/prepared/tep_val_normal.csv",
+    "rows": 9600,
+    "segments": 10,
+    "seams": [
+      172620,
+      431640,
+      690660,
+      949680,
+      1208700,
+      1467720,
+      1726740,
+      1985760,
+      2244780
+    ],
+    "source": "ff_test",
+    "sims": [
+      [
+        0,
+        41
+      ],
+      [
+        0,
+        42
+      ],
+      [
+        0,
+        43
+      ],
+      [
+        0,
+        44
+      ],
+      [
+        0,
+        45
+      ],
+      [
+        0,
+        46
+      ],
+      [
+        0,
+        47
+      ],
+      [
+        0,
+        48
+      ],
+      [
+        0,
+        49
+      ],
+      [
+        0,
+        50
+      ]
+    ]
+  },
+  "eval_slices": [
+    {
+      "path": "data/prepared/tep_eval_slice_01.csv",
+      "rows": 20160,
+      "segments": 21,
+      "seams": [
+        172620,
+        431640,
+        690660,
+        949680,
+        1208700,
+        1467720,
+        1726740,
+        1985760,
+        2244780,
+        2503800,
+        2762820,
+        3021840,
+        3280860,
+        3539880,
+        3798900,
+        4057920,
+        4316940,
+        4575960,
+        4834980,
+        5094000
+      ],
+      "source": "ff_test + f_test",
+      "sims": [
+        [
+          "ff_test",
+          0,
+          51
+        ],
+        [
+          "f_test",
+          1,
+          1
+        ],
+        [
+          "f_test",
+          2,
+          1
+        ],
+        [
+          "f_test",
+          3,
+          1
+        ],
+        [
+          "f_test",
+          4,
+          1
+        ],
+        [
+          "f_test",
+          5,
+          1
+        ],
+        [
+          "f_test",
+          6,
+          1
+        ],
+        [
+          "f_test",
+          7,
+          1
+        ],
+        [
+          "f_test",
+          8,
+          1
+        ],
+        [
+          "f_test",
+          9,
+          1
+        ],
+        [
+          "f_test",
+          10,
+          1
+        ],
+        [
+          "f_test",
+          11,
+          1
+        ],
+        [
+          "f_test",
+          12,
+          1
+        ],
+        [
+          "f_test",
+          13,
+          1
+        ],
+        [
+          "f_test",
+          14,
+          1
+        ],
+        [
+          "f_test",
+          15,
+          1
+        ],
+        [
+          "f_test",
+          16,
+          1
+        ],
+        [
+          "f_test",
+          17,
+          1
+        ],
+        [
+          "f_test",
+          18,
+          1
+        ],
+        [
+          "f_test",
+          19,
+          1
+        ],
+        [
+          "f_test",
+          20,
+          1
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_eval_slice_02.csv",
+      "rows": 20160,
+      "segments": 21,
+      "seams": [
+        172620,
+        431640,
+        690660,
+        949680,
+        1208700,
+        1467720,
+        1726740,
+        1985760,
+        2244780,
+        2503800,
+        2762820,
+        3021840,
+        3280860,
+        3539880,
+        3798900,
+        4057920,
+        4316940,
+        4575960,
+        4834980,
+        5094000
+      ],
+      "source": "ff_test + f_test",
+      "sims": [
+        [
+          "ff_test",
+          0,
+          52
+        ],
+        [
+          "f_test",
+          1,
+          2
+        ],
+        [
+          "f_test",
+          2,
+          2
+        ],
+        [
+          "f_test",
+          3,
+          2
+        ],
+        [
+          "f_test",
+          4,
+          2
+        ],
+        [
+          "f_test",
+          5,
+          2
+        ],
+        [
+          "f_test",
+          6,
+          2
+        ],
+        [
+          "f_test",
+          7,
+          2
+        ],
+        [
+          "f_test",
+          8,
+          2
+        ],
+        [
+          "f_test",
+          9,
+          2
+        ],
+        [
+          "f_test",
+          10,
+          2
+        ],
+        [
+          "f_test",
+          11,
+          2
+        ],
+        [
+          "f_test",
+          12,
+          2
+        ],
+        [
+          "f_test",
+          13,
+          2
+        ],
+        [
+          "f_test",
+          14,
+          2
+        ],
+        [
+          "f_test",
+          15,
+          2
+        ],
+        [
+          "f_test",
+          16,
+          2
+        ],
+        [
+          "f_test",
+          17,
+          2
+        ],
+        [
+          "f_test",
+          18,
+          2
+        ],
+        [
+          "f_test",
+          19,
+          2
+        ],
+        [
+          "f_test",
+          20,
+          2
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_eval_slice_03.csv",
+      "rows": 20160,
+      "segments": 21,
+      "seams": [
+        172620,
+        431640,
+        690660,
+        949680,
+        1208700,
+        1467720,
+        1726740,
+        1985760,
+        2244780,
+        2503800,
+        2762820,
+        3021840,
+        3280860,
+        3539880,
+        3798900,
+        4057920,
+        4316940,
+        4575960,
+        4834980,
+        5094000
+      ],
+      "source": "ff_test + f_test",
+      "sims": [
+        [
+          "ff_test",
+          0,
+          53
+        ],
+        [
+          "f_test",
+          1,
+          3
+        ],
+        [
+          "f_test",
+          2,
+          3
+        ],
+        [
+          "f_test",
+          3,
+          3
+        ],
+        [
+          "f_test",
+          4,
+          3
+        ],
+        [
+          "f_test",
+          5,
+          3
+        ],
+        [
+          "f_test",
+          6,
+          3
+        ],
+        [
+          "f_test",
+          7,
+          3
+        ],
+        [
+          "f_test",
+          8,
+          3
+        ],
+        [
+          "f_test",
+          9,
+          3
+        ],
+        [
+          "f_test",
+          10,
+          3
+        ],
+        [
+          "f_test",
+          11,
+          3
+        ],
+        [
+          "f_test",
+          12,
+          3
+        ],
+        [
+          "f_test",
+          13,
+          3
+        ],
+        [
+          "f_test",
+          14,
+          3
+        ],
+        [
+          "f_test",
+          15,
+          3
+        ],
+        [
+          "f_test",
+          16,
+          3
+        ],
+        [
+          "f_test",
+          17,
+          3
+        ],
+        [
+          "f_test",
+          18,
+          3
+        ],
+        [
+          "f_test",
+          19,
+          3
+        ],
+        [
+          "f_test",
+          20,
+          3
+        ]
+      ]
+    },
+    {
+      "path": "data/prepared/tep_eval_slice_04.csv",
+      "rows": 20160,
+      "segments": 21,
+      "seams": [
+        172620,
+        431640,
+        690660,
+        949680,
+        1208700,
+        1467720,
+        1726740,
+        1985760,
+        2244780,
+        2503800,
+        2762820,
+        3021840,
+        3280860,
+        3539880,
+        3798900,
+        4057920,
+        4316940,
+        4575960,
+        4834980,
+        5094000
+      ],
+      "source": "ff_test + f_test",
+      "sims": [
+        [
+          "ff_test",
+          0,
+          54
+        ],
+        [
+          "f_test",
+          1,
+          4
+        ],
+        [
+          "f_test",
+          2,
+          4
+        ],
+        [
+          "f_test",
+          3,
+          4
+        ],
+        [
+          "f_test",
+          4,
+          4
+        ],
+        [
+          "f_test",
+          5,
+          4
+        ],
+        [
+          "f_test",
+          6,
+          4
+        ],
+        [
+          "f_test",
+          7,
+          4
+        ],
+        [
+          "f_test",
+          8,
+          4
+        ],
+        [
+          "f_test",
+          9,
+          4
+        ],
+        [
+          "f_test",
+          10,
+          4
+        ],
+        [
+          "f_test",
+          11,
+          4
+        ],
+        [
+          "f_test",
+          12,
+          4
+        ],
+        [
+          "f_test",
+          13,
+          4
+        ],
+        [
+          "f_test",
+          14,
+          4
+        ],
+        [
+          "f_test",
+          15,
+          4
+        ],
+        [
+          "f_test",
+          16,
+          4
+        ],
+        [
+          "f_test",
+          17,
+          4
+        ],
+        [
+          "f_test",
+          18,
+          4
+        ],
+        [
+          "f_test",
+          19,
+          4
+        ],
+        [
+          "f_test",
+          20,
+          4
+        ]
+      ]
+    }
+  ]
+}

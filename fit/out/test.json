@@ -1,0 +1,165 @@
+{
+ "eval": "evl_7pgrscedav9hz9p8yhe74vjpr3",
+ "blueprint": {
+  "id": "blp_5tzy6zjpwe8w29v6rjrwfx7rkt",
+  "key": "ad-tep-qs-otr_10jmfqnatn8q3vc8rh9d4e03a2",
+  "trial": "otr_10jmfqnatn8q3vc8rh9d4e03a2",
+  "values": {
+   "data_columns": [
+    "xmeas_1",
+    "xmeas_2",
+    "xmeas_3",
+    "xmeas_4",
+    "xmeas_5",
+    "xmeas_6",
+    "xmeas_7",
+    "xmeas_8",
+    "xmeas_9",
+    "xmeas_10",
+    "xmeas_11",
+    "xmeas_12",
+    "xmeas_13",
+    "xmeas_14",
+    "xmeas_15",
+    "xmeas_16",
+    "xmeas_17",
+    "xmeas_18",
+    "xmeas_19",
+    "xmeas_20",
+    "xmeas_21",
+    "xmeas_22",
+    "xmv_1",
+    "xmv_2",
+    "xmv_3",
+    "xmv_4",
+    "xmv_5",
+    "xmv_6",
+    "xmv_7",
+    "xmv_8",
+    "xmv_9",
+    "xmv_10",
+    "xmv_11"
+   ],
+   "feature_names": [
+    "std",
+    "range",
+    "slope",
+    "median"
+   ],
+   "metric": "l2",
+   "pca_components": 16,
+   "step_size": 8,
+   "threshold": 1.215,
+   "timestamp_column": "timestamp",
+   "window_size": 48,
+   "n_neighbors": 5
+  }
+ },
+ "optimization": "opt_209fz0am368yv94m6jj526eges",
+ "platform": {
+  "accuracy": 0.7802518223989396,
+  "detection_precision": 0.9919457397202204,
+  "detection_recall": 0.78,
+  "foreground_macro_f1": 0.8732972569509236,
+  "macro_f1": 0.7330631667858745
+ },
+ "confusion": {
+  "tp": 4680,
+  "fn": 1320,
+  "fp": 38,
+  "tn": 1207
+ },
+ "abstained": 300,
+ "detection_by_idv": {
+  "idv_01": {
+   "flagged": 299,
+   "windows": 300
+  },
+  "idv_02": {
+   "flagged": 294,
+   "windows": 300
+  },
+  "idv_03": {
+   "flagged": 3,
+   "windows": 300
+  },
+  "idv_04": {
+   "flagged": 300,
+   "windows": 300
+  },
+  "idv_05": {
+   "flagged": 300,
+   "windows": 300
+  },
+  "idv_06": {
+   "flagged": 300,
+   "windows": 300
+  },
+  "idv_07": {
+   "flagged": 300,
+   "windows": 300
+  },
+  "idv_08": {
+   "flagged": 292,
+   "windows": 300
+  },
+  "idv_09": {
+   "flagged": 3,
+   "windows": 300
+  },
+  "idv_10": {
+   "flagged": 146,
+   "windows": 300
+  },
+  "idv_11": {
+   "flagged": 297,
+   "windows": 300
+  },
+  "idv_12": {
+   "flagged": 299,
+   "windows": 300
+  },
+  "idv_13": {
+   "flagged": 285,
+   "windows": 300
+  },
+  "idv_14": {
+   "flagged": 300,
+   "windows": 300
+  },
+  "idv_15": {
+   "flagged": 4,
+   "windows": 300
+  },
+  "idv_16": {
+   "flagged": 105,
+   "windows": 300
+  },
+  "idv_17": {
+   "flagged": 286,
+   "windows": 300
+  },
+  "idv_18": {
+   "flagged": 283,
+   "windows": 300
+  },
+  "idv_19": {
+   "flagged": 295,
+   "windows": 300
+  },
+  "idv_20": {
+   "flagged": 289,
+   "windows": 300
+  }
+ },
+ "false_alarms": {
+  "fault-free run": {
+   "flagged": 18,
+   "windows": 345
+  },
+  "faulty runs, first 8 h": {
+   "flagged": 20,
+   "windows": 900
+  }
+ }
+}

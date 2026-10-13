@@ -1,0 +1,21 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Model weights
+*.safetensors
+
+# Raw data: prep/download.py fetches it from Harvard Dataverse (5.7 GB of CSV)
+data/raw/
+
+
+# Logs
+fit/out/*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+.DS_Store

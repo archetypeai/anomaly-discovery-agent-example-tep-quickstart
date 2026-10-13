@@ -1,0 +1,442 @@
+{
+ "sustain": 3,
+ "far_target": 0.01,
+ "inputs": [
+  "eval_out/delivery/ad-output-full_chunk_001.csv",
+  "eval_out/delivery/ad-output-full_chunk_002.csv",
+  "eval_out/delivery/ad-output-full_chunk_003.csv",
+  "eval_out/delivery/ad-output-full_chunk_004.csv"
+ ],
+ "artifact": {
+  "threshold": 1.215,
+  "per_idv": {
+   "idv_01": {
+    "type": "step  A/C feed ratio",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9921875,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.32499999999999996,
+    "auroc": 0.9973468031043177
+   },
+   "idv_02": {
+    "type": "step  B composition",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.980625,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.825,
+    "auroc": 0.9912120824141192
+   },
+   "idv_03": {
+    "type": "step  D feed temp",
+    "hard": true,
+    "n_fault": 3200,
+    "detection_rate": 0.015625,
+    "sims": 4,
+    "sims_detected": 1,
+    "median_delay_h": 25.1,
+    "auroc": 0.47615484901906713
+   },
+   "idv_04": {
+    "type": "step  reactor coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 1.0,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.0,
+    "auroc": 1.0
+   },
+   "idv_05": {
+    "type": "step  condenser coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.994375,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.025,
+    "auroc": 0.9993245252915223
+   },
+   "idv_06": {
+    "type": "step  A feed loss",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 1.0,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.0,
+    "auroc": 0.9999987689095493
+   },
+   "idv_07": {
+    "type": "step  C header pressure",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 1.0,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.0,
+    "auroc": 1.0
+   },
+   "idv_08": {
+    "type": "rand  A/B/C composition",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9671875,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 1.1,
+    "auroc": 0.9863166512369996
+   },
+   "idv_09": {
+    "type": "rand  D feed temp",
+    "hard": true,
+    "n_fault": 3200,
+    "detection_rate": 0.014375,
+    "sims": 4,
+    "sims_detected": 1,
+    "median_delay_h": 25.2,
+    "auroc": 0.4621469848132682
+   },
+   "idv_10": {
+    "type": "rand  C feed temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.52375,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 5.025,
+    "auroc": 0.863329274838481
+   },
+   "idv_11": {
+    "type": "rand  reactor coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9859375,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.675,
+    "auroc": 0.9944666669949574
+   },
+   "idv_12": {
+    "type": "rand  condenser coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.99,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.4,
+    "auroc": 0.9946817261857863
+   },
+   "idv_13": {
+    "type": "drift reaction kinetics",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9384375,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 2.325,
+    "auroc": 0.9726944384257801
+   },
+   "idv_14": {
+    "type": "stick reactor coolant valve",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.99875,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.05,
+    "auroc": 0.999496680980145
+   },
+   "idv_15": {
+    "type": "stick condenser coolant valve",
+    "hard": true,
+    "n_fault": 3200,
+    "detection_rate": 0.024375,
+    "sims": 4,
+    "sims_detected": 2,
+    "median_delay_h": 23.325000000000003,
+    "auroc": 0.4961829548140561
+   },
+   "idv_16": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.433125,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 4.625,
+    "auroc": 0.8649502147021746
+   },
+   "idv_17": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.96125,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 1.375,
+    "auroc": 0.9826146022100536
+   },
+   "idv_18": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.93875,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 2.25,
+    "auroc": 0.9689649114599748
+   },
+   "idv_19": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.98625,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.5,
+    "auroc": 0.995111721458399
+   },
+   "idv_20": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9225,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 2.925,
+    "auroc": 0.9676729682083202
+   }
+  },
+  "overall": {
+   "n_normal": 12692,
+   "false_alarms": 239,
+   "far": 0.01883075953356445,
+   "mean_detection_rate": 0.783375,
+   "mean_detection_rate_excl_hard": 0.9184191176470589,
+   "sims_detected": 72,
+   "sims_total": 80,
+   "macro_auroc": 0.9006333412533486,
+   "unmatched": 0
+  }
+ },
+ "calibrated": {
+  "threshold": 1.2230106079999998,
+  "per_idv": {
+   "idv_01": {
+    "type": "step  A/C feed ratio",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9915625,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.32499999999999996,
+    "auroc": 0.9973468031043177
+   },
+   "idv_02": {
+    "type": "step  B composition",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9803125,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.825,
+    "auroc": 0.9912120824141192
+   },
+   "idv_03": {
+    "type": "step  D feed temp",
+    "hard": true,
+    "n_fault": 3200,
+    "detection_rate": 0.0128125,
+    "sims": 4,
+    "sims_detected": 1,
+    "median_delay_h": 25.25,
+    "auroc": 0.47615484901906713
+   },
+   "idv_04": {
+    "type": "step  reactor coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 1.0,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.0,
+    "auroc": 1.0
+   },
+   "idv_05": {
+    "type": "step  condenser coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9928125,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.025,
+    "auroc": 0.9993245252915223
+   },
+   "idv_06": {
+    "type": "step  A feed loss",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 1.0,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.0,
+    "auroc": 0.9999987689095493
+   },
+   "idv_07": {
+    "type": "step  C header pressure",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 1.0,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.0,
+    "auroc": 1.0
+   },
+   "idv_08": {
+    "type": "rand  A/B/C composition",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9665625,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 1.1749999999999998,
+    "auroc": 0.9863166512369996
+   },
+   "idv_09": {
+    "type": "rand  D feed temp",
+    "hard": true,
+    "n_fault": 3200,
+    "detection_rate": 0.0103125,
+    "sims": 4,
+    "sims_detected": 1,
+    "median_delay_h": 25.2,
+    "auroc": 0.4621469848132682
+   },
+   "idv_10": {
+    "type": "rand  C feed temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.504375,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 5.025,
+    "auroc": 0.863329274838481
+   },
+   "idv_11": {
+    "type": "rand  reactor coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.985625,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.675,
+    "auroc": 0.9944666669949574
+   },
+   "idv_12": {
+    "type": "rand  condenser coolant temp",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.99,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.4,
+    "auroc": 0.9946817261857863
+   },
+   "idv_13": {
+    "type": "drift reaction kinetics",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.938125,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 2.325,
+    "auroc": 0.9726944384257801
+   },
+   "idv_14": {
+    "type": "stick reactor coolant valve",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.99875,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.05,
+    "auroc": 0.999496680980145
+   },
+   "idv_15": {
+    "type": "stick condenser coolant valve",
+    "hard": true,
+    "n_fault": 3200,
+    "detection_rate": 0.0215625,
+    "sims": 4,
+    "sims_detected": 1,
+    "median_delay_h": 25.1,
+    "auroc": 0.4961829548140561
+   },
+   "idv_16": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.404375,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 4.824999999999999,
+    "auroc": 0.8649502147021746
+   },
+   "idv_17": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.96125,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 1.375,
+    "auroc": 0.9826146022100536
+   },
+   "idv_18": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.93875,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 2.25,
+    "auroc": 0.9689649114599748
+   },
+   "idv_19": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.9859375,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 0.5,
+    "auroc": 0.995111721458399
+   },
+   "idv_20": {
+    "type": "unknown",
+    "hard": false,
+    "n_fault": 3200,
+    "detection_rate": 0.92125,
+    "sims": 4,
+    "sims_detected": 4,
+    "median_delay_h": 2.925,
+    "auroc": 0.9676729682083202
+   }
+  },
+  "overall": {
+   "n_normal": 12692,
+   "false_alarms": 179,
+   "far": 0.014103372202962495,
+   "mean_detection_rate": 0.7802187500000001,
+   "mean_detection_rate_excl_hard": 0.9152757352941177,
+   "sims_detected": 71,
+   "sims_total": 80,
+   "macro_auroc": 0.9006333412533486,
+   "unmatched": 0
+  }
+ }
+}

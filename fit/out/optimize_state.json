@@ -1,0 +1,81 @@
+{
+ "endpoint": "https://api.dev.u1.archetypeai.app",
+ "runs": [
+  {
+   "optimization": "opt_209fz0am368yv94m6jj526eges",
+   "request": {
+    "name": "ad-tep 20261013T063520Z",
+    "blueprint_id": "blp_0z4r73zx0j84pb1zk0r4ra61n9",
+    "primary": "anomaly.macro_f1",
+    "overrides": {
+     "values": {
+      "timestamp_column": "timestamp",
+      "data_columns": [
+       "xmeas_1",
+       "xmeas_2",
+       "xmeas_3",
+       "xmeas_4",
+       "xmeas_5",
+       "xmeas_6",
+       "xmeas_7",
+       "xmeas_8",
+       "xmeas_9",
+       "xmeas_10",
+       "xmeas_11",
+       "xmeas_12",
+       "xmeas_13",
+       "xmeas_14",
+       "xmeas_15",
+       "xmeas_16",
+       "xmeas_17",
+       "xmeas_18",
+       "xmeas_19",
+       "xmeas_20",
+       "xmeas_21",
+       "xmeas_22",
+       "xmv_1",
+       "xmv_2",
+       "xmv_3",
+       "xmv_4",
+       "xmv_5",
+       "xmv_6",
+       "xmv_7",
+       "xmv_8",
+       "xmv_9",
+       "xmv_10",
+       "xmv_11"
+      ],
+      "window_size": 48,
+      "step_size": 8,
+      "metric": "l2",
+      "pca_components": 16,
+      "threshold": 1.215,
+      "feature_names": [
+       "std",
+       "range",
+       "slope",
+       "median"
+      ]
+     }
+    },
+    "search_space": {
+     "parameters": {
+      "n_neighbors": {
+       "kind": "value",
+       "spec": {
+        "type": "categorical",
+        "values": [
+         5,
+         10
+        ]
+       }
+      }
+     }
+    },
+    "budget": {
+     "max_trials": 2
+    }
+   }
+  }
+ ]
+}
