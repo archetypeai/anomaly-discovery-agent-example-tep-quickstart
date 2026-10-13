@@ -19,3 +19,6 @@ __pycache__/
 .venv/
 
 .DS_Store
+
+# Working notes, not part of the example
+plan.md
