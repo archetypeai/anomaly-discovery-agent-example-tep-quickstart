@@ -1,0 +1,193 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+/* theme.css already does `@import 'tailwindcss'` (tokens >= 0.10), so importing it
+   again gives Tailwind two entries — harmless in the production build, but in dev
+   it drops the DS's own `@layer base` typography block, which silently costs you
+   h1-h6, p and small. Keep exactly one Tailwind entry. */
+@import '@archetypeai/ds-lib-tokens/theme.css';
+@import 'tw-animate-css';
+
+/* The @source directives make Tailwind emit the classes used inside the package
+   dists; removing them silently unstyles every design-system component.
+   NOTE: no `@source not '../../node_modules'` here. The OSM demo has that line
+   and is right to — it vendors its component source into $lib, so nothing it
+   renders lives in node_modules. This app composes the PUBLISHED packages, as
+   the bearings demo does, so that exclusion would cancel the two includes below
+   and the DS components would mount unstyled. */
+@source '../../node_modules/@archetypeai/ds-ui-svelte-console/dist';
+@source '../../node_modules/@archetypeai/ds-ui-svelte-labs/dist';
+
+@theme {
+	/* The DS brand faces (PP Neue Montreal) are licensed and cannot ship in an
+	   example repo — ds-lib-tokens/fonts.css points at /fonts/PPNeueMontreal*.woff2,
+	   which produced four 404s per page load here. Geist (OFL-1.1) stands in,
+	   swapped at the TOKEN layer rather than in components, so every DS component
+	   still resolves its typography through font-sans / font-mono. Delete these two
+	   lines to return to the brand faces once the files are in static/fonts.
+	   Same swap, same two lines, in all three sibling demos. */
+	--font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+	--font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+}
+
+@layer base {
+	/* This is a fixed-viewport workbench: every scroll happens INSIDE a panel, and
+	   the document itself never scrolls. Saying so removes the page scrollbar
+	   entirely, which is what makes a dropdown's scroll-lock a no-op instead of a
+	   width change the layout has to absorb. */
+	html,
+	body {
+		height: 100%;
+		overflow: hidden;
+		overscroll-behavior: none;
+	}
+
+	:root {
+		/* Metric-match the stand-in to the brand face, which is what the DS itself
+		   does for its Helvetica/Roboto/Arial fallbacks. Measured against
+		   PPNeueMontreal-Book at 100px: cap heights agree, but x-height is 53.0 in
+		   Geist vs 51.0 in the brand face. Left alone, every DS size token renders
+		   ~4% larger than the design system specifies. A no-op once the brand faces
+		   are present — their ratio already is 0.51. */
+		font-size-adjust: ex-height 0.51;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+   Domain palette. One semantic token per thing this app talks about, layered
+   over the DS palette exactly as the DS layers its own --atai-* status tokens.
+   Components never name a raw colour.
+
+   The score ramp is deliberately NOT a red/green pass-fail: an anomaly score is
+   a continuous distance from normal, and the whole argument of this example is
+   that a fault is visible in the score before it is obvious in any one channel.
+   Three stops — at, approaching, and past the manifold — carry that better than
+   a binary, and the threshold gets its own token because it is a decision line
+   rather than a severity.
+
+   The sibling demos source these from the raw hue ramps (teal-700, amber-600,
+   rose-700, mauve-500). Those ramps were dropped in ds-lib-tokens 0.16, which
+   ships only --color-atai-* and --color-chart-*, so the same three stops are
+   built from the status tokens instead. Those already carry their own dark
+   values, which is why only the plate ink needs a :root.dark block below.
+   --------------------------------------------------------------------------- */
+:root {
+	--score-normal: var(--color-atai-good);
+	--score-elevated: var(--color-atai-warning);
+	--score-anomaly: var(--color-atai-critical);
+	--score-threshold: var(--color-atai-warning);
+
+	/* Plate ink. The flowsheet is a draughtsman's plate, not a UI element, so its
+	   lines come off the neutral ramp rather than out of --color-border: ink reads
+	   as ink and does not compete with the hairlines separating the panes it is
+	   drawn on. ONE INK, as the bearings plate settled on — a two-tone plate has
+	   already decided which parts matter, and on a drawing whose subject is which
+	   unit is off-normal, that decision belongs to the tint and to nothing else. */
+	--plate-ink: var(--color-zinc-700);
+	/* Process lines inside a unit — coil, trays, liquid level — a step back from
+	   the ink so the vessel outlines stay the primary reading. */
+	--plate-detail: var(--color-zinc-400);
+}
+
+:root.dark {
+	/* Inverted, as the references invert theirs: bone lines on near-black. A plate
+	   that kept its light-mode zinc-700 would be all but invisible here, which is
+	   the silent failure a token with no dark value produces. */
+	--plate-ink: var(--color-zinc-300);
+	--plate-detail: var(--color-zinc-500);
+}
+
+/* Re-registered as DS colour tokens so every domain colour is reachable BOTH
+   ways: `var(--score-anomaly)` for SVG attributes and inline styles, and
+   `text-score-anomaly` / `stroke-plate-ink` as utilities. Tailwind only emits a
+   utility for a custom property declared under @theme, so without this block the
+   layer above is half a token layer — usable from script, invisible to markup.
+   All three references carry the same block. */
+@theme {
+	--color-score-normal: var(--score-normal);
+	--color-score-elevated: var(--score-elevated);
+	--color-score-anomaly: var(--score-anomaly);
+	--color-score-threshold: var(--score-threshold);
+
+	--color-plate-ink: var(--plate-ink);
+	--color-plate-detail: var(--plate-detail);
+}
+
+/* ---------------------------------------------------------------------------
+   The floating run cluster, lifted verbatim from the OSM reference via the
+   bearings demo.
+
+   These are the one documented exception to "colour is always a token": a
+   surface deliberately copied from another product, where the literal values
+   ARE the spec. Read off the live platform rather than the DS package — the
+   published `runSession` button variant is a FLAT `bg-atai-brand-babyblue` fill
+   AND it injects its own arrow glyph while discarding the caller's children, so
+   it can render neither "Run Agent" nor a play triangle. The platform pill is a
+   transparent button over this layered gradient under a 0.5px border and the
+   toolbar shadow stack.
+
+   A package-consuming app cannot patch the DS Button, so the pill is composed
+   at the call site from these classes instead of a variant. The vendoring
+   references add `runAgent` / `agentSettings` variants to their own button;
+   this is the same surface reached the only way a consumer can reach it.
+   --------------------------------------------------------------------------- */
+.run-agent-surface {
+	background-image:
+		linear-gradient(
+			oklch(1 0 0 / 0.34),
+			oklch(1 0 0 / 0.1) min(9%, 3px),
+			oklch(1 0 0 / 0) min(26%, 9px),
+			oklch(0 0 0 / 0) max(74%, 100% - 10px),
+			oklch(0 0 0 / 0.025) max(91%, 100% - 4px),
+			oklch(0 0 0 / 0.07)
+		),
+		linear-gradient(oklch(0.864 0.057 266.625 / 0.95) 0px, oklch(0.864 0.057 266.625 / 0.95) 0px),
+		linear-gradient(
+			oklch(0.964 0.057 266.625),
+			oklch(0.864 0.057 266.625) min(38%, 16px),
+			oklch(0.864 0.057 266.625) max(62%, 100% - 16px),
+			oklch(0.794 0.057 266.625)
+		);
+}
+
+.bottom-toolbar-surface {
+	background-image:
+		linear-gradient(
+			oklch(1 0 0 / 0.42),
+			oklch(1 0 0 / 0.12) min(9%, 3px),
+			oklch(1 0 0 / 0) min(26%, 9px),
+			oklch(0 0 0 / 0) max(74%, 100% - 10px),
+			oklch(0 0 0 / 0.02) max(91%, 100% - 4px),
+			oklch(0 0 0 / 0.055)
+		),
+		linear-gradient(oklch(0.985 0 0 / 0.95) 0px, oklch(0.985 0 0 / 0.95) 0px),
+		linear-gradient(
+			oklch(1 0.004 286.32),
+			oklch(0.92 0.004 286.32) min(38%, 16px),
+			oklch(0.92 0.004 286.32) max(62%, 100% - 16px),
+			oklch(0.84 0.004 286.32)
+		);
+}
+
+/* The drop stack is shared; only the two inset lines differ per surface, which
+   is why they are written into each shadow rather than factored out — box-shadow
+   is a single property and cannot be composed across classes. */
+.shadow-bottom-toolbar {
+	box-shadow:
+		oklch(1 0 0 / 0.9) 0 0.5px 0 0 inset,
+		oklch(0 0 0 / 0.055) 0 -0.5px 0 0 inset,
+		oklch(0.141 0.005 285.823 / 0) 0 54px 15px 0,
+		oklch(0.141 0.005 285.823 / 0.03) 0 34px 14px 0,
+		oklch(0.141 0.005 285.823 / 0.1) 0 19px 12px 0,
+		oklch(0.141 0.005 285.823 / 0.17) 0 9px 9px 0,
+		oklch(0.141 0.005 285.823 / 0.2) 0 2px 5px 0;
+}
+.run-agent-surface.shadow-bottom-toolbar {
+	box-shadow:
+		oklch(1 0 0 / 0.7) 0 0.5px 0 0 inset,
+		oklch(0 0 0 / 0.07) 0 -0.5px 0 0 inset,
+		oklch(0.141 0.005 285.823 / 0) 0 54px 15px 0,
+		oklch(0.141 0.005 285.823 / 0.03) 0 34px 14px 0,
+		oklch(0.141 0.005 285.823 / 0.1) 0 19px 12px 0,
+		oklch(0.141 0.005 285.823 / 0.17) 0 9px 9px 0,
+		oklch(0.141 0.005 285.823 / 0.2) 0 2px 5px 0;
+}

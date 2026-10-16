@@ -1,3 +1,4 @@
 data/prepared/**/*.csv filter=lfs diff=lfs merge=lfs -text
 data/roles/**/*.csv filter=lfs diff=lfs merge=lfs -text
 eval_out/delivery/*.csv filter=lfs diff=lfs merge=lfs -text
+eval_out/serving/*.csv filter=lfs diff=lfs merge=lfs -text
