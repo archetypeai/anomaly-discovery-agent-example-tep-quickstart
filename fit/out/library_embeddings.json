@@ -1,0 +1,20 @@
+{
+ "blueprint": "ad-tep-qs-otr_10jmfqnatn8q3vc8rh9d4e03a2",
+ "window_size": 48,
+ "step_size": 8,
+ "files": 40,
+ "windows": 2280,
+ "dim": 25344,
+ "explained_variance_pc1_pc2": [
+  0.0651,
+  0.0587
+ ],
+ "score": {
+  "min": 0.9488,
+  "median": 1.0077,
+  "max": 1.1082,
+  "threshold": 1.215
+ },
+ "anomaly_windows": 0,
+ "view_bytes": 322368
+}

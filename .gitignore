@@ -22,3 +22,10 @@ __pycache__/
 
 # Working notes, not part of the example
 plan.md
+
+# Stage 8: the library batch outputs with embeddings (~0.6 GB), rebuilt by fit/library_embeddings.py;
+# the serving bridge's ids in flight; cleanup progress
+fit/out/library_embeddings/
+fit/out/app_serving_state.json
+fit/out/cleanup_state.json
+fit/out/serve_state.json
