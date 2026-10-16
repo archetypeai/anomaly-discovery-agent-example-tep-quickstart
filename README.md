@@ -364,7 +364,7 @@ calls and their limits.
    relative), and each run's first sustained alarm (3 consecutive anomaly
    windows).
 5. **Cleanup:** the agent is cancelled and deleted, and the bundle deleted, however
-   the replay went.
+   the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
 
 **Expect** (ours, Dev, 2026-10-15), delivery file 1's fault-free run (sim 96) and
 its IDV 5 run (sim 26), 913 windows each:

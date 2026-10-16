@@ -58,7 +58,7 @@ checked against Stage 6's batch output.
   An agent the platform released after 20 minutes without a query (a replay paused that
   long) is deleted and replaced on the next window, retrying while Dev's serving workers
   are all taken. If anything can't be deleted on exit, the bridge says so and keeps the
-  ids for `fit/cleanup.py`.
+  ids for `fit/cleanup.py`. See [Stop and clean up](#stop-and-clean-up).
 
 ## The embedding space: the reference library, recomputed
 
@@ -91,17 +91,7 @@ npm run dev                           # broker + serving bridge + replayer + web
 open http://localhost:5180
 ```
 
-`npm run stop` stops all four and checks the ports. To see whether a serving agent is
-still running (yours or anyone's), from the repo root:
-
-```sh
-set -a; source .env; set +a
-curl -s "$ATAI_API_ENDPOINT/agents/instances?status=running&limit=100" -H "Authorization: Bearer $ATAI_API_KEY" \
-  | jq -c '.data[] | select(.mode=="serving") | {id, blueprint, name, created_at}'
-```
-
-`status=running` filters on the server; `mode=serving` is ignored there, so `jq`
-picks the serving agents. The bridge's agent is named `TEP app-serving`.
+When you're done, stop it and check it cleaned up: [Stop and clean up](#stop-and-clean-up).
 
 ### Pace
 
@@ -117,6 +107,66 @@ windows. Settings → Pace chooses how many windows to ask about:
 A window scores the same either way; the step only decides which windows are asked
 about.
 
+## Stop and clean up
+
+A running app holds a serving agent on Dev, and so one of its 3 serving workers,
+until the bridge deletes the agent or the platform releases it after 20 minutes
+without a query. Closing the browser tab does not stop it.
+
+1. **Stop the app.** Press Ctrl-C **once** in the `npm run dev` terminal and
+   wait for `bridge: deleted its agent(s) and bundle …`; a second Ctrl-C can cut
+   that short. Or, from `app-serving/` in any terminal (also for an app started
+   in the background or from a terminal since closed):
+
+   ```sh
+   npm run stop      # SIGTERM to the bridge, waits for it, stops the rest, checks the ports
+   ```
+
+   Either way the bridge cancels and deletes its agent, deletes its bundle and
+   removes `fit/out/app_serving_state.json`. `npm run stop` ends with
+   `all ports free (1890 · 9008 · 9100 · 5180)`; a port still held names its process.
+
+2. **Check nothing is left**, from the repo root:
+
+   ```sh
+   ls fit/out/app_serving_state.json        # "No such file": the bridge cleaned up
+   set -a; source .env; set +a
+   curl -s "$ATAI_API_ENDPOINT/agents/instances?status=running&limit=100" -H "Authorization: Bearer $ATAI_API_KEY" \
+     | jq -c '.data[] | select(.mode=="serving") | {id, blueprint, name, created_at}'
+   ```
+
+   No line named `TEP app-serving` means no agent of this app is running.
+   `status=running` filters on the server; `mode=serving` is ignored there, so
+   `jq` picks the serving agents (other people's may show up too).
+
+3. **If something is left** (the bridge was killed hard with `kill -9`, the
+   machine slept or lost power, or it printed `not everything was deleted`), the
+   ids are still in `fit/out/app_serving_state.json`:
+
+   ```sh
+   python3 fit/cleanup.py            # lists what it would delete, stage by stage
+   python3 fit/cleanup.py --yes      # deletes it
+   ```
+
+   It also finds agents the bridge replaced (from the bundle's own listing),
+   cancels a running agent before deleting it, and removes the state file when
+   done. Without a state file, an agent of yours from the listing above can be
+   removed by its id:
+
+   ```sh
+   curl -s -X POST "$ATAI_API_ENDPOINT/agents/instances/<agt_id>/cancel" -H "Authorization: Bearer $ATAI_API_KEY" \
+     -H "Content-Type: application/json" -d '{}'
+   curl -s -X DELETE "$ATAI_API_ENDPOINT/agents/instances/<agt_id>" -H "Authorization: Bearer $ATAI_API_KEY"
+   ```
+
+   Its bundle (`bnd_…`, from `GET /agents/instances/<agt_id>`) can then be
+   deleted with `DELETE /agents/bundles/<bnd_id>`; a bundle that still has any
+   agent, even a cancelled one, answers 409.
+
+`fit/library_embeddings.py`'s 40 batch agents and their bundle hold no serving
+worker; `fit/cleanup.py --yes` deletes them too, with the rest of the platform
+path's agents (see the [repo README](../README.md)), whenever you're done with them.
+
 ## Ports
 
 | MQTT TCP | MQTT WS | Web | Agent admin |
@@ -131,7 +181,7 @@ The same slot as the full example's `app-serving/`, so run one of the two at a t
 |---|---|
 | `scripts/serving-bridge.js` | the agent's local end: broker ↔ serving agent on the platform, and the admin API the replayer calls |
 | `scripts/replayer.js` | replays Stage 6's delivery runs one at a time, paced by the agent, with the step switch |
-| `scripts/run-broker.sh`, `scripts/stop.sh`, `mosquitto/` | the broker on 1890 / 9008, and stopping everything |
+| `scripts/run-broker.sh`, `scripts/stop.sh`, `mosquitto/` | the broker on 1890 / 9008, and stopping everything (matched by `--app=tep-serving`, so other demos are left alone) |
 | `static/detector-view.{json,bin}` | the recomputed reference cloud and projection, from `fit/library_embeddings.py` |
 | `src/` | the SvelteKit workbench, with the Pace switch in Settings |
 

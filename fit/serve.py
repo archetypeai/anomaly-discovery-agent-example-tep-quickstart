@@ -22,7 +22,8 @@ Stage 6's batch output for the same window:
      within 1e-4 relative (served and batch differ by ~1e-5, float32 noise);
      the first sustained alarm (3 consecutive anomaly windows) of each run,
      served and batch;
-  5. the agent cancelled and deleted, and the bundle deleted, however it went.
+  5. the agent cancelled and deleted, and the bundle deleted, however it went
+     (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
 
@@ -35,6 +36,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import signal
 import statistics
 import sys
 import time
@@ -94,7 +96,13 @@ def first_alarm(labels: list[str]) -> int | None:
     return None
 
 
+def stop(signum, _frame):
+    sys.exit(f"stopped by signal {signum}")       # so `finally` deletes the agent and bundle
+
+
 def main() -> int:
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, stop)
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--file", default="full_chunk_001", help="a delivery file Stage 6 delivered")
     ap.add_argument("--faults", nargs="+", default=["idv_00", "idv_05"],
@@ -160,6 +168,7 @@ def main() -> int:
                 got.extend(records)
             log(f"  {fault} (sim {sim}): {n} windows, {time.time() - t_start:.0f} s so far")
     finally:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)     # a second Ctrl-C mustn't cut the cleanup short
         request("POST", f"{agents_base()}/instances/{agent}/cancel", body={})
         request("DELETE", f"{agents_base()}/instances/{agent}", raw=True)
         request("DELETE", f"{agents_base()}/bundles/{bundle}", raw=True)
