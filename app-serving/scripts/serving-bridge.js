@@ -26,7 +26,8 @@
  *   the agent is cancelled and deleted, and the bundle deleted; the ids sit in
  *   fit/out/app_serving_state.json until then, so `python3 fit/cleanup.py`
  *   finds them after a hard kill. An agent the platform released (20 minutes
- *   without a query) is replaced on the next window.
+ *   without a query, e.g. a paused replay) is deleted and replaced on the next
+ *   window: a bundle that still has an agent can't be deleted (409).
  *
  * Env (repo .env): ATAI_API_ENDPOINT (dev only), ATAI_API_KEY.
  * Env (app-serving/.env): MQTT_PORT, AGENT_PORT, STEP.
@@ -95,8 +96,11 @@ async function api(method, p, body) {
 	return text ? JSON.parse(text) : {};
 }
 
-const live = { bundle: null, agent: null, running: false };
-const save = () => fs.writeFileSync(STATE, JSON.stringify({ endpoint: ENDPOINT, bundle: live.bundle, agent: live.agent }, null, 1));
+/** `agents`: every agent of the bundle not yet deleted, the current one last. */
+const live = { bundle: null, agent: null, agents: [], running: false };
+const save = () => fs.writeFileSync(STATE, JSON.stringify(
+	{ endpoint: ENDPOINT, bundle: live.bundle, agent: live.agent, agents: live.agents }, null, 1));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function ensureServedBlueprint() {
 	try {
@@ -130,6 +134,7 @@ async function startAgent() {
 		save();
 	}
 	live.agent = (await api('POST', `/bundles/${live.bundle}/run`, { mode: 'serving' })).id;
+	live.agents.push(live.agent);
 	save();
 	const t0 = Date.now();
 	for (;;) {
@@ -137,10 +142,26 @@ async function startAgent() {
 		if (s === 'running') break;
 		if (['failed', 'completed', 'cancelled', 'canceled'].includes(s) || Date.now() - t0 > 600_000)
 			throw new Error(`agent ${live.agent} is ${s}`);
-		await new Promise((r) => setTimeout(r, 2000));
+		await sleep(2000);
 	}
 	live.running = true;
 	console.log(`bridge: serving agent ${live.agent} running (bundle ${live.bundle}, ${SERVED})`);
+}
+
+/** Cancel and delete an agent; true once it is gone (404 counts). */
+async function dropAgent(id) {
+	await api('POST', `/instances/${id}/cancel`, {}).catch(() => {});   // a released agent is already stopped
+	try {
+		await api('DELETE', `/instances/${id}`);
+	} catch (e) {
+		if (e.status !== 404) {
+			console.error(`bridge: ${e.message}`);
+			return false;
+		}
+	}
+	live.agents = live.agents.filter((a) => a !== id);
+	save();
+	return true;
 }
 
 let stopping = false;
@@ -148,19 +169,51 @@ async function shutdown(sig) {
 	if (stopping) return;
 	stopping = true;
 	console.log(`bridge: ${sig}, cleaning up`);
+	let left = 0;
 	try {
-		if (live.agent) {
-			await api('POST', `/instances/${live.agent}/cancel`, {}).catch(() => {});
-			await api('DELETE', `/instances/${live.agent}`).catch(() => {});
+		for (const id of [...live.agents]) if (!(await dropAgent(id))) left++;
+		if (live.bundle && !left) {
+			try {
+				await api('DELETE', `/bundles/${live.bundle}`);
+			} catch (e) {
+				if (e.status !== 404) {
+					console.error(`bridge: ${e.message}`);
+					left++;
+				}
+			}
 		}
-		if (live.bundle) await api('DELETE', `/bundles/${live.bundle}`).catch(() => {});
-		fs.rmSync(STATE, { force: true });
-		console.log(`bridge: cancelled and deleted ${live.agent}, deleted ${live.bundle}`);
+		if (left) {
+			// Keep the ids for fit/cleanup.py rather than leaving them on the platform unrecorded.
+			console.error(`bridge: not everything was deleted; run python3 fit/cleanup.py --yes (ids in ${path.relative(REPO, STATE)})`);
+		} else {
+			fs.rmSync(STATE, { force: true });
+			console.log(`bridge: deleted its agent(s) and bundle ${live.bundle ?? '(none)'}`);
+		}
 	} finally {
-		process.exit(0);
+		process.exit(left ? 1 : 0);
 	}
 }
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => shutdown(sig));
+// Anything unexpected still cleans up: an exit without it would hold a Dev worker.
+process.on('uncaughtException', (e) => { console.error('bridge:', e); shutdown('error'); });
+process.on('unhandledRejection', (e) => { console.error('bridge:', e); shutdown('error'); });
+
+/** Replace a released agent: delete it, then start another, retrying while
+ *  Dev's serving workers are all taken. */
+async function replaceAgent() {
+	live.running = false;
+	if (live.agent) await dropAgent(live.agent);
+	for (let wait = 15_000; !stopping; wait = Math.min(wait * 2, 120_000)) {
+		try {
+			await startAgent();
+			return;
+		} catch (e) {
+			console.error(`bridge: could not start a serving agent (${e.message}); retrying in ${wait / 1000} s`);
+			if (live.agent && live.agents.includes(live.agent)) await dropAgent(live.agent);
+			await sleep(wait);
+		}
+	}
+}
 
 // ------------------------------------------------------------------ the windows
 
@@ -183,7 +236,7 @@ function onSample(payload) {
 	seen++;
 	if (seen >= WINDOW && (seen - WINDOW) % step === 0) {
 		queue.push({ gen: generation, rows: buffer.slice(-WINDOW) });
-		drain();
+		drain().catch((e) => console.error(`bridge: ${e.message}`));
 	}
 }
 
@@ -203,9 +256,8 @@ async function drain() {
 			} catch (e) {
 				if (e.status === 409) {
 					// Released after 20 minutes without a query, or cancelled elsewhere.
-					console.warn(`bridge: agent ${live.agent} no longer running; starting another`);
-					live.running = false;
-					await startAgent();
+					console.warn(`bridge: agent ${live.agent} no longer running; replacing it`);
+					await replaceAgent();
 					queue.unshift(job);
 					continue;
 				}
