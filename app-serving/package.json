@@ -16,8 +16,8 @@
     "format:check": "prettier --check .",
     "web": "vite dev --port 5180",
     "broker": "sh scripts/run-broker.sh",
-    "replayer": "node scripts/replayer.js",
-    "agent": "node scripts/serving-bridge.js",
+    "replayer": "node scripts/replayer.js --app=tep-serving",
+    "agent": "node scripts/serving-bridge.js --app=tep-serving",
     "stop": "sh scripts/stop.sh"
   },
   "devDependencies": {

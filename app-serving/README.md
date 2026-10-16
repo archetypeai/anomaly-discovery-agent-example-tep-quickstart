@@ -119,13 +119,12 @@ without a query. Closing the browser tab does not stop it.
    in the background or from a terminal since closed):
 
    ```sh
-   npm run stop      # SIGTERM to the bridge, stops the rest, checks the ports
+   npm run stop      # SIGTERM to the bridge, waits for it, stops the rest, checks the ports
    ```
 
    Either way the bridge cancels and deletes its agent, deletes its bundle and
    removes `fit/out/app_serving_state.json`. `npm run stop` ends with
-   `all ports free (1890 · 9008 · 9100 · 5180)`; a port still held names its process
-   (9100 is the bridge: it may still be deleting, so run `npm run stop` again after a few seconds).
+   `all ports free (1890 · 9008 · 9100 · 5180)`; a port still held names its process.
 
 2. **Check nothing is left**, from the repo root:
 
@@ -182,7 +181,7 @@ The same slot as the full example's `app-serving/`, so run one of the two at a t
 |---|---|
 | `scripts/serving-bridge.js` | the agent's local end: broker ↔ serving agent on the platform, and the admin API the replayer calls |
 | `scripts/replayer.js` | replays Stage 6's delivery runs one at a time, paced by the agent, with the step switch |
-| `scripts/run-broker.sh`, `scripts/stop.sh`, `mosquitto/` | the broker on 1890 / 9008, and stopping everything |
+| `scripts/run-broker.sh`, `scripts/stop.sh`, `mosquitto/` | the broker on 1890 / 9008, and stopping everything (matched by `--app=tep-serving`, so other demos are left alone) |
 | `static/detector-view.{json,bin}` | the recomputed reference cloud and projection, from `fit/library_embeddings.py` |
 | `src/` | the SvelteKit workbench, with the Pace switch in Settings |
 
