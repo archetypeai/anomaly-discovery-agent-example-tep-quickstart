@@ -55,8 +55,10 @@ checked against Stage 6's batch output.
 - **On exit** (Ctrl-C, `npm run stop`) the bridge cancels and deletes its agent and
   deletes its bundle. If it's killed hard, the ids are still in
   `fit/out/app_serving_state.json`, and `python3 fit/cleanup.py --yes` removes them.
-  An agent the platform released after 20 minutes without a query is replaced on the
-  next window.
+  An agent the platform released after 20 minutes without a query (a replay paused that
+  long) is deleted and replaced on the next window, retrying while Dev's serving workers
+  are all taken. If anything can't be deleted on exit, the bridge says so and keeps the
+  ids for `fit/cleanup.py`.
 
 ## The embedding space: the reference library, recomputed
 

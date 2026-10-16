@@ -61,7 +61,10 @@ def main() -> int:
         targets += [("Stage 8", "instances", serve["agent"])] if serve.get("agent") else []
         targets += [("Stage 8", "bundles", serve["bundle"])]
     if bridge.get("bundle"):
-        targets += [("Stage 9", "instances", bridge["agent"])] if bridge.get("agent") else []
+        # every agent the bridge started, a released one it replaced included
+        agents = set(bridge.get("agents") or []) | ({bridge["agent"]} if bridge.get("agent") else set())
+        agents |= {r["id"] for r in list_bundle_runs(bridge["bundle"])}
+        targets += [("Stage 9", "instances", a) for a in sorted(agents)]
         targets += [("Stage 9", "bundles", bridge["bundle"])]
     if library.get("bundle"):
         targets += [("Stage 9", "instances", a) for a in sorted(set(library.get("agents", {}).values()))]
