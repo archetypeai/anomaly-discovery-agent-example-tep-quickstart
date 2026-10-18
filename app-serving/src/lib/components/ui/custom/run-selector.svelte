@@ -35,12 +35,14 @@
 	onValueChange={(/** @type {string} */ v) => v && tep.select(Number(v))}
 	disabled={!s.connected || !available.length}
 >
-	<Select.Trigger class="h-[34px] font-mono text-[11px] tracking-wider uppercase">
-		{label}
-	</Select.Trigger>
+	<Select.Trigger size="sm" typography="mono" aria-label="Run">{label}</Select.Trigger>
 	<Select.Content>
 		{#each available as r (r.id)}
-			<Select.Item value={String(r.id)} class="font-mono text-[11px] tracking-wider uppercase">
+			<Select.Item
+				value={String(r.id)}
+				label="RUN {String(r.id).padStart(2, '0')}"
+				typography="mono"
+			>
 				RUN {String(r.id).padStart(2, '0')}
 			</Select.Item>
 		{/each}

@@ -1,6 +1,6 @@
 {
 	"name": "archetypeai-design-system",
-	"version": "0.16.1",
+	"version": "0.19.0",
 	"components": [
 		{
 			"name": "alert",
@@ -75,11 +75,13 @@
 			"name": "badge",
 			"import": "@archetypeai/ds-ui-svelte-console/primitives/badge",
 			"source": "https://design-system-console.archetypeai.workers.dev/r/badge.json",
-			"description": "Small pill for statuses and selected items.",
+			"description": "Small pill for a run's status, a selected item, or a step number — nothing else.",
 			"usage": [
-				"Status: `variant=\"status\"` colored via status tokens, e.g. class=\"text-atai-good border-atai-good\" (Completed), atai-critical (Failed), atai-warning (Interrupted), atai-neutral (Running), muted-foreground (Pending).",
+				"Restraint: a badge is for state the user acts on, not decoration. Do not badge categories, tags, counts, model names, versions, units or metadata — write them as plain text (`text-muted-foreground` for secondary). One status badge per item at most, and never a badge next to text that already says the same thing.",
+				"Status: `variant=\"status\"` colored by a status token on the text alone, e.g. class=\"text-atai-good\" (Completed), atai-critical (Failed), atai-warning (Interrupted), atai-neutral (Running), muted-foreground (Pending). The outline follows the text colour, so never pass a `border-*` class or remove the outline.",
 				"Size: `size=\"sm\"` gives the status pill smaller type and tighter spacing for tight spaces (cards, tables) or inline with text; defaults to `size=\"default\"`.",
 				"Selection: `variant=\"selection\"` for dismissible picks, with an embedded `Button variant=\"ghost\" size=\"inline\" visibility=\"dimmed\"` X icon to remove.",
+				"Step: `variant=\"step\"` is the filled circle that numbers the steps of an ordered procedure, e.g. `<Badge variant=\"step\" aria-hidden=\"true\">{i + 1}</Badge>` leading each row with `flex items-center gap-2`. Pass the number only, 1-based; one digit is a circle and more digits stretch it into a pill of the same height. Hide it from assistive tech when the row's label already names the step. `size=\"sm\"` (16px) suits dense lists and `text-xs` labels; `size=\"lg\"` (24px) steps set beside larger type.",
 				"Spacing: the badge carries no outer margin — the container owns the gap (e.g. `flex gap-2`). For the rare trailing-edge case, add `class=\"-mr-1\"` at the call site."
 			],
 			"variants": {
@@ -87,11 +89,13 @@
 					"axes": {
 						"variant": [
 							"selection",
-							"status"
+							"status",
+							"step"
 						],
 						"size": [
 							"default",
-							"sm"
+							"sm",
+							"lg"
 						]
 					},
 					"defaults": {
@@ -246,7 +250,7 @@
 			"description": "Syntax-highlighted code display (CodeBlock, shiki; yaml/json/python/shell) and editable code field with JSON-schema validation for YAML (CodeBlockEditor).",
 			"usage": [
 				"`<CodeBlock code language=\"yaml\" />` for read-only code (border built in). `language` accepts `\"yaml\" | \"json\" | \"python\" | \"shell\"` — use `\"shell\"` for bash/sh/curl snippets. Theme switches are CSS-only — no {#key} wrapper needed. Grows to content by default and never clips: whenever its height is constrained — by a `max-h-*` class, by a flex/grid parent like `Dialog.Body`, or by the `maxHeight`/`scroll` props — the internal scroller shows a scrollbar instead. To cap it yourself pass `maxHeight=\"20rem\"` (any CSS length) or the `scroll` shorthand (=600px); neither is needed just to avoid clipping. `showLineNumbers={false}` hides the gutter; `wrap` wraps long lines instead of scrolling horizontally.",
-				"Config editors: `<CodeBlockEditor bind:value bind:valid bind:validating bind:schemaUnavailable schema={jsonSchema} placeholder showDownload downloadBaseName disabled />` + a status badge row driven by the bindables (validating → 'Checking…' spinner; !valid → 'Invalid'; valid+schemaUnavailable → 'YAML parses'; valid → 'Valid YAML'). Grows to content (floor via `minHeight`, default 10rem) and scrolls rather than clips whenever its height is constrained; cap it yourself via `maxHeight` (any length) or `scroll` (=600px). Visually identical to CodeBlock. `language` (same union, default `\"yaml\"`) switches highlighting; live validation runs only for `\"yaml\"` — for other languages `schema` is ignored and `valid` stays true. The download button's extension/MIME follows the language (.yaml/.json/.py/.sh)."
+				"Config editors: `<CodeBlockEditor bind:value bind:valid bind:validating bind:schemaUnavailable schema={jsonSchema} placeholder showDownload downloadBaseName disabled />` + a status badge row driven by the bindables (validating → 'Checking…' spinner; !valid → 'Invalid'; valid+schemaUnavailable → 'YAML parses'; valid → 'Valid YAML'). Grows to content (floor via `minHeight`, default 10rem) and scrolls rather than clips whenever its height is constrained; cap it yourself via `maxHeight` (any length) or `scroll` (=600px). Visually identical to CodeBlock. `language` (same union, default `\"yaml\"`) switches highlighting; live validation runs only for `\"yaml\"` — for other languages `schema` is ignored and `valid` stays true. The download button's extension/MIME follows the language (.yaml/.json/.py/.sh). Validation errors pair what happened with a fix (schema pointers render as `model.learning_rate`, types as plain words); when the schema fails with no field to point at, `schemaFallbackFix=\"...\"` overrides the generic fix line with app-specific guidance."
 			]
 		},
 		{
@@ -278,6 +282,32 @@
 			}
 		},
 		{
+			"name": "command",
+			"import": "@archetypeai/ds-ui-svelte-console/primitives/command",
+			"source": "https://design-system-console.archetypeai.workers.dev/r/command.json",
+			"description": "Searchable menu: a text field over a filtered, keyboard-navigable list of items, with groups, an empty state and a footer that stays in view. Reads as a DropdownMenu.",
+			"usage": [
+				"`<Command.Root>` holds a `Command.Input`, a `Command.List` of `Command.Group`s (each a `Command.GroupHeading` and a `Command.GroupItems` of `Command.Item`s, with `Command.Separator`s between), a `Command.Empty`, and an optional `Command.Footer`. Put it in a `Popover.Content class=\"w-120 p-0\"` for a searchable menu, or on the page as a standalone search list.",
+				"Filtering: by default Command filters and ranks the items itself against each item's `value` (plus any `keywords`). When the caller filters (its own match rule, a sort, a server search), pass `shouldFilter={false}` and render only the matching items; bind the input with `bind:value` to read the query.",
+				"`Command.Input` is an `InputGroup` with the search icon at its start. Controls that belong in the field, such as a sort toggle (`Tabs.List variant=\"segmented\"` with icon-only triggers and an `aria-label` on each), go in as its children and sit at its end.",
+				"`Command.Item` takes `onSelect` (Enter or click) and `disabled`, which skips it in arrow-key navigation and dims it; say why in a `title`. The arrow keys move the highlight; pass `loop` on the root to wrap from the last item to the first. It takes DropdownMenu.Item's `variant` (`destructive`), `inset`, `typography` and `justify`, so a row is built the same way in both menus.",
+				"Mark the current pick with `data-checked={item.value === current}`: the item's trailing check shows on it, so the menu opens showing what's picked. Every item reserves the check's width, so rows line up whether or not one is checked.",
+				"`Command.Empty` shows when no item is left: \"No file matches “report”.\" names the query. With the built-in filter that happens on its own. With `shouldFilter={false}` Command counts every mounted item, so while a query is typed leave out the static rows (an \"All files\" row, the footer) or Empty never shows.",
+				"`Command.Footer` sits below the list, outside its scroll, so it stays in view however long the list is (\"Show all 240 files\"). A `Command.Item` in the footer is still reached by the arrow keys; give it `forceMount` if it should stay while a built-in filter runs.",
+				"Headings, items and separators take DropdownMenu's own variants (`dropdownMenuGroupHeadingVariants`, `dropdownMenuItemVariants` through `commandItemVariants`, `dropdownMenuSeparatorVariants`), so the two menus can't drift apart. Style an item's row layout with `class`; don't restyle the highlight."
+			],
+			"variants": {
+				"commandItemVariants": {
+					"axes": {
+						"variant": [
+							"default",
+							"destructive"
+						]
+					}
+				}
+			}
+		},
+		{
 			"name": "console-utils",
 			"import": "@archetypeai/ds-ui-svelte-console/primitives/utils",
 			"source": "https://design-system-console.archetypeai.workers.dev/r/console-utils.json",
@@ -300,12 +330,15 @@
 			"name": "counter",
 			"import": "@archetypeai/ds-ui-svelte-console/primitives/counter",
 			"source": "https://design-system-console.archetypeai.workers.dev/r/counter.json",
-			"description": "Odometer pill for a numeric count.",
+			"description": "Odometer for a numeric count: a pill by default, or bare so any number on the page can tick.",
 			"usage": [
 				"Count: `Counter value={412}` rolls only the digit places that changed; past 999 it abbreviates (`1.2K`, `123K`, `1.2M`) so it never grows a fifth column, and the exact number stays in its title + accessible label.",
 				"Absent vs zero vs loading: omit the component entirely when there is no count, pass `value={0}` for an empty one, and `value={null}` while it is still loading (reserves the same width so nothing reflows when it arrives).",
 				"At least, for a list you cannot size: `Counter value={103} atLeast` renders `103+` when the caller has loaded 103 rows and knows only that more exist (keyset pagination, a capped query). The number is the caller's own, not a rounded threshold, and the accessible label reads \"at least 103\". Past 999 the abbreviation truncates instead of rounding, so `1250` shows `1.2K+` and never claims rows nobody loaded. `atLeast` is ignored on `value={0}`, where it would state nothing.",
-				"Tone & size: `tone=\"muted\"` for a quieter pill against busy chrome; `size=\"sm\"` for dense rows (tables, list items). Inside a tab strip use `Tabs.Count`, which re-colors it for the active/inactive trigger."
+				"Three axes, each one thing: `variant` is the treatment (`pill`, the default, or `bare`), `tone` is colour (`solid` or `muted`, and `muted` still reads as muted on a bare counter), and `size` is the box (`sm` for dense rows like tables and list items). Inside a tab strip use `Tabs.Count`, which re-colors it for the active/inactive trigger.",
+				"A number anywhere, not just a pill: `variant=\"bare\" size=\"inherit\"` drops the pill and the mono face and takes the typography of whatever it sits in, so a headline figure, a table cell or a number in running text can roll. It sits on the surrounding baseline and reserves no width of its own, so it can be dropped mid-sentence: `Processed <Counter value={n} variant=\"bare\" size=\"inherit\" exact /> of 2,000 rows.` Size and weight come from the parent (`<span class=\"text-6xl\">`), and the digit row tracks the line height, so it works at any scale.",
+				"Decimals: `decimals={2}` keeps two places (`0.97`, `1.00`) instead of rounding to a whole number, rounding half up like `Math.round(v * 100) / 100`, and is never abbreviated. Use it for a score or a rate; a count stays a whole number.",
+				"Exact digits: `exact` turns off the `1.2K` abbreviation and rolls the whole number. Use it where the reader is meant to read the figure rather than glance at it (a headline, a total in a sentence); leave it off in chrome, where a fifth column would reflow the layout."
 			],
 			"variants": {
 				"counterVariants": {
@@ -314,13 +347,19 @@
 							"solid",
 							"muted"
 						],
+						"variant": [
+							"pill",
+							"bare"
+						],
 						"size": [
 							"default",
-							"sm"
+							"sm",
+							"inherit"
 						]
 					},
 					"defaults": {
 						"tone": "solid",
+						"variant": "pill",
 						"size": "default"
 					}
 				}
@@ -733,7 +772,7 @@
 			"description": "Indeterminate loading bar for route/navigation transitions.",
 			"usage": [
 				"Mount once in the root layout and gate on navigation: `{#if navigating.to}<LoadingBar />{/if}` (SvelteKit `navigating` from `$app/state`). Presentational only — it does not read navigation state itself.",
-				"`position=\"bottom\"` pins it to the viewport bottom; always fixed + full-width. Indeterminate only — for a determinate value bar use `progress`."
+				"`position=\"bottom\"` pins it to the viewport bottom; always fixed + full-width. For navigation only. Work inside a page uses `Progress`: a value when the total is known, `value={null}` when it is not."
 			],
 			"variants": {
 				"loadingBarVariants": {
@@ -789,13 +828,29 @@
 			]
 		},
 		{
+			"name": "popover",
+			"import": "@archetypeai/ds-ui-svelte-console/primitives/popover",
+			"source": "https://design-system-console.archetypeai.workers.dev/r/popover.json",
+			"description": "A floating panel anchored to a trigger, on DropdownMenu's surface and motion. Padded by default; hosts a Command for a searchable menu.",
+			"usage": [
+				"DropdownMenu vs Popover + Command: a plain list of actions or choices is a `DropdownMenu`. Reach for `Popover` + `Command` only when the list needs a search field, which DropdownMenu can't host (its typeahead takes the keystrokes), or a footer that stays in view while the list scrolls.",
+				"`<Popover.Root bind:open>` with a `Popover.Trigger` and a `Popover.Content`. The trigger is unstyled: pass a `Button` through its `child` snippet (`{#snippet child({ props })}<Button variant=\"outline\" {...props}>…</Button>{/snippet}`) so it looks like every other trigger.",
+				"`Popover.Content` is portalled, offset 4px, `w-72` and padded (`p-4`, children `gap-4`) for free-form content. For a searchable menu, put a `Command` inside and pass `class=\"w-120 p-0\"` (any width, no padding) so the Command sits flush. `align=\"start\"` lines it up with a trigger at the start of a row.",
+				"A searchable menu's trigger is a combobox: give the `Button` `role=\"combobox\"`, `aria-expanded={open}` and an `aria-label` naming what it picks (a combobox isn't named by its text, unlike a button), and bind its `ref`. On a pick, close and hand focus back to the trigger: `open = false; tick().then(() => triggerRef?.focus())`. `Popover.Close` wraps a control that should close it directly."
+			]
+		},
+		{
 			"name": "progress",
 			"import": "@archetypeai/ds-ui-svelte-console/primitives/progress",
 			"source": "https://design-system-console.archetypeai.workers.dev/r/progress.json",
-			"description": "Determinate progress bar.",
+			"description": "Progress bar: fills to a known value, or sweeps while the total is unknown.",
 			"usage": [
+				"A rolling percentage above the bar is composed, not a prop: wrap a bare Counter and the bar in a `flex flex-col gap-2.5`, with the figure as `<span class=\"font-mono text-6xl\"><Counter value={pct} variant=\"bare\" size=\"inherit\" exact /></span>` and a `text-muted-foreground text-lg` unit beside it. Mark the whole figure row `aria-hidden`: the bar already announces the value through `aria-valuenow`, so the number drawn beside it is presentation, not a second thing to read out.",
 				"Pair with a large mono readout: `<span class=\"font-mono text-4xl\">{value}</span><span class=\"text-muted-foreground text-sm\">%</span>` beside the bar.",
-				"`size=\"sm\"` for compact/inline progress (upload rows); always aria-label."
+				"`size=\"sm\"` for compact/inline progress (upload rows); always aria-label.",
+				"Unknown total vs not started: `value={null}` is work whose total isn't known (a running eval that reports rows scored but no row count). The bar sweeps, drops `aria-valuenow`, sets `aria-busy` and marks `data-indeterminate`. Pass `value={0}` for work with a known total that hasn't moved yet. Show what is known beside the bar (`1,276 rows scored`), never a made-up percentage.",
+				"Reduced motion holds the sweep still in the centre of the track, so it can't be read as partly done.",
+				"`variant=\"running\"` paints the bar in `atai-neutral`, the colour the console uses for a running job (see Badge's status recipe). `success` and `critical` are for finished work."
 			],
 			"variants": {
 				"progressVariants": {
@@ -813,6 +868,7 @@
 					"axes": {
 						"variant": [
 							"default",
+							"running",
 							"success",
 							"critical"
 						]
@@ -832,6 +888,92 @@
 				"`<ScatterChart title icon data categoryKey=\"cluster\" categories={{ q1: 'Cluster A', … }} xMin xMax yMin yMax xTicks yTicks />` — data rows are { x, y, <categoryKey> }; categories map drives legend + series colors.",
 				"Streaming: append rows and set `maxPoints` for a sliding window."
 			]
+		},
+		{
+			"name": "score-bento",
+			"import": "@archetypeai/ds-ui-svelte-console/primitives/score-bento",
+			"source": "https://design-system-console.archetypeai.workers.dev/r/score-bento.json",
+			"description": "Score hero: a 0..1 score as a field of one hundred cells painted in the tone, revealed from the bottom-right corner while the figure rolls up to its value.",
+			"usage": [
+				"`ScoreBento value={0.97} label=\"Macro F1\"` paints the whole field and rolls the figure to `0.97` (a bare `Counter` with `decimals={2}`). The value is 0..1 and shown to two decimals; round the same way (`Math.round(v * 100) / 100`) anywhere else the page prints this score, so the hero and a list can't disagree on a digit.",
+				"Unscored vs in flight vs scored: `value={null}` renders the empty field and an em dash (no score yet, or a failed run). While the run is going, pass `status=\"running\"` with `value={null}`: a single diagonal sweeps the empty field back and forth without claiming a score, and `valueText` + `meta` carry what is known (`valueText=\"1,276\" meta=\"rows scored\"`). `status=\"completed\"` with a value reveals the field from the corner on first paint and lands the `eyebrow` once the last cell does.",
+				"`status` takes the agent service's eval and optimization statuses as they come (`pending`, `running`, `completed`, `failed`, `cancelled`); only `running` and `completed` move, the rest are still. Reduced motion stills both.",
+				"`tone` picks the colour: `neutral` (the default) paints from the theme's foreground and works for any score; `babyblue` and `yellow` are brand fills; `warning` is the system's warning colour, for a score that needs attention; `slate` is graded, so the score picks its step (below). Which tone a score wears is the caller's decision, e.g. a band map kept beside the thresholds. A score paints every cell in the tone's token at full strength in both themes, so the colour and the figure carry it, not an amount of cells; with no score the cells show the bento's background. A new colour is a new tone in `scoreBentoFieldVariants` and `scoreBentoInkVariants`, not a call-site override.",
+				"`tone=\"slate\"` is the one graded tone: the score's tenth picks a step on the slate scale, 50 at 0.05 up to 900 at 0.95, run the other way in dark (950 up to 100) so a high score still stands furthest from the page, with the ink flipping to white from 500. Use it where the score itself should colour the bento; the fixed tones paint the same colour at every score.",
+				"Around the figure: `eyebrow` is a short line above it (a verdict such as \"Great\"), `meta` a line under it, `valueText` replaces the two-decimal figure with a caller-formatted string, and `trailing` is a top-right line such as a delta against the previous run. `help` is a plain-words explanation of the label, behind an info disc in the top-right corner. `help` renders a Tooltip, so the page needs a `Tooltip.Provider` above it; put one in the app layout rather than wrapping each bento.",
+				"`size=\"compact\"` fits a side panel or another narrow column (a shorter field, `text-7xl` figure); `default` is the page hero. The bento sets no width or grid placement of its own: lay it out with `class` (`md:col-span-7 md:row-span-2` beside two `StatBento`s at `md:col-span-2`)."
+			],
+			"variants": {
+				"scoreBentoVariants": {
+					"axes": {
+						"size": [
+							"default",
+							"compact"
+						]
+					},
+					"defaults": {
+						"size": "default"
+					}
+				},
+				"scoreBentoFieldVariants": {
+					"axes": {
+						"tone": [
+							"neutral",
+							"babyblue",
+							"yellow",
+							"warning",
+							"slate"
+						]
+					},
+					"defaults": {
+						"tone": "neutral"
+					}
+				},
+				"scoreBentoInkVariants": {
+					"axes": {
+						"tone": [
+							"neutral",
+							"babyblue",
+							"yellow",
+							"warning",
+							"slate"
+						]
+					},
+					"defaults": {
+						"tone": "neutral"
+					}
+				},
+				"scoreBentoSlateVariants": {
+					"axes": {
+						"step": [
+							"0",
+							"1",
+							"2",
+							"3",
+							"4",
+							"5",
+							"6",
+							"7",
+							"8",
+							"9"
+						]
+					},
+					"defaults": {
+						"step": "0"
+					}
+				},
+				"scoreBentoValueVariants": {
+					"axes": {
+						"size": [
+							"default",
+							"compact"
+						]
+					},
+					"defaults": {
+						"size": "default"
+					}
+				}
+			}
 		},
 		{
 			"name": "select",
@@ -919,7 +1061,7 @@
 				"It never renders an overlay or scrim and never traps focus or scroll: the list behind stays fully interactive, clicking outside does nothing, Escape closes. If the task needs the page blocked, use Dialog instead.",
 				"One panel at a time. Drilling in replaces Body's content and adds an in-panel back; it never opens a second SidePanel.",
 				"Read-mostly: actions inside are fine, but destructive confirmations spawn a Dialog over the panel. The panel does not own confirmation.",
-				"`size=\"sm\"` (384px) for a record and its fields; `size=\"md\"` (576px) when Body carries a preview, a chart or a code block. `side=\"left\"` only when the list itself lives on the right.",
+				"`size=\"sm\"` (384px) for a record and its fields; `size=\"md\"` (576px) when Body carries a preview, a chart or a code block; `size=\"lg\"` (768px, capped at the window's width) when Body holds a full-size page section such as a scorecard or a confusion grid. `side=\"left\"` only when the list itself lives on the right.",
 				"Header layout follows Dialog: a `space-y-2` block, so `SidePanel.Title` and then either `SidePanel.Description` (plain text) or `SidePanel.Meta` (badges, a status line, key/value metadata) stack full width. The `actions` cluster and the close sit absolutely at the top right, so the header reserves right padding and a long Title truncates rather than running under them. Give header actions the same bare icon treatment as the close via `sidePanelCloseButtonVariants`; keep `Description` when the subtitle is text, because it is what wires `aria-describedby` and `Meta` cannot.",
 				"Content renders in place (no portal) so Tab reaches it after the list; do not mount it inside a transformed ancestor, where `fixed` misplaces. Focus does not move on open. Header renders an outline icon Close by default (`showCloseButton={false}` to place `SidePanel.Close` yourself). `SidePanel.Footer` is optional: it holds the actions on the data being viewed, never Close or the full-page handoff. One primary action sits right; with `justify=\"between\"` secondary actions (copy an id, compare) go first and land left."
 			],
@@ -932,7 +1074,8 @@
 						],
 						"size": [
 							"sm",
-							"md"
+							"md",
+							"so it still fits a window narrower than the panel\n      lg"
 						],
 						"mode": [
 							"overlay"
@@ -1002,6 +1145,19 @@
 					}
 				}
 			}
+		},
+		{
+			"name": "stat-bento",
+			"import": "@archetypeai/ds-ui-svelte-console/primitives/stat-bento",
+			"source": "https://design-system-console.archetypeai.workers.dev/r/stat-bento.json",
+			"description": "Small figure bento: a label top-left, the value bottom-right, one line of context bottom-left. ScoreBento's quiet sibling.",
+			"usage": [
+				"`StatBento label=\"Accuracy\" value=\"0.94\" meta=\"1,203 of 1,276\"`. `value` is a string the caller formats (`0.94`, `12%`, `3m 20s`), so the bento never guesses at precision or units.",
+				"Missing vs pending: pass `value=\"—\"` when the figure does not exist, and say why in `meta` while it is still coming (`meta=\"when complete\"`). Omit `meta` when there is nothing to add; the value keeps its bottom-right place either way.",
+				"Where the bento is too narrow for `meta` and the value side by side, the value wraps under the context line instead of widening the bento, so the bento can go in a two- or three-up grid of any width.",
+				"It sits on the card surface, not a tone, so a coloured `ScoreBento` beside it stays the only coloured thing. It sets no height or grid placement: size and lay it out with `class` (`min-h-28` in a side panel, `md:col-span-2` beside a bento).",
+				"`help` renders a Tooltip info disc in the top-right corner, so the page needs a `Tooltip.Provider` above it; put one in the app layout."
+			]
 		},
 		{
 			"name": "switch",
@@ -1107,23 +1263,29 @@
 			"source": "https://design-system-console.archetypeai.workers.dev/r/tabs.json",
 			"description": "View and section switcher.",
 			"usage": [
-				"Icon view toggle (list/grid): `Tabs.List variant=\"toggle\"` + `Tabs.Trigger variant=\"icon\"` with an icon + title.",
-				"Segmented source switch (Library | File IDs | Upload): `variant=\"toggle\"` list + triggers `size=\"pill\" typography=\"mono\"`.",
-				"Page-section tabs (Progress | Logs | Artifacts): `Tabs.List variant=\"line\"` with plain text triggers; always `Tabs.Root bind:value`.",
+				"The look is set once, on `Tabs.List`; triggers take it from the list and have no styling props of their own beyond `variant=\"icon\"`.",
+				"Page-section tabs (Progress | Logs | Artifacts): `Tabs.List` (`variant=\"line\"` is the default) with plain text triggers and a `Tabs.Content` per tab; always `Tabs.Root bind:value`.",
+				"A second strip nested inside a section's panel: `Tabs.List size=\"sm\"`, so it reads as a level below the page's strip. `size` exists on `line` only.",
+				"Mode or view switch over the same content (Library | File IDs | Upload, Share | Count): `Tabs.List variant=\"segmented\"` with text triggers and no `Tabs.Content`.",
+				"Icon view toggle (list/grid) or sort direction: `Tabs.List variant=\"segmented\"` + `Tabs.Trigger variant=\"icon\"` with an icon, and a `title` or `aria-label` on each trigger.",
 				"Count on a trigger: `<Tabs.Trigger value=\"logs\">Logs <Tabs.Count value={logCount} /></Tabs.Trigger>` — an odometer pill that abbreviates past 999 (`1.2K`) so the strip never reflows. Pass `value={null}` while the count is still loading (it reserves the width), `value={0}` for an empty tab, and omit `Tabs.Count` entirely for a tab that has no count at all.",
 				"Count on a tab that cannot be sized: `<Tabs.Count value={loaded} atLeast />` renders `103+` for a keyset-paginated tab that knows only how many rows it has so far. Prefer it over dropping the count entirely, which reads as \"none\"."
 			],
 			"variants": {
-				"tabsListVariants": {
+				"tabsVariants": {
 					"axes": {
 						"variant": [
-							"default",
 							"line",
-							"toggle"
+							"segmented"
+						],
+						"size": [
+							"default",
+							"sm"
 						]
 					},
 					"defaults": {
-						"variant": "default"
+						"variant": "line",
+						"size": "default"
 					}
 				},
 				"tabsTriggerVariants": {
@@ -1131,20 +1293,10 @@
 						"variant": [
 							"text",
 							"icon"
-						],
-						"size": [
-							"default",
-							"pill"
-						],
-						"typography": [
-							"default",
-							"mono"
 						]
 					},
 					"defaults": {
-						"variant": "text",
-						"size": "default",
-						"typography": "default"
+						"variant": "text"
 					}
 				}
 			}

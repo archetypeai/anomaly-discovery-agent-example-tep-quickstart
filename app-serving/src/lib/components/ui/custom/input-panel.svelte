@@ -15,7 +15,6 @@
 	 */
 	import Pane from '$lib/components/ui/patterns/pane/index.js';
 	import CircleArrowUpIcon from '@lucide/svelte/icons/circle-arrow-up';
-	import InfoIcon from '@lucide/svelte/icons/info';
 	import * as Tooltip from '@archetypeai/ds-ui-svelte-console/primitives/tooltip';
 	import ChannelGrid from './channel-grid.svelte';
 	import RunSelector from './run-selector.svelte';
@@ -23,12 +22,6 @@
 	/** @type {{tep: any, class?: string}} */
 	let { tep, class: className = '' } = $props();
 	const s = $derived(tep.state);
-
-	// The heading voice — sans, normal case, foreground. The references grow the
-	// block caption into this rather than switching to a second mono uppercase
-	// size: three captions in the panel voice on one screen shout louder than the
-	// panel captions above them.
-	const HEADING = 'font-sans text-sm tracking-normal normal-case text-foreground';
 
 	// IDENTITY, not explanation — the form the house style gives this line, whose
 	// own example is `subtitle="North Sea · Equinor"`.
@@ -47,23 +40,21 @@
 	{/snippet}
 
 	<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-		<Pane title="Process tags" captionClass={HEADING} class="min-h-0 flex-1">
+		<Pane title="Process tags" class="min-h-0 flex-1">
 			{#snippet titleAfter()}
 				<Tooltip.Root>
-					<Tooltip.Trigger variant="info" aria-label="About these tags">
-						<InfoIcon class="size-3.5 text-muted-foreground" aria-hidden="true" />
-					</Tooltip.Trigger>
-					<Tooltip.Content class="max-w-xs text-xs leading-snug">
+					<Tooltip.Trigger variant="info" aria-label="About these tags" />
+					<Tooltip.Content class="max-w-xs">
 						All 33 channels the detector sees — 22 measurements and 11 manipulated variables,
-						sampled every three minutes. Values are the plant's own engineering units; the figure
-						on the right is the same reading as a distance from the reference mean, in reference
+						sampled every three minutes. Values are the plant's own engineering units; the figure on
+						the right is the same reading as a distance from the reference mean, in reference
 						sigmas. The agent is given the z-scored form, because that is what its detector was
 						fitted on; the inverse is exact, so these are the same numbers.
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/snippet}
 			{#snippet actions()}
-				<span class="font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
+				<span class="font-mono text-xs text-muted-foreground tabular-nums">
 					{s.status?.processHours?.toFixed(1) ?? '0.0'} h
 				</span>
 			{/snippet}

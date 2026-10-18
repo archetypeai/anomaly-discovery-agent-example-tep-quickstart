@@ -182,7 +182,14 @@
 		262,
 		'rows/s'
 	)}
-	{@render flow('M 215,240 C 235,275 290,302 330,328', 'tep/raw', rateOf('tep/raw'), 270, 262, 'blk/s')}
+	{@render flow(
+		'M 215,240 C 235,275 290,302 330,328',
+		'tep/raw',
+		rateOf('tep/raw'),
+		270,
+		262,
+		'blk/s'
+	)}
 	<text x="270" y="290" font-size="10" fill={rateOf('tep/status') > 0 ? GOOD : MUTED}>
 		tep/status {fmt(rateOf('tep/status'))}
 	</text>

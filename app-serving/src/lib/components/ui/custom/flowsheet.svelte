@@ -86,23 +86,41 @@
 			<rect x="14" y="96" width="74" height="92" rx="3" fill={tint('feed')} stroke={edge('feed')} />
 			{#each ['A', 'D', 'E', 'A+C'] as f, i (f)}
 				<line x1="88" y1={110 + i * 22} x2="130" y2={110 + i * 22} />
-				<polygon points="130,{106 + i * 22} 138,{110 + i * 22} 130,{114 + i * 22}" fill="var(--plate-ink)" stroke="none" />
-				<text x="26" y={114 + i * 22} class="fill-muted-foreground text-[9px]" stroke="none">{f} feed</text>
+				<polygon
+					points="130,{106 + i * 22} 138,{110 + i * 22} 130,{114 + i * 22}"
+					fill="var(--plate-ink)"
+					stroke="none"
+				/>
+				<text x="26" y={114 + i * 22} class="fill-muted-foreground text-2xs" stroke="none"
+					>{f} feed</text
+				>
 			{/each}
 		</g>
 
 		<!-- ── reactor ─────────────────────────────────────────────────────── -->
 		<g>
-			<rect x="140" y="80" width="86" height="124" rx="8" fill={tint('reactor')} stroke={edge('reactor')} />
+			<rect
+				x="140"
+				y="80"
+				width="86"
+				height="124"
+				rx="8"
+				fill={tint('reactor')}
+				stroke={edge('reactor')}
+			/>
 			<!-- cooling coil: the reactor is exothermic and its coolant valve is the
 			     manipulated variable three of the twenty faults act on -->
 			{#each [0, 1, 2, 3] as i (i)}
 				<path d="M150 {104 + i * 26} q 16 -12 33 0 q 16 12 33 0" stroke="var(--plate-detail)" />
 			{/each}
-			<text x="183" y="220" text-anchor="middle" class="fill-plate-ink text-[10px]" stroke="none">Reactor</text>
+			<text x="183" y="220" text-anchor="middle" class="fill-plate-ink text-2xs" stroke="none"
+				>Reactor</text
+			>
 			<!-- coolant in/out -->
 			<line x1="140" y1="212" x2="118" y2="212" stroke="var(--plate-detail)" />
-			<text x="114" y="215" text-anchor="end" class="fill-muted-foreground text-[8px]" stroke="none">CW</text>
+			<text x="114" y="215" text-anchor="end" class="fill-muted-foreground text-2xs" stroke="none"
+				>CW</text
+			>
 		</g>
 
 		<!-- reactor → condenser -->
@@ -112,17 +130,37 @@
 		<!-- ── condenser + separator ───────────────────────────────────────── -->
 		<g>
 			<!-- condenser: heat-exchanger shell -->
-			<rect x="296" y="100" width="58" height="40" rx="3" fill={tint('separator')} stroke={edge('separator')} />
+			<rect
+				x="296"
+				y="100"
+				width="58"
+				height="40"
+				rx="3"
+				fill={tint('separator')}
+				stroke={edge('separator')}
+			/>
 			<line x1="296" y1="120" x2="354" y2="120" stroke="var(--plate-detail)" />
-			<text x="325" y="152" text-anchor="middle" class="fill-plate-ink text-[10px]" stroke="none">Condenser</text>
+			<text x="325" y="152" text-anchor="middle" class="fill-plate-ink text-2xs" stroke="none"
+				>Condenser</text
+			>
 
 			<line x1="354" y1="120" x2="392" y2="120" />
 			<polygon points="392,116 400,120 392,124" fill="var(--plate-ink)" stroke="none" />
 
 			<!-- separator: vertical drum with a liquid level -->
-			<rect x="400" y="86" width="64" height="118" rx="26" fill={tint('separator')} stroke={edge('separator')} />
+			<rect
+				x="400"
+				y="86"
+				width="64"
+				height="118"
+				rx="26"
+				fill={tint('separator')}
+				stroke={edge('separator')}
+			/>
 			<path d="M400 168 q 32 10 64 0" stroke="var(--plate-detail)" />
-			<text x="432" y="220" text-anchor="middle" class="fill-plate-ink text-[10px]" stroke="none">Separator</text>
+			<text x="432" y="220" text-anchor="middle" class="fill-plate-ink text-2xs" stroke="none"
+				>Separator</text
+			>
 		</g>
 
 		<!-- ── purge, up from the separator overhead ───────────────────────── -->
@@ -130,8 +168,18 @@
 			<line x1="432" y1="86" x2="432" y2="46" />
 			<line x1="432" y1="46" x2="560" y2="46" />
 			<polygon points="560,42 568,46 560,50" fill="var(--plate-ink)" stroke="none" />
-			<rect x="568" y="32" width="54" height="28" rx="3" fill={tint('purge')} stroke={edge('purge')} />
-			<text x="595" y="50" text-anchor="middle" class="fill-plate-ink text-[9px]" stroke="none">Purge</text>
+			<rect
+				x="568"
+				y="32"
+				width="54"
+				height="28"
+				rx="3"
+				fill={tint('purge')}
+				stroke={edge('purge')}
+			/>
+			<text x="595" y="50" text-anchor="middle" class="fill-plate-ink text-2xs" stroke="none"
+				>Purge</text
+			>
 		</g>
 
 		<!-- ── recycle compressor, back to the reactor ─────────────────────── -->
@@ -147,22 +195,36 @@
 			     is inside the condenser shell (y=100-140) two units to the right, so
 			     the label printed straight through the box. Above, the only thing at
 			     this x is clear space — the purge run at y=46 starts at x=432. -->
-			<text x="312" y="44" text-anchor="middle" class="fill-plate-ink text-[9px]" stroke="none">Compressor</text>
+			<text x="312" y="44" text-anchor="middle" class="fill-plate-ink text-2xs" stroke="none"
+				>Compressor</text
+			>
 		</g>
 
 		<!-- ── stripper ────────────────────────────────────────────────────── -->
 		<g>
 			<line x1="464" y1="188" x2="524" y2="188" />
 			<polygon points="524,184 532,188 524,192" fill="var(--plate-ink)" stroke="none" />
-			<rect x="532" y="96" width="62" height="130" rx="6" fill={tint('stripper')} stroke={edge('stripper')} />
+			<rect
+				x="532"
+				y="96"
+				width="62"
+				height="130"
+				rx="6"
+				fill={tint('stripper')}
+				stroke={edge('stripper')}
+			/>
 			<!-- trays -->
 			{#each [0, 1, 2, 3, 4] as i (i)}
 				<line x1="540" y1={120 + i * 20} x2="586" y2={120 + i * 20} stroke="var(--plate-detail)" />
 			{/each}
-			<text x="563" y="242" text-anchor="middle" class="fill-plate-ink text-[10px]" stroke="none">Stripper</text>
+			<text x="563" y="242" text-anchor="middle" class="fill-plate-ink text-2xs" stroke="none"
+				>Stripper</text
+			>
 			<!-- steam in -->
 			<line x1="532" y1="214" x2="506" y2="214" stroke="var(--plate-detail)" />
-			<text x="502" y="217" text-anchor="end" class="fill-muted-foreground text-[8px]" stroke="none">steam</text>
+			<text x="502" y="217" text-anchor="end" class="fill-muted-foreground text-2xs" stroke="none"
+				>steam</text
+			>
 			<!-- Stripper overhead joins the recycle riser at x=416, where the
 			     separator's own overhead comes up — one T-junction, then a single
 			     line left through the compressor to the reactor. It used to stop at
@@ -176,7 +238,13 @@
 		<g>
 			<line x1="594" y1="214" x2="672" y2="214" />
 			<polygon points="672,210 680,214 672,218" fill="var(--plate-ink)" stroke="none" />
-			<text x="700" y="217" text-anchor="middle" class="fill-muted-foreground text-[9px]" stroke="none">G, H</text>
+			<text
+				x="700"
+				y="217"
+				text-anchor="middle"
+				class="fill-muted-foreground text-2xs"
+				stroke="none">G, H</text
+			>
 		</g>
 	</svg>
 
@@ -185,8 +253,11 @@
 	<div class="mt-2 grid shrink-0 grid-cols-3 gap-x-4 gap-y-1 sm:grid-cols-6">
 		{#each readouts as r (r.key)}
 			<div class="flex flex-col gap-0.5">
-				<span class="truncate text-[10px] text-muted-foreground">{r.label}</span>
-				<span class="font-mono text-xs" style="color: {r.dev >= 1 ? deviationTone(r.dev).color : 'var(--color-foreground)'}">
+				<span class="truncate text-2xs text-muted-foreground">{r.label}</span>
+				<span
+					class="font-mono text-xs"
+					style="color: {r.dev >= 1 ? deviationTone(r.dev).color : 'var(--color-foreground)'}"
+				>
 					{r.dev.toFixed(1)}σ
 				</span>
 			</div>

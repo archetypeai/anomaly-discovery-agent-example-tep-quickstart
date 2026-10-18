@@ -62,7 +62,7 @@ Use semantic tokens for anything themed; standard Tailwind for layout.
   `text-muted-foreground`, `border-border`, `bg-accent`, `bg-primary`,
   `text-primary-foreground`, `bg-destructive`
 - Status: `text-atai-good`, `text-atai-warning`, `text-atai-critical`,
-  `text-atai-neutral` (pair with matching `border-*` on status badges)
+  `text-atai-neutral` (status badges take only the text colour; the outline follows it)
 - Brand: `bg-atai-brand-babyblue`, `bg-atai-brand-yellow`,
   `text-atai-always-black`, `text-atai-always-white`
 - Icon strokes on lucide icons: `stroke-icon-default`,
