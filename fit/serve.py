@@ -70,10 +70,12 @@ def served_blueprint(promoted: str) -> str:
     doc = copy.deepcopy(src["document"])
     doc.pop("blueprint_id", None)
     doc["values"]["step_size"] = 1
-    endpoint = {"format": "serving", "kind": "http", "protocols": ["atai-records"]}
+    # The platform fills in protocols and models for a served blueprint and
+    # rejects the document outright if we set them ourselves.
+    endpoint = {"format": "serving", "kind": "http"}
     doc["connectors"] = {
         "source": {"key": "RecordsSource", "config": {
-            **endpoint, "models": [MODEL],
+            **endpoint,
             "data_columns": [{"dtype": "f32", "names": doc["values"]["data_columns"]}],
             "timestamp_column": doc["values"]["timestamp_column"]}},
         "sink": {"key": "RecordsSink", "config": dict(endpoint)},
