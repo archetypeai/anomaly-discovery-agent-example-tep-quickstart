@@ -21,8 +21,9 @@ Agents go first (a bundle that still has an agent answers 409), a running one is
 cancelled before it is deleted, and an id already gone counts as done. Progress
 goes to fit/out/cleanup_state.json, so a rerun picks up where it stopped.
 
-What stays: the promoted blueprint and its served copy (deleting a blueprint
-takes an org admin's key), and the optimization and eval the README cites.
+What stays: the promoted blueprint, and the optimization and eval the README
+cites. The served copy is deleted with the rest — fit/serve.py remakes it, and
+a blueprint deletes fine once no bundle holds it.
 After a cleanup, rerunning fit/deliver.py needs fit/out/deliver_state.json moved
 aside, since its bundle is gone.
 """
@@ -58,7 +59,11 @@ def main() -> int:
     test = load_state(state_path("test"))
     targets = []                                   # (stage, kind, id), agents before their bundle
     if serve.get("bundle"):
-        targets += [("Stage 8", "instances", serve["agent"])] if serve.get("agent") else []
+        # a /run rejected after the instance was created (400) leaves an agent the
+        # state file never recorded, and it still holds the bundle
+        agents = {serve["agent"]} if serve.get("agent") else set()
+        agents |= {r["id"] for r in list_bundle_runs(serve["bundle"])}
+        targets += [("Stage 8", "instances", a) for a in sorted(agents)]
         targets += [("Stage 8", "bundles", serve["bundle"])]
     if bridge.get("bundle"):
         # every agent the bridge started, a released one it replaced included
@@ -87,23 +92,44 @@ def main() -> int:
     print(f"already deleted: {len(gone & {t[2] for t in targets})}")
     bp = test.get("blueprint", {}).get("key")
     if bp:
-        print(f"stays: blueprints {bp} and {bp}-served-records (an org admin can delete them); "
-              f"optimization {test.get('optimization')} and eval {test.get('eval')}")
+        print(f"also deletes: blueprint {bp}-served-records (fit/serve.py remakes it)")
+        print(f"stays: blueprint {bp}, optimization {test.get('optimization')} "
+              f"and eval {test.get('eval')}")
     if not args.yes:
         print("\nnothing deleted: rerun with --yes")
         return 0
 
+    stuck = []
     for k, (stage, kind, obj) in enumerate(todo, 1):
-        if kind == "instances":
-            info = call("GET", f"/instances/{obj}")
-            if info and info.get("status") not in ("completed", "failed", "cancelled", "canceled"):
-                call("POST", f"/instances/{obj}/cancel", body={})
-        call("DELETE", f"/{kind}/{obj}")
-        gone.add(obj)
+        try:
+            if kind == "instances":
+                info = call("GET", f"/instances/{obj}")
+                if info and info.get("status") not in ("completed", "failed", "cancelled", "canceled"):
+                    call("POST", f"/instances/{obj}/cancel", body={})
+            call("DELETE", f"/{kind}/{obj}")
+            gone.add(obj)
+        except SystemExit as e:
+            # keep going: one object that will not delete used to strand every
+            # object behind it, including whole stages further down the list
+            stuck.append((kind, obj, str(e).splitlines()[0][:200]))
         if k % 25 == 0 or k == len(todo):
             done["deleted"] = sorted(gone)
             save_state(done_path, done)
-            log(f"deleted {k}/{len(todo)}")
+            log(f"deleted {k - len(stuck)}/{len(todo)}")
+
+    # the served copy is regenerable, and deletes once no bundle holds it
+    if bp and not any(kind == "bundles" for kind, _, _ in stuck):
+        try:
+            call("DELETE", f"/blueprints/{bp}-served-records")
+        except SystemExit as e:
+            stuck.append(("blueprints", f"{bp}-served-records", str(e).splitlines()[0][:200]))
+
+    if stuck:
+        print(f"\n{len(stuck)} object(s) would not delete:")
+        for kind, obj, why in stuck:
+            print(f"  {kind}/{obj}: {why}")
+        print("an agent holds its bundle, and a bundle holds its blueprint: "
+              "delete what holds them, then rerun")
     for kind, st in (("serve", serve), ("app_serving", bridge)):
         if st.get("bundle"):
             state_path(kind).unlink()

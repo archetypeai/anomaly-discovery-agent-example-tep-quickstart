@@ -109,11 +109,42 @@ def bundles_url(bundle_id: str = "") -> str:
     return f"{base}/{bundle_id}" if bundle_id else base
 
 
+def _runs_by_filter(bundle_id: str, progress: bool = True):
+    """The bundle's runs via `bundle_id=`, or None if the filter is not honored."""
+    out, after = [], None
+    while True:
+        url = f"{agents_base()}/instances?bundle_id={bundle_id}&limit=100"
+        if after:
+            url += f"&after={after}"
+        try:
+            page = request("GET", url)
+        except SystemExit:
+            return None                            # unsupported: fall back to the scan
+        rows = page.get("data", [])
+        if any(r.get("bundle_id") != bundle_id for r in rows):
+            return None                            # ignored: the rows are everyone's
+        out += rows
+        if not rows or not page.get("has_more"):
+            break
+        after = page.get("next_cursor") or rows[-1].get("id")
+        if not after:
+            break
+    if progress:
+        print(f"  {len(out)} run(s) belong to this bundle", flush=True)
+    return out
+
+
 def list_bundle_runs(bundle_id: str, progress: bool = True) -> list:
     """Every agent launched from a bundle, newest first.
 
-    There is no `/agents/bundles/{id}/runs` endpoint, so this walks the whole
-    instance listing and filters on `bundle_id`. That is slower than it sounds:
+    The instance listing takes `bundle_id=` and the platform validates it (a
+    malformed id answers 400), so one filtered request replaces walking the
+    whole listing. Verified on dev 2026-10-20: the delivery bundle answered
+    with its five runs and `has_more` false, and the scan below found the same
+    five in 37 pages. If a deployment ever ignores the parameter the rows come
+    back unfiltered, so the result is checked and the scan runs instead.
+
+    The scan is kept as that fallback. It is slower than it sounds:
     5,100 instances across 51 pages took ~10 s on dev, and it used to print
     nothing while doing it, which reads exactly like a hang.
 
@@ -125,6 +156,10 @@ def list_bundle_runs(bundle_id: str, progress: bool = True) -> list:
     The seen-id guard below makes a repeat page a hard stop rather than a loop,
     in case the parameter name moves again.
     """
+    filtered = _runs_by_filter(bundle_id, progress)
+    if filtered is not None:
+        return filtered
+
     out, after, pages, seen = [], None, 0, set()
     while True:
         url = f"{agents_base()}/instances?limit=100"
