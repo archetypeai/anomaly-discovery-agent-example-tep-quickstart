@@ -85,17 +85,24 @@ def score(files: list, ev: dict, preds: list, window: int, step: int) -> dict:
     paired, abstained = [], 0
     for f in files:
         name = (ROLES / f["file"]).stem
-        src = REPO / f["source"]
-        ws = windows(src.with_name(src.stem + "_labels.csv"), window, step)
-        got = sorted(by_ex.get(name, []), key=lambda p: p["row_index"])
+        # The manifest names the labels sidecar directly; deriving it from a
+        # "source" key does not work, because build_roles.py has never written
+        # one -- each test entry carries file / labels / normal / anomaly.
+        ws = windows(ROLES / f["labels"], window, step)
+        # Order by the window's own time interval. The platform emits `input`
+        # as 0 for every record, so it cannot order anything; `key.predicted`
+        # is [start, end] in epoch seconds and is unique per window.
+        got = sorted(by_ex.get(name, []), key=lambda p: p["key"]["predicted"][0])
         if len(got) != len(ws):
             raise SystemExit(f"{name}: {len(got)} predictions for {len(ws)} windows at "
                              f"window {window}, step {step}")
         for i, (row, p) in enumerate(zip(ws, got)):
-            if p["gold"] != gold(row):
-                raise SystemExit(f"{name} window {i}: platform gold {p['gold']}, sidecar says "
+            if p["expected"] != gold(row):
+                raise SystemExit(f"{name} window {i}: platform gold {p['expected']}, sidecar says "
                                  f"{gold(row)} -- predictions are misaligned")
-            if p["abstained"]:
+            # `outcome: missed` carries a null `predicted`: the detector
+            # abstained on that window.
+            if p["outcome"] == "missed" or p["predicted"] is None:
                 abstained += 1
             else:
                 paired.append((row, p["predicted"]))
