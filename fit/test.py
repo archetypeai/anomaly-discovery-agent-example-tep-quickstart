@@ -85,17 +85,24 @@ def score(files: list, ev: dict, preds: list, window: int, step: int) -> dict:
     paired, abstained = [], 0
     for f in files:
         name = (ROLES / f["file"]).stem
-        src = REPO / f["source"]
-        ws = windows(src.with_name(src.stem + "_labels.csv"), window, step)
-        got = sorted(by_ex.get(name, []), key=lambda p: p["row_index"])
+        # The manifest names the labels sidecar directly; deriving it from a
+        # "source" key does not work, because build_roles.py has never written
+        # one -- each test entry carries file / labels / normal / anomaly.
+        ws = windows(ROLES / f["labels"], window, step)
+        # Order by the window's own time interval. The platform emits `input`
+        # as 0 for every record, so it cannot order anything; `key.predicted`
+        # is [start, end] in epoch seconds and is unique per window.
+        got = sorted(by_ex.get(name, []), key=lambda p: p["key"]["predicted"][0])
         if len(got) != len(ws):
             raise SystemExit(f"{name}: {len(got)} predictions for {len(ws)} windows at "
                              f"window {window}, step {step}")
         for i, (row, p) in enumerate(zip(ws, got)):
-            if p["gold"] != gold(row):
-                raise SystemExit(f"{name} window {i}: platform gold {p['gold']}, sidecar says "
+            if p["expected"] != gold(row):
+                raise SystemExit(f"{name} window {i}: platform gold {p['expected']}, sidecar says "
                                  f"{gold(row)} -- predictions are misaligned")
-            if p["abstained"]:
+            # `outcome: missed` carries a null `predicted`: the detector
+            # abstained on that window.
+            if p["outcome"] == "missed" or p["predicted"] is None:
                 abstained += 1
             else:
                 paired.append((row, p["predicted"]))
@@ -174,7 +181,7 @@ def main() -> int:
         raise SystemExit(f"eval {state['eval']} ended {ev['status']}: {ev.get('error')}")
     pred = next(x["id"] for x in ev["output_artifacts"]
                 if x.get("metadata", {}).get("kind") == "predictions")
-    raw = request("GET", f"{api_base()}/v0.5/files/download/{pred}", raw=True)
+    raw = request("GET", f"{api_base()}/files/download/{pred}", raw=True)
     (OUT / "test-predictions.ndjson").write_bytes(raw)
     v = state["blueprint"]["values"]
     r = score(files, ev, [json.loads(x) for x in raw.decode().splitlines()],

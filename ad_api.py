@@ -68,10 +68,17 @@ def load_dotenv(path: str = ".env") -> None:
 
 
 def api_base() -> str:
+    """The deployment root with /api appended — every surface lives under it.
+
+    Accepts a bare root, a /vX.Y suffix or /api itself, so one .env works
+    whichever form you have.
+    """
     endpoint = os.environ.get("ATAI_API_ENDPOINT", "").rstrip("/")
     if not endpoint:
         sys.exit("ATAI_API_ENDPOINT is not set")
-    return endpoint
+    endpoint = re.sub(r"/api$", "", endpoint)
+    endpoint = re.sub(r"/v[0-9]+(\.[0-9]+)*$", "", endpoint)
+    return f"{endpoint}/api"
 
 
 def require_key() -> str:
@@ -185,7 +192,7 @@ def request(method: str, url: str, body=None, headers=None, raw: bool = False,
 
 
 def upload_file(path: str, rename: str | None = None) -> dict:
-    """POST a file to /v0.5/files as multipart/form-data."""
+    """POST a file to /api/files as multipart/form-data."""
     boundary = uuid.uuid4().hex
     filename = rename or os.path.basename(path)
     content = open(path, "rb").read()
@@ -196,7 +203,7 @@ def upload_file(path: str, rename: str | None = None) -> dict:
         content,
         f"\r\n--{boundary}--\r\n".encode(),
     ])
-    req = urllib.request.Request(f"{api_base()}/v0.5/files", data=body, method="POST")
+    req = urllib.request.Request(f"{api_base()}/files", data=body, method="POST")
     req.add_header("Authorization", f"Bearer {os.environ['ATAI_API_KEY']}")
     req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
     try:
@@ -362,7 +369,7 @@ def _download(ref: str) -> bytes | None:
         if ref.startswith("http"):
             with urllib.request.urlopen(ref, timeout=120) as resp:
                 return resp.read()
-        return request("GET", f"{api_base()}/v0.5{ref}", raw=True)
+        return request("GET", f"{api_base()}{ref}", raw=True)
     except (urllib.error.URLError, TimeoutError, ConnectionError,
             http.client.HTTPException) as e:          # incl. IncompleteRead mid-download
         print(f"  download failed ({e}); retrying")
