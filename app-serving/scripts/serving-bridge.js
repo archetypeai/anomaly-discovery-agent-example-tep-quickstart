@@ -45,13 +45,21 @@ import { REPO, loadEnv, readJson } from './common.js';
 
 loadEnv();
 
-const ENDPOINT = (process.env.ATAI_API_ENDPOINT ?? '').replace(/\/+$/, '').replace(/\/v\d+(\.\d+)*$/, '');
+// The deployment root, with any /api or /vX.Y suffix removed, then /api appended:
+// every platform surface lives under it, and one .env works whichever form you have.
+// Keeping /api on ENDPOINT also matches what fit/ writes into the state files.
+const ROOT = (process.env.ATAI_API_ENDPOINT ?? '')
+	.replace(/\/+$/, '')
+	.replace(/\/api$/, '')
+	.replace(/\/v\d+(\.\d+)*$/, '');
+const ENDPOINT = ROOT ? `${ROOT}/api` : '';
 const KEY = process.env.ATAI_API_KEY;
 if (!ENDPOINT || !KEY) {
 	console.error('bridge: set ATAI_API_ENDPOINT and ATAI_API_KEY in the repo .env');
 	process.exit(1);
 }
-if (!ENDPOINT.includes('api.dev.')) {
+// Match the deployment generation, not one host: dev is api.dev.* and platform.dev.*
+if (!ROOT.includes('.dev.')) {
 	console.error(`bridge: ${ENDPOINT}: agent serving is on dev only for now`);
 	process.exit(1);
 }
@@ -127,9 +135,11 @@ async function ensureServedBlueprint() {
 	const doc = structuredClone(src.document);
 	delete doc.blueprint_id;
 	doc.values.step_size = 1;
-	const endpoint = { format: 'serving', kind: 'http', protocols: ['atai-records'] };
+	// The platform fills in protocols and models for a served blueprint and
+	// rejects the document outright if we set them ourselves.
+	const endpoint = { format: 'serving', kind: 'http' };
 	doc.connectors = {
-		source: { key: 'RecordsSource', config: { ...endpoint, models: [MODEL],
+		source: { key: 'RecordsSource', config: { ...endpoint,
 			data_columns: [{ dtype: 'f32', names: doc.values.data_columns }], timestamp_column: doc.values.timestamp_column } },
 		sink: { key: 'RecordsSink', config: { ...endpoint } }
 	};
