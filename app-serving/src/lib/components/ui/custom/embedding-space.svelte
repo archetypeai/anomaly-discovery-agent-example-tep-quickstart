@@ -68,9 +68,7 @@
 	// to fill a wide box and PC2 to fill a short one would make the same distance
 	// look different depending on its direction — on a plot whose whole subject is
 	// how far the run has moved from the cloud, that is a lying picture.
-	const unit = $derived(
-		Math.min(W - 2 * PAD, H - 2 * PAD) / (bounds.hi - bounds.lo)
-	);
+	const unit = $derived(Math.min(W - 2 * PAD, H - 2 * PAD) / (bounds.hi - bounds.lo));
 	const sx = (/** @type {number} */ v) => W / 2 + v * unit;
 	const sy = (/** @type {number} */ v) => H / 2 - v * unit;
 
@@ -91,7 +89,12 @@
 		let d = '';
 		for (const polygon of mp.coordinates ?? []) {
 			for (const ring of polygon) {
-				d += 'M' + ring.map((/** @type {number[]} */ pt) => `${pt[0].toFixed(1)} ${pt[1].toFixed(1)}`).join('L') + 'Z';
+				d +=
+					'M' +
+					ring
+						.map((/** @type {number[]} */ pt) => `${pt[0].toFixed(1)} ${pt[1].toFixed(1)}`)
+						.join('L') +
+					'Z';
 			}
 		}
 		return d;
@@ -169,88 +172,95 @@
 				role="img"
 				aria-label="The run's path through PCA 1-2 of the detector's space"
 			>
-			<defs>
-				<!-- The ground the field is drawn on. A grid of points rather than
+				<defs>
+					<!-- The ground the field is drawn on. A grid of points rather than
 				     rules: it gives the plot a floor and a sense of scale without
 				     drawing lines that compete with the trail. -->
-				<pattern id="tep-emb-grid" width="18" height="18" patternUnits="userSpaceOnUse">
-					<circle cx="1" cy="1" r="0.75" fill="var(--color-muted-foreground)" opacity="0.35" />
-				</pattern>
-			</defs>
-			<rect x="0" y="0" width={W} height={H} fill="url(#tep-emb-grid)" />
+					<pattern id="tep-emb-grid" width="18" height="18" patternUnits="userSpaceOnUse">
+						<circle cx="1" cy="1" r="0.75" fill="var(--color-muted-foreground)" opacity="0.35" />
+					</pattern>
+				</defs>
+				<rect x="0" y="0" width={W} height={H} fill="url(#tep-emb-grid)" />
 
-			<!-- The axes cross at the field's centre, which is the origin: these
+				<!-- The axes cross at the field's centre, which is the origin: these
 			     components are whitened, so the reference set is zero-mean and
 			     unit-variance by construction. -->
-			<line x1={sx(0)} y1={PAD} x2={sx(0)} y2={H - PAD} stroke="var(--color-border)" />
-			<line x1={PAD} y1={sy(0)} x2={W - PAD} y2={sy(0)} stroke="var(--color-border)" />
+				<line x1={sx(0)} y1={PAD} x2={sx(0)} y2={H - PAD} stroke="var(--color-border)" />
+				<line x1={PAD} y1={sy(0)} x2={W - PAD} y2={sy(0)} stroke="var(--color-border)" />
 
-			{#each bands as b, i (i)}
-				<path d={b.d} fill="var(--score-normal)" fill-rule="evenodd" opacity={b.o} stroke="none" />
-			{/each}
+				{#each bands as b, i (i)}
+					<path
+						d={b.d}
+						fill="var(--score-normal)"
+						fill-rule="evenodd"
+						opacity={b.o}
+						stroke="none"
+					/>
+				{/each}
 
-			{#if path}
-				<path
-					d={path}
-					stroke="var(--plate-ink)"
-					stroke-width="1"
-					stroke-linejoin="round"
-					opacity="0.9"
-				/>
-			{/if}
+				{#if path}
+					<path
+						d={path}
+						stroke="var(--plate-ink)"
+						stroke-width="1"
+						stroke-linejoin="round"
+						opacity="0.9"
+					/>
+				{/if}
 
-			<!-- Recent windows as marks on the path, coloured by their own band, so
+				<!-- Recent windows as marks on the path, coloured by their own band, so
 			     the run's approach is legible and not just its endpoint. -->
-			{#each trail.slice(-60) as p, i (i)}
-				<circle
-					cx={sx(p.x)}
-					cy={sy(p.y)}
-					r="1.6"
-					fill={scoreTone(p.score, s.threshold).color}
-					opacity="0.7"
-				/>
-			{/each}
+				{#each trail.slice(-60) as p, i (i)}
+					<circle
+						cx={sx(p.x)}
+						cy={sy(p.y)}
+						r="1.6"
+						fill={scoreTone(p.score, s.threshold).color}
+						opacity="0.7"
+					/>
+				{/each}
 
-			{#if head}
-				<circle
-					cx={sx(head.x)}
-					cy={sy(head.y)}
-					r="4.5"
-					fill={scoreTone(head.score, s.threshold).color}
-					stroke="var(--color-background)"
-					stroke-width="1.5"
-				/>
-			{/if}
+				{#if head}
+					<circle
+						cx={sx(head.x)}
+						cy={sy(head.y)}
+						r="4.5"
+						fill={scoreTone(head.score, s.threshold).color}
+						stroke="var(--color-background)"
+						stroke-width="1.5"
+					/>
+				{/if}
 
-			<!-- The field names itself, where it is. -->
-			<g>
-				<rect
-					x={sx(0) - 66}
-					y={labelY - 9}
-					width="132"
-					height="18"
-					rx="3"
-					fill="var(--color-background)"
-					stroke="var(--score-normal)"
-					opacity="0.95"
-				/>
-				<text
-					x={sx(0)}
-					y={labelY + 4}
-					text-anchor="middle"
-					class="fill-score-normal font-mono text-[9px] tracking-wider uppercase"
-				>
-					{view.manifest.nReference.toLocaleString()} fitted normal
-				</text>
-			</g>
+				<!-- The field names itself, where it is. -->
+				<g>
+					<rect
+						x={sx(0) - 66}
+						y={labelY - 9}
+						width="132"
+						height="18"
+						rx="3"
+						fill="var(--color-background)"
+						stroke="var(--score-normal)"
+						opacity="0.95"
+					/>
+					<text
+						x={sx(0)}
+						y={labelY + 4}
+						text-anchor="middle"
+						class="fill-score-normal font-mono text-2xs uppercase"
+					>
+						{view.manifest.nReference.toLocaleString()} fitted normal
+					</text>
+				</g>
 
 				<text
 					x={sx(bounds.hi) - 4}
 					y={sy(0) - 6}
 					text-anchor="end"
-					class="fill-muted-foreground text-[9px]">PC 1</text
+					class="fill-muted-foreground text-2xs">PC 1</text
 				>
-				<text x={sx(0) + 6} y={sy(bounds.hi) + 10} class="fill-muted-foreground text-[9px]">PC 2</text>
+				<text x={sx(0) + 6} y={sy(bounds.hi) + 10} class="fill-muted-foreground text-2xs">PC 2</text
+				>
 
 				<!-- The readouts live in the LEFT MARGIN, not in a row under the plot.
 				     Equal-scale axes make the drawing square, so in this panel's 2:1
@@ -258,10 +268,10 @@
 				     row underneath spent height the square actually wanted. -->
 				<g transform="translate(6, {H / 2 - 44})">
 					{#each readouts as r, i (r.label)}
-						<text y={i * 32} class="fill-muted-foreground font-mono text-[9px] tracking-wide uppercase"
+						<text y={i * 32} class="fill-muted-foreground font-mono text-2xs uppercase"
 							>{r.label}</text
 						>
-						<text y={i * 32 + 15} class="fill-foreground font-mono text-[13px]">{r.value}</text>
+						<text y={i * 32 + 15} class="fill-foreground font-mono text-sm">{r.value}</text>
 					{/each}
 				</g>
 			</svg>
@@ -272,7 +282,7 @@
 			     missing rather than present an empty cloud as a result. The live
 			     trail needs `output_embeddings: true` on the blueprint; see
 			     app/README.md, "The embedding space". -->
-			<p class="shrink-0 pt-1 text-center text-[11px] text-muted-foreground">
+			<p class="shrink-0 pt-1 text-center text-xs text-muted-foreground">
 				No window projected yet — the trail needs <span class="font-mono">output_embeddings</span> on
 				the agent.
 			</p>

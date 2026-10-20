@@ -7,6 +7,7 @@
  *   tep/raw       replayer -> one block of samples, RAW engineering units
  *   tep/status    replayer -> transport, run registry, z-score stats (retained)
  *   ad/results    AGENT    -> one scored window
+ *   ad/agent      bridge   -> the serving agent's phase (retained)
  *
  * Everything the agent claims comes from `ad/results` and nothing else. The
  * replayer's ground truth arrives on a separate topic, is withheld until the
@@ -79,19 +80,39 @@ export const UNITS = {
  *  as a column index. Downs & Vogel's variable table.
  *  @type {Record<string, [label: string, unit: string]>} */
 export const CHANNEL_META = {
-	xmeas_1: ['A feed', 'kscmh'], xmeas_2: ['D feed', 'kg/h'], xmeas_3: ['E feed', 'kg/h'],
-	xmeas_4: ['A+C feed', 'kscmh'], xmeas_5: ['Recycle flow', 'kscmh'], xmeas_6: ['Reactor feed', 'kscmh'],
-	xmeas_7: ['Reactor pressure', 'kPa'], xmeas_8: ['Reactor level', '%'], xmeas_9: ['Reactor temp', '°C'],
-	xmeas_10: ['Purge rate', 'kscmh'], xmeas_11: ['Separator temp', '°C'], xmeas_12: ['Separator level', '%'],
-	xmeas_13: ['Separator pressure', 'kPa'], xmeas_14: ['Separator underflow', 'm³/h'],
-	xmeas_15: ['Stripper level', '%'], xmeas_16: ['Stripper pressure', 'kPa'],
-	xmeas_17: ['Stripper underflow', 'm³/h'], xmeas_18: ['Stripper temp', '°C'],
-	xmeas_19: ['Stripper steam', 'kg/h'], xmeas_20: ['Compressor work', 'kW'],
-	xmeas_21: ['Reactor cool. out', '°C'], xmeas_22: ['Separator cool. out', '°C'],
-	xmv_1: ['D feed valve', '%'], xmv_2: ['E feed valve', '%'], xmv_3: ['A feed valve', '%'],
-	xmv_4: ['A+C feed valve', '%'], xmv_5: ['Compressor recycle', '%'], xmv_6: ['Purge valve', '%'],
-	xmv_7: ['Separator liquid', '%'], xmv_8: ['Stripper liquid', '%'], xmv_9: ['Stripper steam valve', '%'],
-	xmv_10: ['Reactor coolant', '%'], xmv_11: ['Condenser coolant', '%']
+	xmeas_1: ['A feed', 'kscmh'],
+	xmeas_2: ['D feed', 'kg/h'],
+	xmeas_3: ['E feed', 'kg/h'],
+	xmeas_4: ['A+C feed', 'kscmh'],
+	xmeas_5: ['Recycle flow', 'kscmh'],
+	xmeas_6: ['Reactor feed', 'kscmh'],
+	xmeas_7: ['Reactor pressure', 'kPa'],
+	xmeas_8: ['Reactor level', '%'],
+	xmeas_9: ['Reactor temp', '°C'],
+	xmeas_10: ['Purge rate', 'kscmh'],
+	xmeas_11: ['Separator temp', '°C'],
+	xmeas_12: ['Separator level', '%'],
+	xmeas_13: ['Separator pressure', 'kPa'],
+	xmeas_14: ['Separator underflow', 'm³/h'],
+	xmeas_15: ['Stripper level', '%'],
+	xmeas_16: ['Stripper pressure', 'kPa'],
+	xmeas_17: ['Stripper underflow', 'm³/h'],
+	xmeas_18: ['Stripper temp', '°C'],
+	xmeas_19: ['Stripper steam', 'kg/h'],
+	xmeas_20: ['Compressor work', 'kW'],
+	xmeas_21: ['Reactor cool. out', '°C'],
+	xmeas_22: ['Separator cool. out', '°C'],
+	xmv_1: ['D feed valve', '%'],
+	xmv_2: ['E feed valve', '%'],
+	xmv_3: ['A feed valve', '%'],
+	xmv_4: ['A+C feed valve', '%'],
+	xmv_5: ['Compressor recycle', '%'],
+	xmv_6: ['Purge valve', '%'],
+	xmv_7: ['Separator liquid', '%'],
+	xmv_8: ['Stripper liquid', '%'],
+	xmv_9: ['Stripper steam valve', '%'],
+	xmv_10: ['Reactor coolant', '%'],
+	xmv_11: ['Condenser coolant', '%']
 };
 
 function brokerUrl() {
@@ -138,6 +159,9 @@ function emptyState() {
 		 *  @type {{x:number, y:number, score:number, over:boolean}[]} */
 		trail: [],
 		rate: 0,
+		/** The bridge's last word on the serving agent: {phase, detail, agent, ...}.
+		 *  @type {any} */
+		agent: null,
 		/** Windows the agent emitted, split by whether it scored them. An invalid
 		 *  window is one the graph rejected before the encoder — a timestamp gap or
 		 *  an off-cadence sample — and it is worth showing rather than hiding,
@@ -177,10 +201,12 @@ class TepStore {
 	connect() {
 		if (this.#client) return;
 		const url = brokerUrl();
-		this.#client = mqtt.connect(url, { clientId: `tep-app-${Math.random().toString(16).slice(2)}` });
+		this.#client = mqtt.connect(url, {
+			clientId: `tep-app-${Math.random().toString(16).slice(2)}`
+		});
 		this.#client.on('connect', () => {
 			this.state.connected = true;
-			this.#client?.subscribe(TOPICS, { qos: 0 });
+			this.#client?.subscribe([...TOPICS, 'ad/agent'], { qos: 0 });
 			this.loadDetectorView();
 		});
 		this.#client.on('close', () => (this.state.connected = false));
@@ -301,6 +327,10 @@ class TepStore {
 		} catch {
 			return;
 		}
+		if (topic === 'ad/agent') {
+			this.state.agent = msg;
+			return;
+		}
 		if (topic === 'tep/status') {
 			const prevRun = this.state.status?.runId;
 			this.state.status = msg;
@@ -374,7 +404,11 @@ class TepStore {
 			const last = this.state.detections.at(-1);
 			if (!last || last.closed) {
 				this.state.detections.push({
-					hours: tail[0].hours, sample: tail[0].sample, peak: score, windows: SUSTAIN, closed: false
+					hours: tail[0].hours,
+					sample: tail[0].sample,
+					peak: score,
+					windows: SUSTAIN,
+					closed: false
 				});
 			} else {
 				last.peak = Math.max(last.peak, score);
@@ -405,14 +439,26 @@ class TepStore {
 	#publish(action, value) {
 		this.#client?.publish('tep/control', JSON.stringify({ action, value }));
 	}
-	play() { this.#publish('play'); }
-	pause() { this.#publish('pause'); }
-	restart() { this.#publish('restart'); }
-	reveal() { this.#publish('reveal'); }
+	play() {
+		this.#publish('play');
+	}
+	pause() {
+		this.#publish('pause');
+	}
+	restart() {
+		this.#publish('restart');
+	}
+	reveal() {
+		this.#publish('reveal');
+	}
 	/** @param {1 | 4} n a query every n samples */
-	setStep(n) { this.#publish('step', n); }
+	setStep(n) {
+		this.#publish('step', n);
+	}
 	/** @param {number} id */
-	select(id) { this.#publish('select', id); }
+	select(id) {
+		this.#publish('select', id);
+	}
 }
 
 export const tep = new TepStore();

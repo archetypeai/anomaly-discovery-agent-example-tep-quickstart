@@ -27,7 +27,12 @@
  *   fit/out/app_serving_state.json until then, so `python3 fit/cleanup.py`
  *   finds them after a hard kill. An agent the platform released (20 minutes
  *   without a query, e.g. a paused replay) is deleted and replaced on the next
- *   window: a bundle that still has an agent can't be deleted (409).
+ *   window: a bundle that still has an agent can't be deleted (409). Starting
+ *   one retries while all the workers are taken, and windows wait in the queue
+ *   until the agent is running.
+ * - THE PAGE SEES THE AGENT'S PHASE on `ad/agent` (retained): starting,
+ *   waiting, running, replacing, stopped. An MQTT will clears a stale
+ *   "running" if this process dies without saying so.
  *
  * Env (repo .env): ATAI_API_ENDPOINT (dev only), ATAI_API_KEY.
  * Env (app-serving/.env): MQTT_PORT, AGENT_PORT, STEP.
@@ -36,20 +41,9 @@ import mqtt from 'mqtt';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { REPO, loadEnv, readJson } from './common.js';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO = path.resolve(HERE, '../..');
-
-function loadDotenv(file) {
-	if (!fs.existsSync(file)) return;
-	for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
-		const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
-		if (m && !line.trimStart().startsWith('#') && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-	}
-}
-loadDotenv(path.join(HERE, '..', '.env'));
-loadDotenv(path.join(REPO, '.env'));
+loadEnv();
 
 const ENDPOINT = (process.env.ATAI_API_ENDPOINT ?? '').replace(/\/+$/, '').replace(/\/v\d+(\.\d+)*$/, '');
 const KEY = process.env.ATAI_API_KEY;
@@ -71,7 +65,15 @@ if (fs.existsSync(STATE)) {
 	console.error(`bridge: ${path.relative(REPO, STATE)} holds an earlier bridge's agent: run python3 fit/cleanup.py --yes`);
 	process.exit(1);
 }
-const test = JSON.parse(fs.readFileSync(path.join(REPO, 'fit', 'out', 'test_state.json'), 'utf8'));
+const test = readJson(path.join(REPO, 'fit', 'out', 'test_state.json'));
+if (!test?.blueprint?.key) {
+	console.error('bridge: no fit/out/test_state.json: run fit/test.py first');
+	process.exit(1);
+}
+if (test.endpoint && test.endpoint.replace(/\/+$/, '') !== ENDPOINT) {
+	console.error(`bridge: fit/out/test_state.json is from ${test.endpoint}, not ${ENDPOINT}`);
+	process.exit(1);
+}
 const PROMOTED = test.blueprint.key;
 const SERVED = `${PROMOTED}-served-records`;
 const CHANNELS = test.blueprint.values.data_columns;
@@ -97,10 +99,20 @@ async function api(method, p, body) {
 }
 
 /** `agents`: every agent of the bundle not yet deleted, the current one last. */
-const live = { bundle: null, agent: null, agents: [], running: false };
+const live = { bundle: null, agent: null, agents: [], running: false, phase: 'starting' };
 const save = () => fs.writeFileSync(STATE, JSON.stringify(
 	{ endpoint: ENDPOINT, bundle: live.bundle, agent: live.agent, agents: live.agents }, null, 1));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const latencies = [];
+
+/** What the page shows about the agent (retained, so a reload sees it at once). */
+function announce(phase, detail = '') {
+	live.phase = phase;
+	const ms = [...latencies].sort((a, b) => a - b);
+	client.publish('ad/agent', JSON.stringify({ phase, detail, running: live.running, agent: live.agent,
+		bundle: live.bundle, blueprint: SERVED, step, queued: queue.length,
+		medianLatencyMs: ms[Math.floor(ms.length / 2)] ?? null }), { retain: true });
+}
 
 async function ensureServedBlueprint() {
 	try {
@@ -136,6 +148,7 @@ async function startAgent() {
 	live.agent = (await api('POST', `/bundles/${live.bundle}/run`, { mode: 'serving' })).id;
 	live.agents.push(live.agent);
 	save();
+	announce('starting', `agent ${live.agent}`);
 	const t0 = Date.now();
 	for (;;) {
 		const s = (await api('GET', `/instances/${live.agent}`)).status;
@@ -145,6 +158,7 @@ async function startAgent() {
 		await sleep(2000);
 	}
 	live.running = true;
+	announce('running');
 	console.log(`bridge: serving agent ${live.agent} running (bundle ${live.bundle}, ${SERVED})`);
 }
 
@@ -160,6 +174,7 @@ async function dropAgent(id) {
 		}
 	}
 	live.agents = live.agents.filter((a) => a !== id);
+	if (live.agent === id) live.agent = null;
 	save();
 	return true;
 }
@@ -169,6 +184,7 @@ async function shutdown(sig) {
 	if (stopping) return;
 	stopping = true;
 	console.log(`bridge: ${sig}, cleaning up`);
+	live.running = false;
 	let left = 0;
 	try {
 		for (const id of [...live.agents]) if (!(await dropAgent(id))) left++;
@@ -189,6 +205,8 @@ async function shutdown(sig) {
 			fs.rmSync(STATE, { force: true });
 			console.log(`bridge: deleted its agent(s) and bundle ${live.bundle ?? '(none)'}`);
 		}
+		announce('stopped');
+		await new Promise((r) => client.end(false, {}, r));
 	} finally {
 		process.exit(left ? 1 : 0);
 	}
@@ -198,18 +216,17 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => shutdow
 process.on('uncaughtException', (e) => { console.error('bridge:', e); shutdown('error'); });
 process.on('unhandledRejection', (e) => { console.error('bridge:', e); shutdown('error'); });
 
-/** Replace a released agent: delete it, then start another, retrying while
- *  Dev's serving workers are all taken. */
-async function replaceAgent() {
+/** Start an agent, retrying while Dev's serving workers are all taken. */
+async function startWithRetry() {
 	live.running = false;
-	if (live.agent) await dropAgent(live.agent);
 	for (let wait = 15_000; !stopping; wait = Math.min(wait * 2, 120_000)) {
 		try {
 			await startAgent();
 			return;
 		} catch (e) {
 			console.error(`bridge: could not start a serving agent (${e.message}); retrying in ${wait / 1000} s`);
-			if (live.agent && live.agents.includes(live.agent)) await dropAgent(live.agent);
+			announce('waiting', `no serving worker free; retrying in ${wait / 1000} s`);
+			if (live.agent) await dropAgent(live.agent);
 			await sleep(wait);
 		}
 	}
@@ -226,7 +243,6 @@ let seen = 0;
 let generation = 0;
 const queue = [];
 let busy = false;
-const latencies = [];
 
 function onSample(payload) {
 	const kv = Object.fromEntries(payload.toString().split(',').map((p) => p.split('=')));
@@ -241,10 +257,10 @@ function onSample(payload) {
 }
 
 async function drain() {
-	if (busy) return;
+	if (busy || !live.running) return;
 	busy = true;
 	try {
-		while (queue.length && !stopping) {
+		while (queue.length && live.running && !stopping) {
 			const job = queue.shift();
 			if (job.gen !== generation) continue;
 			const body = { model: MODEL, query: '', events: [{ type: 'data.numeric_array',
@@ -257,8 +273,10 @@ async function drain() {
 				if (e.status === 409) {
 					// Released after 20 minutes without a query, or cancelled elsewhere.
 					console.warn(`bridge: agent ${live.agent} no longer running; replacing it`);
-					await replaceAgent();
+					announce('replacing', `agent ${live.agent} was released`);
+					if (live.agent) await dropAgent(live.agent);
 					queue.unshift(job);
+					await startWithRetry();
 					continue;
 				}
 				console.error(`bridge: query failed: ${e.message}`);
@@ -268,6 +286,7 @@ async function drain() {
 			}
 			latencies.push(Date.now() - t);
 			if (latencies.length > 200) latencies.shift();
+			if (latencies.length % 10 === 0) announce('running');
 			if (job.gen !== generation) continue;
 			const rec = (answer.response ?? answer).data?.[0];
 			if (!rec) {
@@ -286,11 +305,16 @@ async function drain() {
 	}
 }
 
-const client = mqtt.connect(BROKER_URL, { clientId: `tep-serving-bridge-${Date.now()}` });
+// The will clears a retained "running" if this process dies without saying so (kill -9).
+const client = mqtt.connect(BROKER_URL, {
+	clientId: `tep-serving-bridge-${Date.now()}`,
+	will: { topic: 'ad/agent', payload: JSON.stringify({ phase: 'stopped', running: false }), retain: true, qos: 1 }
+});
 const publish = (msg) => client.publish('ad/results', JSON.stringify(msg));
 
 client.on('connect', () => {
 	client.subscribe(['sensors/tep', 'tep/status'], { qos: 1 });
+	if (live.phase === 'starting' && !live.agent) announce('starting', 'creating the agent');
 	console.log(`bridge: connected to ${BROKER_URL}`);
 });
 client.on('message', (topic, payload) => {
@@ -302,6 +326,7 @@ client.on('message', (topic, payload) => {
 		if (Number.isFinite(want) && want > 0 && want !== step) {
 			step = want;
 			console.log(`bridge: step ${step}`);
+			announce(live.phase);
 		}
 	} catch { /* not ours to parse */ }
 });
@@ -338,7 +363,8 @@ http.createServer((req, res) => {
 
 try {
 	await ensureServedBlueprint();
-	await startAgent();
+	await startWithRetry();
+	drain().catch((e) => console.error(`bridge: ${e.message}`));
 } catch (e) {
 	console.error(`bridge: ${e.message}`);
 	await shutdown('startup failure');

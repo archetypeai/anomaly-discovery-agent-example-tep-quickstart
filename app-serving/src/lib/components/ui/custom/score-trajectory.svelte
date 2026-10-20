@@ -110,7 +110,11 @@
 		}))
 	);
 	const sliceW = $derived(
-		Math.max((W - PAD.l - PAD.r) / Math.max(totalHours / ((s.status?.sampleSeconds ?? 180) * 4 / 3600), 1), 1.2)
+		Math.max(
+			(W - PAD.l - PAD.r) /
+				Math.max(totalHours / (((s.status?.sampleSeconds ?? 180) * 4) / 3600), 1),
+			1.2
+		)
 	);
 	/** Decade ticks that fall inside the range, plus the threshold's own line. */
 	const ticks = $derived([1, 2, 5, 10, 20, 50].filter((v) => v >= yMin && v <= yMax));
@@ -132,25 +136,59 @@
 	>
 		<!-- reference band: at or below 1.0 the window is as ordinary as the
 		     reference data the detector was fitted on -->
-		<rect x={PAD.l} y={y(1.0)} width={W - PAD.l - PAD.r} height={Math.max(0, H - PAD.b - y(1.0))}
-			fill="var(--color-muted)" opacity="0.5" />
+		<rect
+			x={PAD.l}
+			y={y(1.0)}
+			width={W - PAD.l - PAD.r}
+			height={Math.max(0, H - PAD.b - y(1.0))}
+			fill="var(--color-muted)"
+			opacity="0.5"
+		/>
 
 		{#each ticks as t (t)}
-			<line x1={PAD.l} y1={y(t)} x2={W - PAD.r} y2={y(t)} stroke="var(--color-border)" stroke-width="1" />
-			<text x={PAD.l - 6} y={y(t) + 3} text-anchor="end" class="fill-muted-foreground text-[9px]">{t}</text>
+			<line
+				x1={PAD.l}
+				y1={y(t)}
+				x2={W - PAD.r}
+				y2={y(t)}
+				stroke="var(--color-border)"
+				stroke-width="1"
+			/>
+			<text x={PAD.l - 6} y={y(t) + 3} text-anchor="end" class="fill-muted-foreground text-2xs"
+				>{t}</text
+			>
 		{/each}
 
 		<!-- the decision line -->
-		<line x1={PAD.l} y1={y(s.threshold)} x2={W - PAD.r} y2={y(s.threshold)}
-			stroke="var(--score-threshold)" stroke-width="1" stroke-dasharray="4 3" />
-		<text x={W - PAD.r} y={y(s.threshold) - 4} text-anchor="end" class="fill-score-threshold text-[9px]">
+		<line
+			x1={PAD.l}
+			y1={y(s.threshold)}
+			x2={W - PAD.r}
+			y2={y(s.threshold)}
+			stroke="var(--score-threshold)"
+			stroke-width="1"
+			stroke-dasharray="4 3"
+		/>
+		<text
+			x={W - PAD.r}
+			y={y(s.threshold) - 4}
+			text-anchor="end"
+			class="fill-score-threshold text-2xs"
+		>
 			threshold {s.threshold.toFixed(3)}
 		</text>
 
 		<!-- fault onset: the simulator's, not the detector's -->
-		<line x1={x(onsetHours)} y1={PAD.t} x2={x(onsetHours)} y2={H - PAD.b}
-			stroke="var(--color-muted-foreground)" stroke-width="1" stroke-dasharray="2 3" />
-		<text x={x(onsetHours) + 3} y={PAD.t + 8} class="fill-muted-foreground text-[9px]">onset</text>
+		<line
+			x1={x(onsetHours)}
+			y1={PAD.t}
+			x2={x(onsetHours)}
+			y2={H - PAD.b}
+			stroke="var(--color-muted-foreground)"
+			stroke-width="1"
+			stroke-dasharray="2 3"
+		/>
+		<text x={x(onsetHours) + 3} y={PAD.t + 8} class="fill-muted-foreground text-2xs">onset</text>
 
 		{#each segments as seg, i (i)}
 			<path
@@ -184,7 +222,7 @@
 					x={flip ? cx - 32 : cx + 32}
 					y={cy + 4}
 					text-anchor="middle"
-					class="fill-atai-always-black font-mono text-[10px] tabular-nums"
+					class="fill-atai-always-black font-mono text-2xs tabular-nums"
 				>
 					{latest.score.toFixed(3)}
 				</text>
@@ -193,10 +231,23 @@
 
 		<!-- the verdict -->
 		{#if s.detectedHours !== null}
-			<line x1={x(s.detectedHours)} y1={PAD.t} x2={x(s.detectedHours)} y2={H - PAD.b}
-				stroke="var(--score-anomaly)" stroke-width="1" />
-			<circle cx={x(s.detectedHours)} cy={y(s.scores.find((/** @type {any} */ p) => p.sample >= s.detectedAt)?.score ?? s.threshold)}
-				r="3" fill="var(--score-anomaly)" stroke="none" />
+			<line
+				x1={x(s.detectedHours)}
+				y1={PAD.t}
+				x2={x(s.detectedHours)}
+				y2={H - PAD.b}
+				stroke="var(--score-anomaly)"
+				stroke-width="1"
+			/>
+			<circle
+				cx={x(s.detectedHours)}
+				cy={y(
+					s.scores.find((/** @type {any} */ p) => p.sample >= s.detectedAt)?.score ?? s.threshold
+				)}
+				r="3"
+				fill="var(--score-anomaly)"
+				stroke="none"
+			/>
 		{/if}
 
 		<!-- The classification strip, under the axis: every window this run has
@@ -220,8 +271,9 @@
 		     repo's evaluation is quoted on -->
 		<line x1={PAD.l} y1={H - PAD.b} x2={W - PAD.r} y2={H - PAD.b} stroke="var(--color-border)" />
 		{#each [0, 12, 24, 36, 48].filter((/** @type {number} */ h) => h <= totalHours) as h (h)}
-			<text x={x(h)} y={H - PAD.b + 12} text-anchor="middle" class="fill-muted-foreground text-[9px]">{h}h</text>
+			<text x={x(h)} y={H - PAD.b + 12} text-anchor="middle" class="fill-muted-foreground text-2xs"
+				>{h}h</text
+			>
 		{/each}
 	</svg>
-
 </div>

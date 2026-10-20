@@ -63,10 +63,11 @@
 import mqtt from 'mqtt';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { REPO, loadEnv } from './common.js';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO = path.resolve(HERE, '../..');
+// The same .env files as the bridge, so a MQTT_PORT, RUN or STEP set there
+// reaches both.
+loadEnv();
 const PREPARED = process.env.PREPARED_DIR ?? path.join(REPO, 'data', 'prepared');
 /** Stage 6's delivery files: 4 chunks of 21 runs each, with label sidecars. */
 const RUNS_DIR = path.join(PREPARED, 'full');
@@ -86,7 +87,9 @@ const AGENT_ADMIN = process.env.AGENT_ADMIN ?? `http://127.0.0.1:${process.env.A
 const WINDOWS_PER_BLOCK = Number(args['windows-per-block'] ?? 8);
 /** A block's windows normally all come back; this only bounds a lost answer. */
 const BLOCK_TIMEOUT = Number(args['block-timeout'] ?? 60000);
-/** How long to wait for the agent's admin API before replaying without it. */
+/** How long to wait for the bridge's admin API to answer at all before
+ *  replaying without it. Once it answers, the replayer waits for as long as the
+ *  serving agent takes to start (minutes when Dev's workers are all taken). */
 const AGENT_WAIT_S = Number(args['agent-wait'] ?? 90);
 /** Per-request bound on the admin API. A reset lands while the graph is still
  *  draining, so it is not instant — but it is not unbounded either. */
@@ -261,16 +264,25 @@ function selectRun(id) {
 async function waitForAgent() {
 	const deadline = Date.now() + AGENT_WAIT_S * 1000;
 	let announced = false;
-	while (Date.now() < deadline) {
+	let starting = false;
+	while (starting || Date.now() < deadline) {
 		try {
 			const r = await fetch(`${AGENT_ADMIN}/status`, { signal: AbortSignal.timeout(1000) });
 			if (r.ok) {
 				if (announced) console.log('replayer: agent is up');
 				return true;
 			}
+			// 503: the bridge is up and its serving agent is still starting.
+			if (r.status === 503) {
+				if (!starting) console.log('replayer: waiting for the serving agent to start');
+				starting = true;
+				await new Promise((res) => setTimeout(res, 2000));
+				continue;
+			}
 		} catch {
+			starting = false;
 			if (!announced) {
-				console.log(`replayer: waiting for the agent on ${AGENT_ADMIN} (loading Omega takes ~20 s)`);
+				console.log(`replayer: waiting for the serving bridge on ${AGENT_ADMIN}`);
 				announced = true;
 			}
 		}

@@ -34,8 +34,8 @@ checked against Stage 6's batch output.
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                     mosquitto · TCP :1890 · WebSockets :9008                        │
 └─────────────────────────────────────────────────────────────────────────────────────┘
-               sub ▼ tep/raw, tep/status, ad/results     pub ▲ tep/control (play, pause, run, restart, reveal, Pace)
-                     web app (SvelteKit, :5180, mqtt.js over ws): flowsheet · 33 tags · score · embedding space
+               sub ▼ tep/raw, tep/status, ad/results, ad/agent   pub ▲ tep/control (play, pause, run, restart, reveal, Pace)
+                     web app (SvelteKit, :5180, mqtt.js over ws): flowsheet · 33 tags · score · embedding space · detections
 ```
 
 - **The serving bridge** (`scripts/serving-bridge.js`) is the agent's local end. On
@@ -59,6 +59,14 @@ checked against Stage 6's batch output.
   long) is deleted and replaced on the next window, retrying while Dev's serving workers
   are all taken. If anything can't be deleted on exit, the bridge says so and keeps the
   ids for `fit/cleanup.py`. See [Stop and clean up](#stop-and-clean-up).
+- **It holds the agent for as long as it runs, and says what it is doing.** Starting
+  an agent retries (15 s, doubling to 2 min) while Dev's serving workers are all
+  taken, and windows wait in the bridge's queue until the agent is running; the
+  replayer waits too. The phase (starting, waiting, running, replacing, stopped) goes out on
+  `ad/agent`, retained, and shows in the menubar badge and in Settings; an MQTT will
+  clears a stale "running" if the bridge is killed. Both scripts read the repo's
+  `.env` and then `app-serving/.env` (`scripts/common.js`); an `ATAI_*` line in
+  `app-serving/.env` is ignored, so the key lives in one place.
 
 ## The embedding space: the reference library, recomputed
 
@@ -119,7 +127,7 @@ without a query. Closing the browser tab does not stop it.
    in the background or from a terminal since closed):
 
    ```sh
-   npm run stop      # SIGTERM to the bridge, waits for it, stops the rest, checks the ports
+   npm run stop      # SIGTERM to the bridge, waits up to 60 s for it, stops the rest, checks the ports
    ```
 
    Either way the bridge cancels and deletes its agent, deletes its bundle and
@@ -179,11 +187,13 @@ The same slot as the full example's `app-serving/`, so run one of the two at a t
 
 | Path | What |
 |---|---|
+| `scripts/common.js` | the repo and the two `.env` files, shared by the bridge and the replayer |
 | `scripts/serving-bridge.js` | the agent's local end: broker ↔ serving agent on the platform, and the admin API the replayer calls |
 | `scripts/replayer.js` | replays Stage 6's delivery runs one at a time, paced by the agent, with the step switch |
 | `scripts/run-broker.sh`, `scripts/stop.sh`, `mosquitto/` | the broker on 1890 / 9008, and stopping everything (matched by `--app=tep-serving`, so other demos are left alone) |
 | `static/detector-view.{json,bin}` | the recomputed reference cloud and projection, from `fit/library_embeddings.py` |
-| `src/` | the SvelteKit workbench, with the Pace switch in Settings |
+| `src/` | the SvelteKit workbench on the Archetype AI design system (0.19: the labs Menubar, Pane captions in its `Label`, segmented Tabs, Table, Progress), with the Pace switch in Settings |
+| `CLAUDE.md`, `ds-manifest.json` | the design system's rules and component catalogue for a coding agent, from `npx @archetypeai/ds-cli add ds-config-codeagent --claude` |
 
 ## Licence and data
 

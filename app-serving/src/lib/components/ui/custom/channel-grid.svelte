@@ -57,9 +57,7 @@
 			<!-- The unit caption is the Pane `block` voice — mono, uppercase, muted,
 			     a step down from the panel caption above it. -->
 			<div class="mb-0.5 flex items-baseline gap-2">
-				<span class="font-mono text-[10px] tracking-wide text-muted-foreground uppercase"
-					>{unit.label}</span
-				>
+				<span class="font-mono text-2xs text-muted-foreground uppercase">{unit.label}</span>
 				<span class="h-px flex-1 bg-separator"></span>
 			</div>
 			<div class="grid grid-cols-1 gap-x-8 md:grid-cols-2">
@@ -68,7 +66,7 @@
 					{@const meta = CHANNEL_META[c] ?? [c, '']}
 					{@const tone = Math.abs(dev) >= 1 ? deviationTone(dev).color : ''}
 					<div class="flex items-center gap-2 py-[3px]">
-						<span class="min-w-0 flex-1 truncate text-xs leading-tight text-foreground">
+						<span class="min-w-0 flex-1 truncate text-xs text-foreground">
 							{meta[0]}
 						</span>
 						<span
@@ -77,7 +75,7 @@
 						>
 							{fmt(s.latest[c])}
 						</span>
-						<span class="w-10 shrink-0 text-[10px] text-muted-foreground">{meta[1]}</span>
+						<span class="w-10 shrink-0 text-2xs text-muted-foreground">{meta[1]}</span>
 						<svg viewBox="0 0 72 14" class="h-3.5 w-[72px] shrink-0" fill="none" aria-hidden="true">
 							<path
 								d={spark(s.history[c])}
@@ -87,7 +85,7 @@
 							/>
 						</svg>
 						<span
-							class="w-11 shrink-0 text-right font-mono text-[11px] tabular-nums"
+							class="w-11 shrink-0 text-right font-mono text-xs tabular-nums"
 							style={tone ? `color: ${tone}` : 'color: var(--color-muted-foreground)'}
 						>
 							{dev >= 0 ? '+' : ''}{dev.toFixed(1)}σ

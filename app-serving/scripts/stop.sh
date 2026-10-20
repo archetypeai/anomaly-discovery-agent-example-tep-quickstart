@@ -1,11 +1,14 @@
 #!/bin/sh
 # Stop everything this demo starts and verify its ports are free. The serving
-# bridge cancels and deletes its platform agent on SIGTERM; give it a moment.
+# bridge cancels and deletes its platform agent and bundle on SIGTERM, which
+# can take a while when the platform is slow: it gets up to 60 s.
 # npm starts the bridge and replayer with `--app=tep-serving`, which is what is
 # matched: the RED example's bridge and app/'s replayer share their script names.
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 pkill -TERM -f "serving-bridge.js --app=tep-serving" 2>/dev/null
-for i in 1 2 3 4 5 6 7 8 9 10; do
+i=0
+while [ $i -lt 60 ]; do
+	i=$((i + 1))
 	pgrep -f "serving-bridge.js --app=tep-serving" >/dev/null 2>&1 || break
 	sleep 1
 done
@@ -21,3 +24,6 @@ for p in 1890 9008 9100 5180; do
 	fi
 done
 [ $busy -eq 0 ] && echo "all ports free (1890 · 9008 · 9100 · 5180)"
+if [ -f "$HERE/../fit/out/app_serving_state.json" ]; then
+	echo "fit/out/app_serving_state.json is still there: the bridge didn't delete everything; run python3 fit/cleanup.py --yes"
+fi
