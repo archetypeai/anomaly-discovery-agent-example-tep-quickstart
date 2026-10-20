@@ -174,7 +174,7 @@ def main() -> int:
         raise SystemExit(f"eval {state['eval']} ended {ev['status']}: {ev.get('error')}")
     pred = next(x["id"] for x in ev["output_artifacts"]
                 if x.get("metadata", {}).get("kind") == "predictions")
-    raw = request("GET", f"{api_base()}/v0.5/files/download/{pred}", raw=True)
+    raw = request("GET", f"{api_base()}/files/download/{pred}", raw=True)
     (OUT / "test-predictions.ndjson").write_bytes(raw)
     v = state["blueprint"]["values"]
     r = score(files, ev, [json.loads(x) for x in raw.decode().splitlines()],
