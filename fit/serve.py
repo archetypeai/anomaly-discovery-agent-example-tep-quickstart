@@ -70,10 +70,12 @@ def served_blueprint(promoted: str) -> str:
     doc = copy.deepcopy(src["document"])
     doc.pop("blueprint_id", None)
     doc["values"]["step_size"] = 1
-    endpoint = {"format": "serving", "kind": "http", "protocols": ["atai-records"]}
+    # The platform fills in protocols and models for a served blueprint and
+    # rejects the document outright if we set them ourselves.
+    endpoint = {"format": "serving", "kind": "http"}
     doc["connectors"] = {
         "source": {"key": "RecordsSource", "config": {
-            **endpoint, "models": [MODEL],
+            **endpoint,
             "data_columns": [{"dtype": "f32", "names": doc["values"]["data_columns"]}],
             "timestamp_column": doc["values"]["timestamp_column"]}},
         "sink": {"key": "RecordsSink", "config": dict(endpoint)},
@@ -112,8 +114,9 @@ def main() -> int:
     args = ap.parse_args()
 
     load_dotenv()
-    if "api.dev." not in agents_base():
-        sys.exit("agent serving is on dev only for now (https://api.dev.u1.archetypeai.app)")
+    # Match the deployment generation, not one host: dev is api.dev.* and platform.dev.*
+    if ".dev." not in agents_base():
+        sys.exit("agent serving is on dev only for now (e.g. https://platform.dev.u1.archetypeai.app)")
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
     channels, window = bp["values"]["data_columns"], bp["values"]["window_size"]
     data = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}.csv")
