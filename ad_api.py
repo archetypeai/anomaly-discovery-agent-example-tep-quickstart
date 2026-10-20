@@ -89,6 +89,22 @@ def require_key() -> str:
     return key
 
 
+def deployment(endpoint: str) -> str:
+    """What deployment an endpoint addresses, whatever hostname it arrives under.
+
+    api.dev.u1.archetypeai.app and platform.dev.u1.archetypeai.app are one
+    deployment under two names: an agent created through either is visible
+    through the other. Verified on 2026-10-20, when a bundle and its agents
+    recorded against api.dev.u1 all resolved through platform.dev.u1.
+
+    So state written through one name has to load through the other. The
+    generation (api, platform) is everything left of the first dot; the rest
+    names the deployment, which still separates dev.u1 from u1 from u2.
+    """
+    host = re.sub(r"^[a-z]+://", "", endpoint.strip()).split("/")[0].split(":")[0]
+    return re.sub(r"^(api|platform)\.", "", host).lower()
+
+
 def agents_base() -> str:
     return f"{api_base()}/agents"
 

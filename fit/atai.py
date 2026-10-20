@@ -15,7 +15,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 import ad_api  # noqa: E402
-from ad_api import agents_base, api_base, request, upload_file  # noqa: E402,F401
+from ad_api import agents_base, api_base, deployment, request, upload_file  # noqa: E402,F401
 
 ROLES = REPO / "data" / "roles"
 OUT = REPO / "fit" / "out"
@@ -96,8 +96,11 @@ def state_path(kind: str) -> Path:
 
 def load_state(path: Path) -> dict:
     state = json.loads(path.read_text()) if path.exists() else {}
-    if state.get("endpoint", api_base()) != api_base():
-        sys.exit(f"{path} is from {state['endpoint']}, not {api_base()}: move it aside")
+    # Compare deployments, not endpoint strings: the same deployment answers on
+    # more than one hostname, and renaming it must not invalidate run state.
+    was = state.get("endpoint")
+    if was and deployment(was) != deployment(api_base()):
+        sys.exit(f"{path} is from {was}, not {api_base()}: move it aside")
     state["endpoint"] = api_base()
     return state
 
