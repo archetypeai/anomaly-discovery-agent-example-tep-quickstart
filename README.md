@@ -380,14 +380,16 @@ Stage 8: 1,826 windows of 2 run(s) served in 1,826 queries, 1524 s
 - **The served agent gives the delivery's answers:** every label, and both runs'
   first alarms, the fault-free run's false alarm included. Each answer comes back
   in about 0.8 s, for a sample that arrives every 3 minutes.
-- **One score differs by 2%:** IDV 5's window 473, 1.527 served against 1.497 in
-  batch, both well over the 1.215 threshold. Serving returns 1.527 every time,
-  alone or among other windows. The other 1,825 windows agree to within 3×10⁻⁵.
-  Serving and batch embeddings differ by about 2×10⁻⁴, and with k = 5 that is most
-  likely enough, for this one window, to change which reference window is the 5th
-  nearest, so the score moves by a step rather than by rounding. The full example's
-  k = 10 detector, whose score averages twice as many neighbours, showed no such
-  window in the same check.
+- **A score can differ by a step, and often does not.** The run above had one such
+  window: IDV 5's window 473, 1.527 served against 1.497 in batch, both well over
+  the 1.215 threshold, with the other 1,825 agreeing to within 3×10⁻⁵. Serving and
+  batch embeddings differ by about 2×10⁻⁴, and with k = 5 that is sometimes enough
+  to change which reference window is the 5th nearest, so the score moves by a step
+  rather than by rounding. **It is not reproducible:** a 2026-10-20 rerun on
+  platform.dev.u1, with the delivery regenerated the same day, had no such window —
+  all 1,826 scores agreed to within 3.7×10⁻⁵. Expect either outcome; the labels and
+  the alarm times are what should match. The full example's k = 10 detector, whose
+  score averages twice as many neighbours, showed no such window either.
 - **One window per query is the way to serve it.** Sending 16 at once
   (`--windows-per-query 16`) saves little, and in a live plant it would mean waiting
   45 minutes for 15 more samples before asking.

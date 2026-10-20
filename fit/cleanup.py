@@ -11,9 +11,9 @@ What it deletes, from the ids the stages recorded in fit/out/:
   Stage 9   the serving bridge's agent and bundle, if app-serving/ was killed
             before it could delete them (app_serving_state.json): a running
             serving agent holds one of dev's 3 serving workers until it is
-            cancelled or idle 20 min. And the 40 batch agents and bundle of
-            fit/library_embeddings.py (library_state.json; the embeddings are
-            already on disk).
+            cancelled or idle 20 min. And the bundle of
+            fit/library_embeddings.py (library_state.json; it deletes its own
+            agents as it goes, and the embeddings are already on disk).
   Stage 6   the delivery agents and their bundle (deliver_state.json). Their
             outputs are already in eval_out/delivery/.
 
