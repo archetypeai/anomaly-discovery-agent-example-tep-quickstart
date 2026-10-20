@@ -422,10 +422,19 @@ def download_results(agent_id: str, out_path: str,
     deadline = time.time() + settle_s
     frac = short = seen_bytes = None
     while True:
-        if source_end is None:
-            # Size-settle path: download only once num_bytes has held still across
-            # two polls. A stall mid-write looks the same, but without the input
-            # there is nothing better to check against.
+        # The artifact's own status is the authoritative signal and needs nothing
+        # to compare against. A run reports `completed` while its outputs are
+        # still being written -- measured, about a minute of it -- and the
+        # console shows the same pairing, run COMPLETED beside artifact PARTIAL.
+        # An absent status reads as ready, so a deployment reporting none is not
+        # blocked, and the checks below still apply.
+        status = (inner.get("file_attributes", {}).get("job_output", {}).get("status"))
+        if status is not None and status != "complete":
+            print(f"  artifact reports {status}; waiting")
+        elif source_end is None:
+            # No input to compare against: fall back to waiting for num_bytes to
+            # hold still across two polls. A stall mid-write looks the same,
+            # which is why the status above is preferred when present.
             settled = inner.get("num_bytes") == seen_bytes
             seen_bytes = inner.get("num_bytes")
             payload = _download(ref) if settled else None
