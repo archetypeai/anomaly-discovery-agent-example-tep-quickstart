@@ -388,8 +388,10 @@ Stage 8: 1,826 windows of 2 run(s) served in 1,826 queries, 1524 s
   rather than by rounding. **It is not reproducible:** a 2026-10-20 rerun on
   platform.dev.u1, with the delivery regenerated the same day, had no such window —
   all 1,826 scores agreed to within 3.7×10⁻⁵. Expect either outcome; the labels and
-  the alarm times are what should match. The full example's k = 10 detector, whose
-  score averages twice as many neighbours, showed no such window either.
+  the alarm times are what should match. The full example's k = 10 detector averages
+  twice as many neighbours and so swaps one less often, but it is not immune: its
+  2026-10-20 run turned up such a window too, 4×10⁻³ on a score 0.175 from the
+  threshold.
 - **One window per query is the way to serve it.** Sending 16 at once
   (`--windows-per-query 16`) saves little, and in a live plant it would mean waiting
   45 minutes for 15 more samples before asking.
