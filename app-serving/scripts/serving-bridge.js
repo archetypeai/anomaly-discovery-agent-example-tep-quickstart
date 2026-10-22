@@ -78,8 +78,13 @@ if (!test?.blueprint?.key) {
 	console.error('bridge: no fit/out/test_state.json: run fit/test.py first');
 	process.exit(1);
 }
-if (test.endpoint && test.endpoint.replace(/\/+$/, '') !== ENDPOINT) {
-	console.error(`bridge: fit/out/test_state.json is from ${test.endpoint}, not ${ENDPOINT}`);
+/** The deployment an endpoint addresses, whatever hostname it arrives under (as ad_api.py). */
+const deployment = (e) =>
+	e.trim().replace(/^[a-z]+:\/\//, '').split('/')[0].split(':')[0].replace(/^(api|platform)\./, '').toLowerCase();
+if (test.endpoint && deployment(test.endpoint) !== deployment(ENDPOINT)) {
+	console.error(
+		`bridge: fit/out/test_state.json is from ${test.endpoint}, a different deployment from ${ENDPOINT}`
+	);
 	process.exit(1);
 }
 const PROMOTED = test.blueprint.key;
