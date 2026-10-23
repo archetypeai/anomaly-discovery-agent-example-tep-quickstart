@@ -34,7 +34,7 @@
  *   waiting, running, replacing, stopped. An MQTT will clears a stale
  *   "running" if this process dies without saying so.
  *
- * Env (repo .env): ATAI_API_ENDPOINT (dev only), ATAI_API_KEY.
+ * Env (repo .env): ATAI_API_ENDPOINT (dev or staging), ATAI_API_KEY.
  * Env (app-serving/.env): MQTT_PORT, AGENT_PORT, STEP.
  */
 import mqtt from 'mqtt';
@@ -58,9 +58,9 @@ if (!ENDPOINT || !KEY) {
 	console.error('bridge: set ATAI_API_ENDPOINT and ATAI_API_KEY in the repo .env');
 	process.exit(1);
 }
-// Match the deployment generation, not one host: dev is api.dev.* and platform.dev.*
-if (!ROOT.includes('.dev.')) {
-	console.error(`bridge: ${ENDPOINT}: agent serving is on dev only for now`);
+// Match the deployment, not one host: dev is api.dev.* and platform.dev.*, staging platform.stage.*
+if (!['.dev.', '.stage.'].some((d) => ROOT.includes(d))) {
+	console.error(`bridge: ${ENDPOINT}: agent serving is on dev and staging only for now`);
 	process.exit(1);
 }
 const MQTT_PORT = Number(process.env.MQTT_PORT ?? 1890);

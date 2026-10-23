@@ -25,8 +25,8 @@
 | 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
 | 6 | **deliver:** a bundle from that blueprint, run over the delivery files | 15 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
-| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev only), checked against Stage 6 | ~25 min |
-| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev only) | ~8 min once, then ~4 min a run |
+| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~25 min |
+| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~8 min once, then ~4 min a run |
 
   About **30 minutes** end to end, 24 of them on the platform. Platform times
   vary with load.
@@ -343,8 +343,8 @@ python3 fit/serve.py --windows-per-query 16   # up to 16 windows per query
 Stage 6 delivers in batch: upload a file, run an agent over it, download the output
 when the run is done. **Agent serving** keeps an agent loaded and answers a window
 of samples in one round trip, with no upload, queue or polling: what a plant
-historian would call every 3 minutes with the latest 48 samples. It is on Dev only,
-for first internal tests, with 3 serving workers for everyone. The
+historian would call every 3 minutes with the latest 48 samples. It is on Dev and
+Staging only, for first internal tests; Dev has 3 serving workers for everyone. The
 [agent-serving example](https://github.com/archetypeai/agent-serving-example) has the
 calls and their limits.
 
@@ -413,7 +413,7 @@ time, as if the plant were running now, and sends every window to a **serving
 agent** of Stage 5's blueprint: an agent that stays loaded on the platform and
 answers a window in one round trip, under a second. A flowsheet, the 33 tags, the
 anomaly score and an embedding space show the answers as they come. Agent serving
-is on Dev only, for first tests, with 3 workers for everyone; the app holds one
+is on Dev and Staging only, for first tests (Dev has 3 workers for everyone); the app holds one
 while it runs and gives it back on `npm run stop`.
 
 - **A small Node bridge** keeps the latest 48 samples, sends each window as one

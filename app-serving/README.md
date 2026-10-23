@@ -5,9 +5,10 @@ replayed as if the plant were running now, and every window goes to a **serving
 agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answers
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
-> **Dev only.** Agent serving is on Dev — `https://platform.dev.u1.archetypeai.app` —
-> for first internal tests. Dev has **3 serving workers for everyone**: this app holds one
-> while it runs, and gives it back when you stop it.
+> **Dev and Staging only.** Agent serving is on Dev (`https://platform.dev.u1.archetypeai.app`)
+> and Staging (`https://platform.stage.u1.archetypeai.app`) for first internal tests. Dev has
+> **3 serving workers for everyone**: this app holds one while it runs, and gives it back when
+> you stop it.
 
 It is the same app as the [full example's
 `app-serving/`](https://github.com/archetypeai/anomaly-discovery-agent-example-tep/tree/main/app-serving),
