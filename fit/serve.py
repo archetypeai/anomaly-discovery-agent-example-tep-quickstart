@@ -12,10 +12,11 @@ round trip, as a plant historian would ask it every 3 minutes for the latest
 48 samples. This replays delivery runs that way and checks every answer against
 Stage 6's batch output for the same window:
 
-  1. the served variant of fit/test.py's promoted blueprint, made once and reused
-     (`<key>-served-records`): the same detector, encoder and values, step 1,
-     with the CSV source and sink swapped for an `atai-records` serving endpoint;
-  2. a bundle of it, run in serving mode;
+  1. a bundle of fit/test.py's promoted blueprint, as it is, at step 1 (bundle
+     values override a blueprint's): the platform supplies the serving
+     connectors when it runs a bundle in serving mode, so no served copy of the
+     blueprint is made (atai_core #7286; creating one takes the admin role);
+  2. that bundle run in serving mode;
   3. each run replayed one sample at a time: every query holds the latest
      `window_size` samples (`--windows-per-query N` sends N windows at once);
   4. every answer against Stage 6: `predicted_label`, and `anomaly_score` to
@@ -34,7 +35,6 @@ queries, so a query must carry the whole window. Writes eval_out/serving/.
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import signal
 import statistics
@@ -50,42 +50,6 @@ ONSET = 160                      # TEP's 48-hour runs: the fault starts after sa
 SAMPLE_H = 3 / 60
 SUSTAIN = 3
 OUT = REPO / "eval_out" / "serving"
-
-
-def get_or_none(url: str):
-    try:
-        return request("GET", url)
-    except SystemExit as e:
-        if "(404)" in str(e):
-            return None
-        raise
-
-
-def served_blueprint(promoted: str) -> str:
-    """The atai-records served variant of `promoted`, created once."""
-    key = f"{promoted}-served-records"
-    if get_or_none(f"{agents_base()}/blueprints/{key}"):
-        return key
-    src = request("GET", f"{agents_base()}/blueprints/{promoted}")
-    doc = copy.deepcopy(src["document"])
-    doc.pop("blueprint_id", None)
-    doc["values"]["step_size"] = 1
-    # The platform fills in protocols and models for a served blueprint and
-    # rejects the document outright if we set them ourselves.
-    endpoint = {"format": "serving", "kind": "http"}
-    doc["connectors"] = {
-        "source": {"key": "RecordsSource", "config": {
-            **endpoint,
-            "data_columns": [{"dtype": "f32", "names": doc["values"]["data_columns"]}],
-            "timestamp_column": doc["values"]["timestamp_column"]}},
-        "sink": {"key": "RecordsSink", "config": dict(endpoint)},
-    }
-    doc["name"] = f"{src['name']} (served, records)"
-    bp = request("POST", f"{agents_base()}/blueprints", body={
-        "blueprint_key": key, "name": doc["name"], "document": doc,
-        "description": f"Stage 8: {promoted} served with atai-records, step 1."})
-    log(f"created served blueprint {key} ({bp['id']})")
-    return key
 
 
 def first_alarm(labels: list[str]) -> int | None:
@@ -137,12 +101,12 @@ def main() -> int:
     X = data[channels].to_numpy(dtype=float)
     log(f"{args.file}: {len(runs)} run(s), {sum(r[3] for r in runs):,} windows, {wpq} per query; model {bp['key']}")
 
-    key = served_blueprint(bp["key"])
     live = state_path("serve")
     state = load_state(live)
     if state.get("bundle"):
         sys.exit(f"{live} holds an earlier replay's agent and bundle: run fit/cleanup.py first")
-    state["bundle"] = request("POST", f"{agents_base()}/bundles", body={"blueprint": key, "name": "TEP Stage 8"})["id"]
+    state["bundle"] = request("POST", f"{agents_base()}/bundles", body={
+        "blueprint": bp["key"], "name": "TEP Stage 8", "values": {"step_size": 1}})["id"]
     save_state(live, state)
     state["agent"] = request("POST", f"{agents_base()}/bundles/{state['bundle']}/run", body={"mode": "serving"})["id"]
     save_state(live, state)
@@ -205,7 +169,7 @@ def main() -> int:
     stem = OUT / f"serve_{args.file}_{label}_wpq{wpq}"
     df.to_csv(stem.with_suffix(".csv"), index=False)
     ms = sorted(x * 1000 for x in latency)
-    summary = {"blueprint": bp["key"], "served_blueprint": key, "file": args.file, "runs": per_run,
+    summary = {"blueprint": bp["key"], "file": args.file, "runs": per_run,
                "windows": len(df), "windows_per_query": wpq, "queries": len(latency),
                "same_label": int(df.same_label.sum()), "same_score": int(df.same_score.sum()),
                "max_score_rel_diff": float((df.served_score.astype(float) / df.batch_score - 1).abs().max()),

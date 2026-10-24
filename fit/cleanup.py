@@ -22,8 +22,9 @@ cancelled before it is deleted, and an id already gone counts as done. Progress
 goes to fit/out/cleanup_state.json, so a rerun picks up where it stopped.
 
 What stays: the promoted blueprint, and the optimization and eval the README
-cites. The served copy is deleted with the rest — fit/serve.py remakes it, and
-a blueprint deletes fine once no bundle holds it.
+cites. A served copy (`<key>-served-records`) is deleted too if an earlier
+version of fit/serve.py or the bridge made one; they serve the promoted
+blueprint itself now.
 After a cleanup, rerunning fit/deliver.py needs fit/out/deliver_state.json moved
 aside, since its bundle is gone.
 """
@@ -92,7 +93,7 @@ def main() -> int:
     print(f"already deleted: {len(gone & {t[2] for t in targets})}")
     bp = test.get("blueprint", {}).get("key")
     if bp:
-        print(f"also deletes: blueprint {bp}-served-records (fit/serve.py remakes it)")
+        print(f"also deletes: blueprint {bp}-served-records, if an earlier version made one")
         print(f"stays: blueprint {bp}, optimization {test.get('optimization')} "
               f"and eval {test.get('eval')}")
     if not args.yes:
@@ -117,7 +118,7 @@ def main() -> int:
             save_state(done_path, done)
             log(f"deleted {k - len(stuck)}/{len(todo)}")
 
-    # the served copy is regenerable, and deletes once no bundle holds it
+    # a served copy from an earlier version, if any (a 404 counts as done)
     if bp and not any(kind == "bundles" for kind, _, _ in stuck):
         try:
             call("DELETE", f"/blueprints/{bp}-served-records")

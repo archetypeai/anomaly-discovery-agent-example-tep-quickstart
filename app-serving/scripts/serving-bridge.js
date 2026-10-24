@@ -88,7 +88,6 @@ if (test.endpoint && deployment(test.endpoint) !== deployment(ENDPOINT)) {
 	process.exit(1);
 }
 const PROMOTED = test.blueprint.key;
-const SERVED = `${PROMOTED}-served-records`;
 const CHANNELS = test.blueprint.values.data_columns;
 const WINDOW = test.blueprint.values.window_size;
 let step = Number(process.env.STEP ?? 4);
@@ -123,41 +122,16 @@ function announce(phase, detail = '') {
 	live.phase = phase;
 	const ms = [...latencies].sort((a, b) => a - b);
 	client.publish('ad/agent', JSON.stringify({ phase, detail, running: live.running, agent: live.agent,
-		bundle: live.bundle, blueprint: SERVED, step, queued: queue.length,
+		bundle: live.bundle, blueprint: PROMOTED, step, queued: queue.length,
 		medianLatencyMs: ms[Math.floor(ms.length / 2)] ?? null }), { retain: true });
-}
-
-async function ensureServedBlueprint() {
-	try {
-		await api('GET', `/blueprints/${SERVED}`);
-		return;
-	} catch (e) {
-		if (e.status !== 404) throw e;
-	}
-	// The same served copy fit/serve.py makes: promoted blueprint, step 1,
-	// atai-records serving endpoint in place of the CSV source and sink.
-	const src = await api('GET', `/blueprints/${PROMOTED}`);
-	const doc = structuredClone(src.document);
-	delete doc.blueprint_id;
-	doc.values.step_size = 1;
-	// The platform fills in protocols and models for a served blueprint and
-	// rejects the document outright if we set them ourselves.
-	const endpoint = { format: 'serving', kind: 'http' };
-	doc.connectors = {
-		source: { key: 'RecordsSource', config: { ...endpoint,
-			data_columns: [{ dtype: 'f32', names: doc.values.data_columns }], timestamp_column: doc.values.timestamp_column } },
-		sink: { key: 'RecordsSink', config: { ...endpoint } }
-	};
-	doc.name = `${src.name} (served, records)`;
-	await api('POST', '/blueprints', { blueprint_key: SERVED, name: doc.name, document: doc,
-		description: `Stage 8: ${PROMOTED} served with atai-records, step 1.` });
-	console.log(`bridge: created served blueprint ${SERVED}`);
 }
 
 async function startAgent() {
 	if (!live.bundle) {
-		live.bundle = (await api('POST', '/bundles', { blueprint: SERVED, name: 'TEP app-serving',
-			values: { output_embeddings: true } })).id;
+		// The promoted blueprint as it is, at step 1: the platform supplies the serving
+		// connectors when a bundle runs in serving mode, so no served copy is made.
+		live.bundle = (await api('POST', '/bundles', { blueprint: PROMOTED, name: 'TEP app-serving',
+			values: { step_size: 1, output_embeddings: true } })).id;
 		save();
 	}
 	live.agent = (await api('POST', `/bundles/${live.bundle}/run`, { mode: 'serving' })).id;
@@ -174,7 +148,7 @@ async function startAgent() {
 	}
 	live.running = true;
 	announce('running');
-	console.log(`bridge: serving agent ${live.agent} running (bundle ${live.bundle}, ${SERVED})`);
+	console.log(`bridge: serving agent ${live.agent} running (bundle ${live.bundle}, ${PROMOTED})`);
 }
 
 /** Cancel and delete an agent; true once it is gone (404 counts). */
@@ -364,7 +338,7 @@ http.createServer((req, res) => {
 	if (req.method === 'GET' && req.url === '/status') {
 		const ms = [...latencies].sort((a, b) => a - b);
 		return reply(live.running ? 200 : 503, { running: live.running, agent: live.agent, bundle: live.bundle,
-			blueprint: SERVED, step, queued: queue.length, medianLatencyMs: ms[Math.floor(ms.length / 2)] ?? null });
+			blueprint: PROMOTED, step, queued: queue.length, medianLatencyMs: ms[Math.floor(ms.length / 2)] ?? null });
 	}
 	if (req.method === 'POST' && req.url === '/reset') {
 		reset();
@@ -377,7 +351,6 @@ http.createServer((req, res) => {
 // ------------------------------------------------------------------------ start
 
 try {
-	await ensureServedBlueprint();
 	await startWithRetry();
 	drain().catch((e) => console.error(`bridge: ${e.message}`));
 } catch (e) {

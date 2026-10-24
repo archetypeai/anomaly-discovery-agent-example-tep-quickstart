@@ -348,11 +348,12 @@ Staging only, for first internal tests; Dev has 3 serving workers for everyone. 
 [agent-serving example](https://github.com/archetypeai/agent-serving-example) has the
 calls and their limits.
 
-1. **The served blueprint**, made once and reused: a copy of Stage 5's blueprint
-   (`<its key>-served-records`), so the same detector, encoder and values, at step
-   1, with its CSV source and sink swapped for an `atai-records` serving endpoint
-   that answers one named record per window.
-2. **A bundle of it, run in serving mode:** an agent that answers over
+1. **A bundle of Stage 5's blueprint, as it is,** at step 1: the same detector,
+   encoder and values. Run in serving mode, the platform supplies the serving
+   connectors itself, an `atai-records` endpoint that answers one named record per
+   window, so no copy of the blueprint is made (creating a blueprint directly takes
+   the admin role on Staging).
+2. **The bundle, run in serving mode:** an agent that answers over
    `POST /agents/instances/{id}/query`.
 3. **Each run replayed sample by sample.** Every query carries the latest 48
    samples of the 33 tags, one list per tag, and gets one record back:
@@ -444,9 +445,9 @@ python3 fit/cleanup.py --yes     # delete it
 left on Dev, from the ids the stages recorded in `fit/out/`: Stage 6's delivery
 agents and bundle; Stage 8's serving agent and bundle if `fit/serve.py` was killed
 before its own cleanup; and Stage 9's serving bridge leftovers and the 40 batch
-agents of `fit/library_embeddings.py`. The promoted blueprint and its served copy
-stay (deleting a blueprint needs an org admin's key), and so do the optimization
-and the eval. Don't run it while `fit/serve.py` or `app-serving/` is running. To
+agents of `fit/library_embeddings.py`. The promoted blueprint stays, and so do
+the optimization and the eval; a `-served-records` copy left by an earlier
+version goes. Don't run it while `fit/serve.py` or `app-serving/` is running. To
 check that no serving agent of yours is still holding a worker:
 
 ```sh
