@@ -280,7 +280,7 @@
 			<!-- The field is real whether or not a run is being projected onto it, so
 			     the view still earns its place — but it must say which half is
 			     missing rather than present an empty cloud as a result. The live
-			     trail needs `output_embeddings: true` on the blueprint; see
+			     trail needs `output_embeddings: true` on the bridge's bundle; see
 			     app/README.md, "The embedding space". -->
 			<p class="shrink-0 pt-1 text-center text-xs text-muted-foreground">
 				No window projected yet — the trail needs <span class="font-mono">output_embeddings</span> on

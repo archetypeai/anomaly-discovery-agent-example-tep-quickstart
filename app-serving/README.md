@@ -5,9 +5,10 @@ replayed as if the plant were running now, and every window goes to a **serving
 agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answers
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
-> **Dev only.** Agent serving is on Dev — `https://platform.dev.u1.archetypeai.app` —
-> for first internal tests. Dev has **3 serving workers for everyone**: this app holds one
-> while it runs, and gives it back when you stop it.
+> **Dev and Staging only.** Agent serving is on Dev (`https://platform.dev.u1.archetypeai.app`)
+> and Staging (`https://platform.stage.u1.archetypeai.app`) for first internal tests. Dev has
+> **3 serving workers for everyone**: this app holds one while it runs, and gives it back when
+> you stop it.
 
 It is the same app as the [full example's
 `app-serving/`](https://github.com/archetypeai/anomaly-discovery-agent-example-tep/tree/main/app-serving),
@@ -39,10 +40,9 @@ checked against Stage 6's batch output.
 ```
 
 - **The serving bridge** (`scripts/serving-bridge.js`) is the agent's local end. On
-  start it makes sure the served copy of the promoted blueprint exists
-  (`<promoted key>-served-records`: the same blueprint with an `atai-records` serving
-  endpoint in place of its CSV source and sink, at step 1), creates a bundle with
-  `output_embeddings: true` and starts a serving agent. For every window it sends the
+  start it creates a bundle of the promoted blueprint as it is, at step 1 with
+  `output_embeddings: true`, and starts a serving agent: the platform supplies the
+  `atai-records` serving connectors itself, so no copy of the blueprint is made. For every window it sends the
   latest 48 samples as one query, and publishes the answer on `ad/results` with the
   window's timestamps put back (a served agent numbers the samples 0–47 within a
   query).
@@ -88,7 +88,7 @@ recomputed one.
 
 ## Run it
 
-Prerequisites: Node 20+, `brew install mosquitto`, and Stages 4–6 run on Dev. In the [repo README](../README.md) this is Stage 9
+Prerequisites: Node 20+, `brew install mosquitto`, and Stages 4–6 run on Dev or Staging (where the app will serve). In the [repo README](../README.md) this is Stage 9
 (`fit/out/test_state.json` names the promoted blueprint). Then:
 
 ```sh
@@ -117,7 +117,7 @@ about.
 
 ## Stop and clean up
 
-A running app holds a serving agent on Dev, and so one of its 3 serving workers,
+A running app holds a serving agent, and so one of the deployment's serving workers (Dev has 3),
 until the bridge deletes the agent or the platform releases it after 20 minutes
 without a query. Closing the browser tab does not stop it.
 

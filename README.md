@@ -25,8 +25,8 @@
 | 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
 | 6 | **deliver:** a bundle from that blueprint, run over the delivery files | 15 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
-| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev only), checked against Stage 6 | ~25 min |
-| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev only) | ~8 min once, then ~4 min a run |
+| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~25 min |
+| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~8 min once, then ~4 min a run |
 
   About **30 minutes** end to end, 24 of them on the platform. Platform times
   vary with load.
@@ -343,16 +343,17 @@ python3 fit/serve.py --windows-per-query 16   # up to 16 windows per query
 Stage 6 delivers in batch: upload a file, run an agent over it, download the output
 when the run is done. **Agent serving** keeps an agent loaded and answers a window
 of samples in one round trip, with no upload, queue or polling: what a plant
-historian would call every 3 minutes with the latest 48 samples. It is on Dev only,
-for first internal tests, with 3 serving workers for everyone. The
+historian would call every 3 minutes with the latest 48 samples. It is on Dev and
+Staging only, for first internal tests; Dev has 3 serving workers for everyone. The
 [agent-serving example](https://github.com/archetypeai/agent-serving-example) has the
 calls and their limits.
 
-1. **The served blueprint**, made once and reused: a copy of Stage 5's blueprint
-   (`<its key>-served-records`), so the same detector, encoder and values, at step
-   1, with its CSV source and sink swapped for an `atai-records` serving endpoint
-   that answers one named record per window.
-2. **A bundle of it, run in serving mode:** an agent that answers over
+1. **A bundle of Stage 5's blueprint, as it is,** at step 1: the same detector,
+   encoder and values. Run in serving mode, the platform supplies the serving
+   connectors itself, an `atai-records` endpoint that answers one named record per
+   window, so no copy of the blueprint is made (creating a blueprint directly takes
+   the admin role on Staging).
+2. **The bundle, run in serving mode:** an agent that answers over
    `POST /agents/instances/{id}/query`.
 3. **Each run replayed sample by sample.** Every query carries the latest 48
    samples of the 33 tags, one list per tag, and gets one record back:
@@ -413,7 +414,7 @@ time, as if the plant were running now, and sends every window to a **serving
 agent** of Stage 5's blueprint: an agent that stays loaded on the platform and
 answers a window in one round trip, under a second. A flowsheet, the 33 tags, the
 anomaly score and an embedding space show the answers as they come. Agent serving
-is on Dev only, for first tests, with 3 workers for everyone; the app holds one
+is on Dev and Staging only, for first tests (Dev has 3 workers for everyone); the app holds one
 while it runs and gives it back on `npm run stop`.
 
 - **A small Node bridge** keeps the latest 48 samples, sends each window as one
@@ -444,9 +445,9 @@ python3 fit/cleanup.py --yes     # delete it
 left on Dev, from the ids the stages recorded in `fit/out/`: Stage 6's delivery
 agents and bundle; Stage 8's serving agent and bundle if `fit/serve.py` was killed
 before its own cleanup; and Stage 9's serving bridge leftovers and the 40 batch
-agents of `fit/library_embeddings.py`. The promoted blueprint and its served copy
-stay (deleting a blueprint needs an org admin's key), and so do the optimization
-and the eval. Don't run it while `fit/serve.py` or `app-serving/` is running. To
+agents of `fit/library_embeddings.py`. The promoted blueprint stays, and so do
+the optimization and the eval; a `-served-records` copy left by an earlier
+version goes. Don't run it while `fit/serve.py` or `app-serving/` is running. To
 check that no serving agent of yours is still holding a worker:
 
 ```sh
