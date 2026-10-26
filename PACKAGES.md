@@ -1,79 +1,156 @@
-# Packages instead of bundles: what changes for a user
+# Bundles vs packages: what changed, and is it better?
 
-Agent Lifecycle 2.0 replaces bundles with packages. This branch (`explore/packages`)
-moves the quickstart to packages and records what we measured on Dev on
-2026-10-26. **Packages are new and still changing on Dev**: expect breaking
-changes, and re-check the calls below before relying on them.
+Agent Lifecycle 2.0 replaces bundles with packages. This branch
+(`explore/packages`) moves the TEP Anomaly Discovery quickstart to packages and
+runs Stages 4–8 end to end on Dev (2026-10-26). **Packages are new and still
+changing on Dev**: re-check the calls below before relying on them.
 
-## The calls
+## Summary
 
-| Step | Bundles (`main`) | Packages (this branch) |
+- **Everything that ran on bundles runs on packages**, except one output switch
+  (`output_embeddings`), which only the app's embedding view needs.
+- **A package runs the promoted blueprint exactly as promoted.** There are no
+  per-run overrides. That forced one real decision: use the optimized
+  configuration, `step_size` included, in every stage.
+- **Results are the same.** Detection quality is unchanged. Timing is coarser,
+  and that comes from the step the optimization chose, not from packages.
+- **Packages are better, with two gaps to close:**
+  - Values are silently dropped.
+  - Query-based serving doesn't enforce the step.
+
+## 1. The objects and calls
+
+| | Bundles (`main`) | Packages (this branch) |
 |---|---|---|
-| Package the promoted blueprint | `POST /agents/bundles` `{blueprint: <key>, name, values}` | `POST /agents/packages` `{blueprint_ids: [<id>], target: {kind: "platform"}, name}`, then poll until `ready` |
-| Start an agent | `POST /agents/bundles/{id}/run` `{mode, connectors}` | `POST /agents/instances` `{package_id, mode, connectors}` |
-| Query, cancel, delete an agent | unchanged | unchanged |
-| List an agent's siblings | `GET /agents/instances?bundle_id=` | `GET /agents/instances?package_id=` |
-| Delete | `DELETE /agents/bundles/{id}` (409 while it has agents) | `DELETE /agents/packages/{id}` (409 while it has agents) |
+| What it is | a blueprint **plus values that override it** | the promoted blueprint **as it is**, plus the models it resolved to |
+| Create | `POST /agents/bundles` `{blueprint: <key>, name, values}` | `POST /agents/packages` `{blueprint_ids: [<id>], target: {kind: "platform"}, name}`, then poll until `ready` (immediate on Dev) |
+| Run | `POST /agents/bundles/{id}/run` `{mode, connectors}` | `POST /agents/instances` `{package_id, mode, connectors}` |
+| Query, cancel, delete an agent | — | unchanged |
+| An agent's siblings | `GET /agents/instances?bundle_id=` | `GET /agents/instances?package_id=` |
+| Delete | `DELETE /agents/bundles/{id}`, 409 while it has agents | `DELETE /agents/packages/{id}`, 409 while it has agents |
+| Admin role | none; but changing a blueprint (`POST /blueprints`) needs it on Staging | none |
 
-A package names its blueprint by **id**, not key, and pins the models it resolves
-to (`resolved_models`). No admin role is needed.
+Stages 4 and 5 (Optimizations, promote, Evals) touch neither, and didn't change.
 
-## The idea: optimize once, run what you chose
+## 2. What changed in the example
 
-A bundle could override the blueprint's values per run; a package can't. The agent
-is exactly what was promoted. So the configuration Stage 4's optimization chooses
-is the configuration every later stage runs, step included. That is the point of
-optimizing: the user finds a configuration and keeps it.
+There are three separate effects. They are easy to confuse:
 
-`step_size` is the setting this makes visible. It is how far the window moves
-between scores, so it sets how often you get an answer (window 48 at step 8, with
-TEP's 3-minute samples: a score every 24 minutes over the last 2.4 hours). On
-`main`, Stages 4–5 fit and evaluated at step 8 while Stage 6 delivered at step 1
-through a bundle override. On this branch every stage runs at the optimized 8:
+| Effect | Caused by | What it changed |
+|---|---|---|
+| **A. The API** | packages | Create a package, then start an instance. Cleanup deletes packages. A blueprint is named by id. |
+| **B. One configuration throughout** | packages can't override values | Every stage runs the optimized configuration. On `main`, Stages 4–5 ran at step 8 and Stage 6 at step 1 through a bundle override. Now every stage runs at step 8. |
+| **C. Step 8 instead of step 1 downstream** | the optimization's choice (via B) | 8 times fewer windows to score: a score every 24 minutes instead of every 3. Faster runs and coarser timing. |
+
+**Packages make nothing faster by themselves.** The time savings are all effect C:
 
 | Stage | `main` | this branch |
 |---|---|---|
-| 4 optimize, 5 eval | step 8 | step 8 (unchanged) |
-| 6 deliver | step 1, bundle override | step 8, package |
-| 8 serve | one query per sample, bundle | one query per 8 samples, package |
-| 9 app | step 4 (or 1, a setting), bundle | step 8, package |
-| 9 library embeddings | step 8, bundle | step 8, **still a bundle** (see below) |
+| 4 optimize, 5 promote + eval | step 8 | step 8 (unchanged) |
+| 6 deliver | step 1, bundle override, ~15 min | step 8, package, 3–9 min |
+| 8 serve | a query per sample, bundle, ~25 min | a query per 8 samples, package, ~3 min |
+| 9 app | step 4 or 1, bundle, embeddings on | step 8, package, embeddings off |
+| 9 library embeddings | step 8, bundle | step 8, **still a bundle** (needs `output_embeddings`) |
 
-Which step to use is a search question: the full example's broader search
-covers steps (and windows); the quickstart reuses its winner, step 8.
+## 3. Results on Dev (2026-10-26)
 
-## What a user sees (Dev, 2026-10-26)
+Stages 4–8 were run from a fresh optimization, all through packages, in 16½ minutes:
 
-- **Same answers.** Stage 6 through a package matched every 8th window of the
-  step-1 delivery: the same label everywhere, scores within 0.5%. Stage 8 matched
-  Stage 6 in 230/230 windows, scores within 1.6×10⁻⁵, 0.8 s per query.
-- **Detection quality unchanged:** mean detection rate 78.5% (78.0% at step 1),
-  macro AUROC 0.903 (0.901), 70/80 runs detected (71/80).
-- **Coarser timing:** an answer every 24 minutes, so delays are counted in
-  24-minute steps (IDV 16 9.2 h against 4.6 h at step 1), and a 3-window alarm
-  spans 48 minutes instead of 6.
-- **Faster:** delivery 9 min instead of 15, Stage 8 3 min instead of 25, an app
-  run 2 min instead of 4.
+| | `main` (step-1 delivery) | this branch (step 8) |
+|---|---|---|
+| Stage 4 validation macro-F1, k 5 / k 10 | 0.8547 / 0.8540 | same |
+| Stage 5 test macro-F1, mean window detection | 0.7331, 78.0% | same (the same blueprint step) |
+| Stage 7 mean detection rate (1% threshold) | 78.0% | 78.5% |
+| Stage 7 macro AUROC | 0.901 | 0.903 |
+| Stage 7 runs detected | 71/80 | 70/80 |
+| Stage 7 delay, IDV 16 (counted in steps) | 4.6 h | 9.2 h |
+| Stage 8 served vs batch | 1,826/1,826 labels | 230/230 labels, scores within 1.7×10⁻⁵ |
 
-## What packages can't do yet
+The step-8 delivery has the same label as every 8th window of the step-1
+delivery, with scores within 0.5%. Two step-8 package deliveries agreed on
+every headline number, but not to the byte (near-tie score differences).
 
-`values` on `POST /packages` or `POST /instances` is **accepted and silently
-dropped**: no error, and the agent runs as promoted (a query spanning 16 windows
-came back with 2 answers with and without `values: {step_size: 1}`). Unknown
-fields are dropped the same way. Two things in this example still need a value
-the promoted blueprint doesn't have:
+## 4. step_size: what a package fixes, and what it doesn't
 
-- **`output_embeddings: true`**, for the app's embedding view:
-  `fit/library_embeddings.py` still uses a bundle for the reference cloud, and the
-  app's live embedding trail is empty.
-- Nothing else: `output_score` is already on in the promoted blueprint, and
-  turning checkpointing off only worked around runtimes before atai_core #6317.
+`step_size` is how far the 48-sample window moves between scores. TEP samples
+every 3 minutes, so step 8 means a score every 24 minutes over the last 2.4 hours.
+It plays two roles:
 
-## Questions for the platform team
+- **At fit time** it sets the density of the reference library, so it changes the
+  model. It's fixed inside the fitted detector once Stage 4 runs.
+- **At run time** it only decides which windows get scored.
 
-1. Outputs such as embeddings aren't part of the optimized configuration: how
-   should a user turn them on for a promoted blueprint?
-2. Can unknown fields, `values` included, be rejected (400) instead of dropped?
-   A script ported from bundles keeps passing `values` and silently gets
-   different output.
-3. On Staging, `POST /packages` dropped `name`; Dev kept it. A version gap?
+A package fixes the run-time step at the optimized value. Whether that holds
+depends on who keeps the buffer of recent rows:
+
+| How the agent gets rows | Who applies the step | Is step 8 enforced? |
+|---|---|---|
+| Batch: a CSV per run | the agent | yes |
+| Edge runtime: rows from MQTT, one message per row | the agent (its window node) | yes |
+| Platform serving: `/query`, one window per request | **the client** | **no**: the agent keeps nothing between queries, and a 48-row query gets one answer at any step. The step only slices multi-window queries. |
+
+So in query-based serving, the client decides the cadence. Each answer is
+correct at any cadence, but **the alarm behaviour was only evaluated at the
+optimized one**. Measured over 630 hours of normal operation in the delivery:
+
+| Client sends | Alarm rule | False alarms per day | Runs caught | Confirmed alarm, IDV 16 |
+|---|---|---:|---:|---:|
+| every 8th sample (as optimized) | 3 windows in a row (48 min) | 0 | 71/80 | 10.0 h |
+| every sample | 3 windows in a row (6 min) | 1.22 | 72/80 | 4.7 h |
+| every sample | 17 windows in a row (48 min) | 0 | 69/80 | 10.3 h |
+
+Sending on every sample is natural for a live client. But it trades faster alarms
+for more false alarms, and that trade wasn't part of the evaluation. The
+quickstart sends a window every 8 samples, the cadence its numbers describe.
+
+## 5. Is the packages approach better?
+
+**Yes, mainly because what you evaluate is what you deploy.**
+
+1. **The eval measures the delivered agent.** On `main`, Stage 5 evaluated step 8
+   and Stage 6 delivered step 1: the numbers a user was shown described a
+   different configuration from the one they ran. With packages, Optimize →
+   promote → eval → deliver is one configuration end to end. That's the point
+   of the optimization: find a configuration, then keep it.
+2. **Reproducible deployments.** A package pins the encoder and detection-head
+   versions it resolved to. A later model release can't silently change an
+   agent that is already deployed.
+3. **One object for batch and serving.** The same package runs over files or
+   answers queries. Only `mode` differs.
+4. **No admin role, no blueprint copies.** Nothing in the example needs a
+   derived blueprint any more.
+5. **A simpler model to explain:** blueprint (a configuration) → package (fixed,
+   deployable) → instance (running).
+
+**What's worse, or still missing:**
+
+1. **`values` are silently dropped.** `POST /packages` and `POST /instances`
+   accept `values`, and any unknown field, without an error. A script ported
+   from bundles keeps passing `step_size: 1` and gets step-8 output with no
+   warning. This should be a 400.
+2. **Output switches are tied to the configuration.** `output_embeddings` isn't a
+   modelling choice, but a package can't turn it on, so the app's embedding
+   view and its reference cloud still need a bundle.
+3. **Query-based serving doesn't enforce the configuration.** See section 4.
+   The client has to rebuild the window node (buffer, `window_size`,
+   `step_size`), and nothing tells it the step.
+4. **The step has to be right at Stage 4.** Changing it means a new
+   optimization. And Optimize uses one step to fit *and* validate, so "fit at
+   step 8, validate at step 1" (what a step-1 serving client needs evaluated)
+   can't be expressed.
+5. **Still moving on Dev.** For example, Staging dropped a package's `name`,
+   while Dev kept it.
+
+## 6. Questions for the platform team
+
+1. Can unknown fields, `values` included, be rejected with a 400 instead of
+   dropped?
+2. How should a user turn on outputs such as embeddings for a promoted blueprint,
+   without changing its configuration?
+3. Will platform serving get a streaming source (MQTT or a records stream) where
+   the agent keeps the buffer and applies its own `window_size` and
+   `step_size`? Until then, could an instance expose those two values so a
+   query client can follow them?
+4. Could Optimize validate at a different step from the one it fits at, so the
+   cadence a client will serve at can be evaluated?
+5. Is the Staging/Dev difference in package `name` a version gap?
