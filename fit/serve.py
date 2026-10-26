@@ -12,18 +12,20 @@ round trip, as a plant historian would ask it every 3 minutes for the latest
 48 samples. This replays delivery runs that way and checks every answer against
 Stage 6's batch output for the same window:
 
-  1. a bundle of fit/test.py's promoted blueprint, as it is, at step 1 (bundle
-     values override a blueprint's): the platform supplies the serving
-     connectors when it runs a bundle in serving mode, so no served copy of the
-     blueprint is made (atai_core #7286; creating one takes the admin role);
-  2. that bundle run in serving mode;
-  3. each run replayed one sample at a time: every query holds the latest
-     `window_size` samples (`--windows-per-query N` sends N windows at once);
+  1. a package of fit/test.py's promoted blueprint, as it is (Agent Lifecycle
+     2.0: packages replace bundles, and need no admin role). A package carries
+     no values, so the agent runs at the blueprint's own step; the platform
+     supplies the serving connectors, so no served copy is made (atai_core #7286);
+  2. an instance of that package in serving mode;
+  3. each run replayed one sample at a time: every query holds exactly the
+     latest `window_size` samples, so it is answered with one window whatever
+     the blueprint's step (`--windows-per-query N` sends N windows at once,
+     which needs a blueprint promoted at step 1);
   4. every answer against Stage 6: `predicted_label`, and `anomaly_score` to
      within 1e-4 relative (served and batch differ by ~1e-5, float32 noise);
      the first sustained alarm (3 consecutive anomaly windows) of each run,
      served and batch;
-  5. the agent cancelled and deleted, and the bundle deleted, however it went
+  5. the agent cancelled and deleted, and the package deleted, however it went
      (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
@@ -44,6 +46,7 @@ import time
 import pandas as pd
 
 from atai import REPO, agents_base, load_dotenv, load_state, log, request, save_state, state_path
+from ad_api import create_package, packages_url
 
 MODEL = "tep-ad"                 # the name a query gives in `model`
 ONSET = 160                      # TEP's 48-hour runs: the fault starts after sample 160 (8 h)
@@ -63,7 +66,7 @@ def first_alarm(labels: list[str]) -> int | None:
 
 
 def stop(signum, _frame):
-    sys.exit(f"stopped by signal {signum}")       # so `finally` deletes the agent and bundle
+    sys.exit(f"stopped by signal {signum}")       # so `finally` deletes the agent and package
 
 
 def main() -> int:
@@ -84,6 +87,10 @@ def main() -> int:
                  "(e.g. https://platform.dev.u1.archetypeai.app, https://platform.stage.u1.archetypeai.app)")
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
     channels, window = bp["values"]["data_columns"], bp["values"]["window_size"]
+    step = int(bp["values"].get("step_size", 1))
+    if args.windows_per_query > 1 and step != 1:
+        # a package can't override step_size: N windows in one query come back as ceil(N / step)
+        sys.exit(f"--windows-per-query needs a blueprint at step 1; {bp['key']} is at step {step}")
     data = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}.csv")
     labels = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}_labels.csv")
     batch = pd.read_csv(REPO / "eval_out" / "delivery" / f"ad-output-{args.file}.csv")
@@ -103,15 +110,15 @@ def main() -> int:
 
     live = state_path("serve")
     state = load_state(live)
-    if state.get("bundle"):
-        sys.exit(f"{live} holds an earlier replay's agent and bundle: run fit/cleanup.py first")
-    state["bundle"] = request("POST", f"{agents_base()}/bundles", body={
-        "blueprint": bp["key"], "name": "TEP Stage 8", "values": {"step_size": 1}})["id"]
+    if state.get("package"):
+        sys.exit(f"{live} holds an earlier replay's agent and package: run fit/cleanup.py first")
+    state["package"] = create_package(bp["id"], "TEP Stage 8")["id"]
     save_state(live, state)
-    state["agent"] = request("POST", f"{agents_base()}/bundles/{state['bundle']}/run", body={"mode": "serving"})["id"]
+    state["agent"] = request("POST", f"{agents_base()}/instances", body={
+        "package_id": state["package"], "mode": "serving"})["id"]
     save_state(live, state)
-    bundle, agent = state["bundle"], state["agent"]
-    log(f"bundle {bundle} · agent {agent}")
+    package, agent = state["package"], state["agent"]
+    log(f"package {package} · agent {agent}")
     served, latency = {}, []
     t_start = time.time()
     try:
@@ -139,9 +146,9 @@ def main() -> int:
         signal.signal(signal.SIGINT, signal.SIG_IGN)     # a second Ctrl-C mustn't cut the cleanup short
         request("POST", f"{agents_base()}/instances/{agent}/cancel", body={})
         request("DELETE", f"{agents_base()}/instances/{agent}", raw=True)
-        request("DELETE", f"{agents_base()}/bundles/{bundle}", raw=True)
+        request("DELETE", packages_url(package), raw=True)
         live.unlink()
-        log(f"cancelled and deleted {agent}, deleted {bundle}")
+        log(f"cancelled and deleted {agent}, deleted {package}")
     elapsed = time.time() - t_start
 
     rows, per_run = [], []

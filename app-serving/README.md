@@ -40,8 +40,9 @@ checked against Stage 6's batch output.
 ```
 
 - **The serving bridge** (`scripts/serving-bridge.js`) is the agent's local end. On
-  start it creates a bundle of the promoted blueprint as it is, at step 1 with
-  `output_embeddings: true`, and starts a serving agent: the platform supplies the
+  start it creates a package of the promoted blueprint as it is (Agent Lifecycle
+  2.0; a package carries no values, so `output_embeddings` stays off and the
+  embedding trail stays empty), and starts a serving agent: the platform supplies the
   `atai-records` serving connectors itself, so no copy of the blueprint is made. For every window it sends the
   latest 48 samples as one query, and publishes the answer on `ad/results` with the
   window's timestamps put back (a served agent numbers the samples 0–47 within a
@@ -53,7 +54,7 @@ checked against Stage 6's batch output.
 - **The API key never reaches the browser.** The bridge reads `ATAI_API_ENDPOINT` and
   `ATAI_API_KEY` from the repo's `.env`, the same file the Python stages use.
 - **On exit** (Ctrl-C, `npm run stop`) the bridge cancels and deletes its agent and
-  deletes its bundle. If it's killed hard, the ids are still in
+  deletes its package. If it's killed hard, the ids are still in
   `fit/out/app_serving_state.json`, and `python3 fit/cleanup.py --yes` removes them.
   An agent the platform released after 20 minutes without a query (a replay paused that
   long) is deleted and replaced on the next window, retrying while Dev's serving workers
@@ -122,7 +123,7 @@ until the bridge deletes the agent or the platform releases it after 20 minutes
 without a query. Closing the browser tab does not stop it.
 
 1. **Stop the app.** Press Ctrl-C **once** in the `npm run dev` terminal and
-   wait for `bridge: deleted its agent(s) and bundle …`; a second Ctrl-C can cut
+   wait for `bridge: deleted its agent(s) and package …`; a second Ctrl-C can cut
    that short. Or, from `app-serving/` in any terminal (also for an app started
    in the background or from a terminal since closed):
 
@@ -130,7 +131,7 @@ without a query. Closing the browser tab does not stop it.
    npm run stop      # SIGTERM to the bridge, waits up to 60 s for it, stops the rest, checks the ports
    ```
 
-   Either way the bridge cancels and deletes its agent, deletes its bundle and
+   Either way the bridge cancels and deletes its agent, deletes its package and
    removes `fit/out/app_serving_state.json`. `npm run stop` ends with
    `all ports free (1890 · 9008 · 9100 · 5180)`; a port still held names its process.
 
@@ -156,7 +157,7 @@ without a query. Closing the browser tab does not stop it.
    python3 fit/cleanup.py --yes      # deletes it
    ```
 
-   It also finds agents the bridge replaced (from the bundle's own listing),
+   It also finds agents the bridge replaced (from the package's own listing),
    cancels a running agent before deleting it, and removes the state file when
    done. Without a state file, an agent of yours from the listing above can be
    removed by its id:
@@ -167,9 +168,9 @@ without a query. Closing the browser tab does not stop it.
    curl -s -X DELETE "$ATAI_API_ENDPOINT/agents/instances/<agt_id>" -H "Authorization: Bearer $ATAI_API_KEY"
    ```
 
-   Its bundle (`bnd_…`, from `GET /agents/instances/<agt_id>`) can then be
-   deleted with `DELETE /agents/bundles/<bnd_id>`; a bundle that still has any
-   agent, even a cancelled one, answers 409.
+   Its package (`pkg_…`, `package_id` in `GET /agents/instances/<agt_id>`) can then be
+   deleted with `DELETE /agents/packages/<pkg_id>`; a package that still has an
+   agent answers 409.
 
 `fit/library_embeddings.py`'s 40 batch agents and their bundle hold no serving
 worker; `fit/cleanup.py --yes` deletes them too, with the rest of the platform

@@ -348,13 +348,17 @@ Staging only, for first internal tests; Dev has 3 serving workers for everyone. 
 [agent-serving example](https://github.com/archetypeai/agent-serving-example) has the
 calls and their limits.
 
-1. **A bundle of Stage 5's blueprint, as it is,** at step 1: the same detector,
-   encoder and values. Run in serving mode, the platform supplies the serving
+1. **A package of Stage 5's blueprint, as it is** (`POST /api/agents/packages`):
+   the same detector, encoder and values. Packages are Agent Lifecycle 2.0's
+   replacement for bundles, and need no admin role. A package carries no values,
+   so the agent runs at the blueprint's own step 8; one window per query gets one
+   answer whatever the step. In serving mode the platform supplies the serving
    connectors itself, an `atai-records` endpoint that answers one named record per
-   window, so no copy of the blueprint is made (creating a blueprint directly takes
-   the admin role on Staging).
-2. **The bundle, run in serving mode:** an agent that answers over
-   `POST /agents/instances/{id}/query`.
+   window, so no copy of the blueprint is made.
+2. **An instance of the package in serving mode** (`POST /api/agents/instances`
+   with `package_id` and `mode: "serving"`): an agent that answers over
+   `POST /agents/instances/{id}/query`. `--windows-per-query` above 1 needs a
+   blueprint promoted at step 1, since a package can't override the step.
 3. **Each run replayed sample by sample.** Every query carries the latest 48
    samples of the 33 tags, one list per tag, and gets one record back:
    `{"anomaly_score": …, "predicted_label": "normal", "invalid": "false",
@@ -364,7 +368,7 @@ calls and their limits.
 4. **Every answer against Stage 6:** the label, the score (to within 10⁻⁴
    relative), and each run's first sustained alarm (3 consecutive anomaly
    windows).
-5. **Cleanup:** the agent is cancelled and deleted, and the bundle deleted, however
+5. **Cleanup:** the agent is cancelled and deleted, and the package deleted, however
    the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
 
 **Expect** (ours, Dev, 2026-10-15), delivery file 1's fault-free run (sim 96) and
@@ -432,7 +436,9 @@ sample: all 229 windows had Stage 6's label, with scores within 1.5×10⁻⁵ of
 33 embeddings per window and 866 ms per window; the run took about 4½ minutes.
 The reference library came out at 2,280 windows scored 0.949–1.108, all under the
 1.215 threshold, as the detector's own normal data should be. Stopping the app
-(`npm run stop`, or Ctrl-C) cancels and deletes the bridge's agent and bundle.
+(`npm run stop`, or Ctrl-C) cancels and deletes the bridge's agent and package.
+On the `explore/packages` branch the bridge runs a package, which can't turn on
+`output_embeddings`, so the page's live embedding trail stays empty (Dev, 2026-10-26).
 
 ### Clean up the platform
 
@@ -441,9 +447,9 @@ python3 fit/cleanup.py           # list what would be deleted, and what stays
 python3 fit/cleanup.py --yes     # delete it
 ```
 
-[`fit/cleanup.py`](fit/cleanup.py) deletes the agents and bundles this quickstart
+[`fit/cleanup.py`](fit/cleanup.py) deletes the agents, packages and bundles this quickstart
 left on Dev, from the ids the stages recorded in `fit/out/`: Stage 6's delivery
-agents and bundle; Stage 8's serving agent and bundle if `fit/serve.py` was killed
+agents and bundle; Stage 8's serving agent and package if `fit/serve.py` was killed
 before its own cleanup; and Stage 9's serving bridge leftovers and the 40 batch
 agents of `fit/library_embeddings.py`. The promoted blueprint stays, and so do
 the optimization and the eval; a `-served-records` copy left by an earlier
