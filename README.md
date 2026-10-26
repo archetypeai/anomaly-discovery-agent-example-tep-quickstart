@@ -27,7 +27,7 @@
 | 6 | **deliver:** a package of that blueprint, run over the delivery files | 3–9 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
 | 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~3 min |
-| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~8 min once, then ~4 min a run |
+| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~5 min once (the app's blueprint), then ~2 min a run |
 
   About **30 minutes** end to end, 21 of them on the platform. Platform times
   vary with load. Stages 6 and 8 were measured on Dev on 2026-10-26.
@@ -421,7 +421,7 @@ window; a summary).
 ### Stage 9 (optional): watch it live, served from the platform
 
 ```sh
-python3 fit/library_embeddings.py     # once: the reference library's embeddings (~8 min)
+python3 fit/app_blueprint.py          # once: the winning configuration with embeddings on (~5 min)
 cd app-serving && npm install
 npm run dev                           # broker + serving bridge + replayer + web
 open http://localhost:5180
@@ -441,8 +441,17 @@ while it runs and gives it back on `npm run stop`.
   reaches the browser.
 - **The embedding space** needs the windows the detector was fitted on, but the
   promoted detector can't be downloaded and the APIs return no embeddings. So
-  `fit/library_embeddings.py` recomputes them: the 40 library runs through the
-  promoted blueprint in batch with embeddings on, 2,280 windows, then PCA 1–2.
+  `fit/library_embeddings.py` recomputes them: the 40 library runs in batch with
+  embeddings on, 2,280 windows, then PCA 1–2. The result,
+  `app-serving/static/detector-view.{json,bin}`, is committed and depends only on
+  the configuration, so it needs rerunning only if Stage 4 picks a different window
+  or step.
+- **The app's own blueprint.** Stages 4–8 keep `output_embeddings` off (on, every
+  delivery file would grow to hundreds of MB), and a package can't turn it on. So
+  `fit/app_blueprint.py` promotes the same winning configuration with embeddings on,
+  from a 1-trial optimization, for the app and the library embeddings only. It's a
+  stop-gap until a package can switch an output on; see
+  [app-serving/README.md](app-serving/README.md#the-apps-blueprint-the-winning-configuration-with-embeddings-on).
 - **Pace:** a window every 8 samples, the optimized step that every stage uses,
   so the app's alarms are Stage 6's, window for window; a run takes about 2
   minutes.
@@ -452,9 +461,8 @@ windows of delivery file 1's IDV 5 run had Stage 6's label, with scores within
 1.5×10⁻⁵ of batch, 33 embeddings per window and 866 ms per window. The reference library came out at 2,280 windows scored 0.949–1.108, all under the
 1.215 threshold, as the detector's own normal data should be. Stopping the app
 (`npm run stop`, or Ctrl-C) cancels and deletes the bridge's agent and package.
-The bridge runs a package, which can't turn on `output_embeddings`, so the page's
-live embedding trail stays empty; `fit/library_embeddings.py` still uses a bundle
-for the reference cloud (Dev, 2026-10-26).
+Without `fit/app_blueprint.py`'s blueprint, the bridge serves Stage 5's, which has
+no embeddings, and the page's live embedding trail stays empty.
 
 ### Clean up the platform
 
@@ -528,7 +536,7 @@ expected outputs above show at which stage.
 | `fit/deliver.py` | Stage 6 |
 | `fit/score_delivery.py`, `fit/evaluate_detection.py`, `fit/tep_common.py` | Stage 7 |
 | `fit/serve.py` | Stage 8: the promoted blueprint served over `/query` (Dev), delivery runs replayed one window per query, every answer checked against Stage 6 |
-| `fit/library_embeddings.py`, `app-serving/` | Stage 9: the reference library's embeddings; the live app, served from the platform ([README](app-serving/README.md)) |
+| `fit/app_blueprint.py`, `fit/library_embeddings.py`, `app-serving/` | Stage 9: the app's blueprint (embeddings on); the reference library's embeddings; the live app, served from the platform ([README](app-serving/README.md)) |
 | `fit/cleanup.py` | delete the agents, packages and bundles Stages 6, 8 and 9 left on the platform (`--yes`) |
 | `eval_out/serving/` | Stage 8's replay: a row per window, served against batch, and a summary |
 | `data/prepared/` | Stage 1's output: library, validation, test and delivery files with their label sidecars (Git LFS) |

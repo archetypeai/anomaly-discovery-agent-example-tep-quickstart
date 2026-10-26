@@ -11,7 +11,7 @@ What it deletes, from the ids the stages recorded in fit/out/:
   Stage 9   the serving bridge's agent and package, if app-serving/ was killed
             before it could delete them (app_serving_state.json): a running
             serving agent holds one of dev's 3 serving workers until it is
-            cancelled or idle 20 min. And the bundle of
+            cancelled or idle 20 min. And the package of
             fit/library_embeddings.py (library_state.json; it deletes its own
             agents as it goes, and the embeddings are already on disk).
   Stage 6   the delivery agents and their package (deliver_state.json). Their
@@ -22,7 +22,7 @@ cancelled before it is deleted, and an id already gone counts as done. Progress
 goes to fit/out/cleanup_state.json, so a rerun picks up where it stopped.
 
 What stays: the promoted blueprint, and the optimization and eval the README
-cites. A served copy (`<key>-served-records`) is deleted too if an earlier
+cites; fit/app_blueprint.py's blueprint and optimization too. A served copy (`<key>-served-records`) is deleted too if an earlier
 version of fit/serve.py or the bridge made one; they serve the promoted
 blueprint itself now.
 After a cleanup, rerunning fit/deliver.py needs fit/out/deliver_state.json moved
@@ -71,9 +71,10 @@ def main() -> int:
         agents |= {r["id"] for r in list_package_runs(bridge["package"])}
         targets += [("Stage 9", "instances", a) for a in sorted(agents)]
         targets += [("Stage 9", "packages", bridge["package"])]
-    if library.get("bundle"):
+    if library.get("package") or library.get("bundle"):     # a bundle from a run before packages
         targets += [("Stage 9", "instances", a) for a in sorted(set(library.get("agents", {}).values()))]
-        targets += [("Stage 9", "bundles", library["bundle"])]
+        targets += [("Stage 9", "packages", library["package"]) if library.get("package")
+                    else ("Stage 9", "bundles", library["bundle"])]
     if deliver.get("package"):
         # the state holds each file's last attempt; the package's listing also finds replaced ones
         agents = set(deliver.get("agents", {}).values())

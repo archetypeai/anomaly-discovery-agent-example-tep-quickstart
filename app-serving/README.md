@@ -12,14 +12,14 @@ come back to a flowsheet, 33 process tags, the anomaly score and an embedding sp
 
 It is the same app as the [full example's
 `app-serving/`](https://github.com/archetypeai/anomaly-discovery-agent-example-tep/tree/main/app-serving),
-with two differences: it serves this repo's promoted blueprint (k 5), and it replays
-the **delivery** runs (Stage 6's 4 files, 84 runs), so every served window can be
-checked against Stage 6's batch output.
+with two differences: it serves this repo's winning configuration (k 5), and it
+replays the **delivery** runs (Stage 6's 4 files, 84 runs), so every served window can
+be checked against Stage 6's batch output.
 
 ## Architecture
 
 ```
-  data/prepared/full/tep_full_chunk_*.csv     fit/out/test_state.json (the promoted blueprint)
+  data/prepared/full/tep_full_chunk_*.csv     fit/out/app_blueprint_state.json (the app's blueprint)
                 │                                          │ (the replayer reads it too, for the facts it shows)
                 ▼                                          ▼                     repo .env: ATAI_API_KEY
 ┌───────────────────────────┐  GET /status    ┌──────────────────────────────┐          │
@@ -28,10 +28,10 @@ checked against Stage 6's batch output.
 │ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ serving agent (Dev)      │
 │ waits for each block's    │  admin :9100    │ one query per window         │  the latest 48  │ promoted detector,       │
 │ windows before the next   │                 │                              │  samples        │ atai-records,            │
-└───────────────────────────┘                 └──────────────────────────────┘◀────────────────│ embeddings off           │
+└───────────────────────────┘                 └──────────────────────────────┘◀────────────────│ embeddings on            │
   pub │ sensors/tep (z-scored)                   sub ▲ sensors/tep   │ pub        one record   └──────────────────────────┘
   pub │ tep/raw, tep/status (eng. units)         sub ▲ tep/status    │ ad/results (score, label,
-  sub ▲ tep/control, ad/results (pacing)             │ (the step)    ▼ invalid; no embeddings)
+  sub ▲ tep/control, ad/results (pacing)             │ (the step)    ▼ 33 × 768 embedding)
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                     mosquitto · TCP :1890 · WebSockets :9008                        │
 └─────────────────────────────────────────────────────────────────────────────────────┘
@@ -40,9 +40,9 @@ checked against Stage 6's batch output.
 ```
 
 - **The serving bridge** (`scripts/serving-bridge.js`) is the agent's local end. On
-  start it creates a package of the promoted blueprint as it is (Agent Lifecycle
-  2.0; a package carries no values, so `output_embeddings` stays off and the
-  embedding trail stays empty), and starts a serving agent: the platform supplies the
+  start it creates a package of the app's blueprint (see
+  [The app's blueprint](#the-apps-blueprint-the-winning-configuration-with-embeddings-on))
+  and starts a serving agent from it: the platform supplies the
   `atai-records` serving connectors itself, so no copy of the blueprint is made. For every window it sends the
   latest 48 samples as one query, and publishes the answer on `ad/results` with the
   window's timestamps put back (a served agent numbers the samples 0–47 within a
@@ -69,19 +69,56 @@ checked against Stage 6's batch output.
   `.env` and then `app-serving/.env` (`scripts/common.js`); an `ATAI_*` line in
   `app-serving/.env` is ignored, so the key lives in one place.
 
+## The app's blueprint: the winning configuration with embeddings on
+
+The embedding view needs each window's embeddings, and agents return them only
+when their blueprint has `output_embeddings: true`. Stages 4–8 keep it **off**:
+embeddings are 33 × 768 numbers per window, so Stage 6's outputs would grow from
+about 100 KB a file to hundreds of MB, for a view only this app shows. A package
+(Agent Lifecycle 2.0) runs a blueprint exactly as promoted and can't turn an
+output on, so the app gets a blueprint of its own:
+
+```sh
+python3 fit/app_blueprint.py          # once, from the repo root: a 1-trial optimization (~5 min) and promote
+```
+
+- **The same configuration as Stage 5's winner.** It runs a second optimization
+  on the same library and validation files, with every winning value pinned
+  (window, step, k, metric, PCA, threshold, features) plus
+  `output_embeddings: true`, and one trial; then it promotes that trial.
+- **Promoted, not copied.** The blueprint comes from an optimization trial like
+  Stage 5's, so it needs no admin role, and the platform records where it came
+  from.
+- **A refitted detector.** The trial fits its own detector on the same library;
+  its validation scores are printed next to Stage 5's. It serves the app and
+  `fit/library_embeddings.py`, nothing else.
+- **A stop-gap.** It lasts until a package or instance can turn on an output such
+  as `output_embeddings` without a new blueprint. Without it, the bridge serves
+  Stage 5's blueprint, which has no embeddings, and says so: the app works, but
+  the embedding view gets no live trail.
+
+It writes `fit/out/app_blueprint_state.json`. The bridge uses that blueprint only
+if it was made from the current `fit/out/test_state.json` blueprint, on the same
+deployment.
+
 ## The embedding space: the reference library, recomputed
 
 The promoted detector is a registry artifact (`aar_…`) with no download route, and
 the Optimizations and Evals APIs return values, metrics and predictions, not
-embeddings. So the windows the detector was fitted on are recomputed:
+embeddings. So the windows the detector was fitted on are recomputed, and the result
+is **committed**: `static/detector-view.{json,bin}` (about 320 KB) is all the
+embedding view reads, so a clone needs no run for it. It depends only on the
+configuration (window 48, step 8, Omega 1.5, the 40 library runs), not on which fit
+promoted the blueprint. **Rerun it only if your Stage 4 picks a different window or
+step**, or the trail would land in a cloud of different windows:
 
 ```sh
-python3 fit/library_embeddings.py     # once, from the repo root: 40 batch runs, ~8 min
+python3 fit/library_embeddings.py     # only for a different configuration: 40 batch runs, ~8 min
 ```
 
-It runs the 40 library files through the promoted blueprint in **batch**, at the
-trial's step 8 with `output_embeddings: true`: the same windows and encoder as the
-fit, 2,280 of them. PCA 1–2 of their embeddings, whitened, gives the cloud and the
+It runs the 40 library files in **batch** through a package of the app's blueprint
+(above), at the winning step 8 with `output_embeddings: true`: the same windows and
+encoder as the fit, 2,280 of them. PCA 1–2 of their embeddings, whitened, gives the cloud and the
 projection, in `static/detector-view.{json,bin}`. Each live window's embedding from
 the served agent goes through the same projection. The detector's own PCA is fitted
 on these embeddings too, but it can't be read to confirm the axes, so the view is a
@@ -93,7 +130,7 @@ Prerequisites: Node 20+, `brew install mosquitto`, and Stages 4–6 run on Dev o
 (`fit/out/test_state.json` names the promoted blueprint). Then:
 
 ```sh
-python3 fit/library_embeddings.py     # once, from the repo root (writes static/detector-view.*)
+python3 fit/app_blueprint.py          # once, from the repo root: the app's blueprint, embeddings on (~5 min)
 cd app-serving
 npm install
 npm run dev                           # broker + serving bridge + replayer + web
@@ -167,7 +204,7 @@ without a query. Closing the browser tab does not stop it.
    deleted with `DELETE /agents/packages/<pkg_id>`; a package that still has an
    agent answers 409.
 
-`fit/library_embeddings.py`'s 40 batch agents and their bundle hold no serving
+`fit/library_embeddings.py`'s 40 batch agents and their package, if you ran it, hold no serving
 worker; `fit/cleanup.py --yes` deletes them too, with the rest of the platform
 path's agents (see the [repo README](../README.md)), whenever you're done with them.
 

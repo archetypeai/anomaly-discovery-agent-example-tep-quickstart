@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Stage 9, once -- the reference library's embeddings, for app-serving/'s embedding view.
 
+    python3 fit/app_blueprint.py             # first, once: the winning configuration with embeddings on
     python3 fit/library_embeddings.py        # 40 batch runs (~8 min), then the view
 
 The promoted detector was fitted on the library's 40 fault-free runs at the
 trial's window 48 and step 8, but it is a registry artifact (`aar_…`) with no
 download route, so its reference windows can't be read back the way app/ reads
 them from the archived `.safetensors`. They can be recomputed: a bundle on the
-promoted blueprint at its own step with `output_embeddings: true` (still a
-bundle: a package can't turn embeddings on) runs each library file through the
-same encoder, on the same windows, and returns each
+package of fit/app_blueprint.py's blueprint (the winning configuration, refitted
+with `output_embeddings: true`, since a package can't turn embeddings on) runs
+each library file through the same encoder, on the same windows, and returns each
 window's 33 x 768 Omega embedding with its score (2,280 windows in all).
 
 The view is PCA 1-2 of those embeddings, whitened, in the layout app/ already
@@ -35,8 +36,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from atai import REPO, ROLES, load_dotenv, load_state, log, manifest, request, save_state, state_path, upload_all
-from ad_api import CHECKPOINTING_OFF, bundles_url, download_results, poll_agent
+from atai import (REPO, ROLES, agents_base, load_dotenv, load_state, log, manifest, request, save_state,
+                  state_path, upload_all)
+from ad_api import create_package, deployment, download_results, poll_agent
 
 OUT = REPO / "fit" / "out" / "library_embeddings"
 VIEW = REPO / "app-serving" / "static"
@@ -49,14 +51,13 @@ def deliver(m: dict, bp: dict) -> list[Path]:
     STATE = state_path("library")
     state = load_state(STATE)
     save = lambda: save_state(STATE, state)  # noqa: E731
-    if "bundle" not in state:
-        b = request("POST", bundles_url(), body={
-            "blueprint": bp["key"], "name": "AD TEP library embeddings",
-            "values": {"output_score": True, "output_embeddings": True,
-                       "runner_config": CHECKPOINTING_OFF}})
-        state["bundle"] = b["id"]
+    if "bundle" in state or state.get("blueprint", bp["key"]) != bp["key"]:
+        sys.exit(f"{STATE} and fit/out/library_embeddings/ are from an earlier run: move them aside")
+    if "package" not in state:
+        pkg = create_package(bp["id"], "AD TEP library embeddings")
+        state.update(blueprint=bp["key"], package=pkg["id"])
         save()
-        log(f"bundle {b['id']} on {bp['key']} (step {bp['values']['step_size']}, embeddings on)")
+        log(f"package {pkg['id']} on {bp['key']} (step {bp['values']['step_size']}, embeddings on)")
     paths = [ROLES / f["file"] for f in m["library"]]
     ids = upload_all(paths)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -67,8 +68,8 @@ def deliver(m: dict, bp: dict) -> list[Path]:
             return dst
         runs = state.setdefault("agents", {})
         if src.stem not in runs:
-            agent = request("POST", f"{bundles_url(state['bundle'])}/run", body={
-                "connectors": {"source": [{"type": "file", "id": ids[src], "format": "csv"}]}})
+            agent = request("POST", f"{agents_base()}/instances", body={
+                "package_id": state["package"], "connectors": {"source": [{"type": "file", "id": ids[src], "format": "csv"}]}})
             with lock:
                 runs[src.stem] = agent["id"]
                 save()
@@ -92,7 +93,12 @@ def deliver(m: dict, bp: dict) -> list[Path]:
 def main() -> int:
     load_dotenv()
     m = manifest()
-    bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
+    app = load_state(state_path("app_blueprint"))
+    test = load_state(state_path("test"))
+    if not app.get("blueprint") or app.get("source") != test.get("blueprint", {}).get("key") \
+            or deployment(app["endpoint"]) != deployment(agents_base()):
+        sys.exit("no app-serving blueprint for this promoted blueprint and deployment: run fit/app_blueprint.py")
+    bp = app["blueprint"]
     channels, window, step = m["channels"], bp["values"]["window_size"], bp["values"]["step_size"]
     outs = deliver(m, bp)
 

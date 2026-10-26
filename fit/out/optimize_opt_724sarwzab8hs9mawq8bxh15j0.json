@@ -1,7 +1,7 @@
 {
  "optimization": {
-  "id": "opt_37eemevq828xjb4f1aawn2tg23",
-  "name": "ad-tep 20261026T211350Z",
+  "id": "opt_724sarwzab8hs9mawq8bxh15j0",
+  "name": "ad-tep 20261026T213432Z",
   "org_id": "org_4460ne2c1b9bbv8b1e27fhj1m1",
   "project_id": null,
   "blueprint_id": "blp_0z4r73zx0j84pb1zk0r4ra61n9",
@@ -930,10 +930,10 @@
     }
    }
   ],
-  "best_trial_id": "otr_3dxrv2g4bn9y0rd9cda5qp3spq",
+  "best_trial_id": "otr_4j7wbyp9058d7sv5s0an4z7g9t",
   "best_trial": {
-   "id": "otr_3dxrv2g4bn9y0rd9cda5qp3spq",
-   "optimization_id": "opt_37eemevq828xjb4f1aawn2tg23",
+   "id": "otr_4j7wbyp9058d7sv5s0an4z7g9t",
+   "optimization_id": "opt_724sarwzab8hs9mawq8bxh15j0",
    "trial_number": 2,
    "trial_values": {
     "models": {},
@@ -1067,8 +1067,8 @@
    "objective_value": 0.854715956717214,
    "feasible": true,
    "status": "completed",
-   "created_at": "2026-10-26T21:13:51.304233Z",
-   "completed_at": "2026-10-26T21:19:56.901042Z"
+   "created_at": "2026-10-26T21:34:33.100568Z",
+   "completed_at": "2026-10-26T21:40:04.778761Z"
   },
   "status": "completed",
   "progress": {
@@ -1081,14 +1081,14 @@
    "unjudged": 0
   },
   "created_by": "usr_4805ybgs8j9m6av1rg4q2fv3kn",
-  "created_at": "2026-10-26T21:13:51.304233Z",
-  "started_at": "2026-10-26T21:13:51.346514Z",
-  "completed_at": "2026-10-26T21:20:00.568365Z"
+  "created_at": "2026-10-26T21:34:33.100568Z",
+  "started_at": "2026-10-26T21:34:33.142855Z",
+  "completed_at": "2026-10-26T21:40:08.287711Z"
  },
  "trials": [
   {
-   "id": "otr_3dxrv2g4bn9y0rd9cda5qp3spq",
-   "optimization_id": "opt_37eemevq828xjb4f1aawn2tg23",
+   "id": "otr_4j7wbyp9058d7sv5s0an4z7g9t",
+   "optimization_id": "opt_724sarwzab8hs9mawq8bxh15j0",
    "trial_number": 2,
    "trial_values": {
     "models": {},
@@ -1222,12 +1222,12 @@
    "objective_value": 0.854715956717214,
    "feasible": true,
    "status": "completed",
-   "created_at": "2026-10-26T21:13:51.304233Z",
-   "completed_at": "2026-10-26T21:19:56.901042Z"
+   "created_at": "2026-10-26T21:34:33.100568Z",
+   "completed_at": "2026-10-26T21:40:04.778761Z"
   },
   {
-   "id": "otr_3q2nw6gzk09pg920pbmsa4cqbg",
-   "optimization_id": "opt_37eemevq828xjb4f1aawn2tg23",
+   "id": "otr_11p71csnjs90zs8bmf3cpmwwa7",
+   "optimization_id": "opt_724sarwzab8hs9mawq8bxh15j0",
    "trial_number": 1,
    "trial_values": {
     "models": {},
@@ -1361,8 +1361,8 @@
    "objective_value": 0.8540102708865408,
    "feasible": true,
    "status": "completed",
-   "created_at": "2026-10-26T21:13:51.304233Z",
-   "completed_at": "2026-10-26T21:18:17.309191Z"
+   "created_at": "2026-10-26T21:34:33.100568Z",
+   "completed_at": "2026-10-26T21:38:27.263780Z"
   }
  ]
 }

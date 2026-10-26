@@ -7,8 +7,10 @@ changing on Dev**: re-check the calls below before relying on them.
 
 ## Summary
 
-- **Everything that ran on bundles runs on packages**, except one output switch
-  (`output_embeddings`), which only the app's embedding view needs.
+- **Everything that ran on bundles runs on packages.** The one output switch a
+  package can't set, `output_embeddings` (only the app's embedding view needs it),
+  takes a stop-gap: a second, 1-trial optimization of the winning configuration
+  with embeddings on, promoted as the app's own blueprint.
 - **A package runs the promoted blueprint exactly as promoted.** There are no
   per-run overrides. That forced one real decision: use the optimized
   configuration, `step_size` included, in every stage.
@@ -32,6 +34,17 @@ changing on Dev**: re-check the calls below before relying on them.
 
 Stages 4 and 5 (Optimizations, promote, Evals) touch neither, and didn't change.
 
+**What a user can set after promote** (Dev, 2026-10-26):
+
+| | Settable | Not settable |
+|---|---|---|
+| Package | `blueprint_ids` (exactly one: two returned 400 "may name at most 1"); `target.kind` = `platform` (`edge` returned 501 "not supported yet"); `name`, `description` | `values` and unknown fields: silently dropped |
+| Instance | `package_id`; `mode` (`serving`, or omitted for batch); `connectors` (batch input files; none in serving) | `name` (the instance takes the package's name); `values`: silently dropped |
+
+Everything that affects behaviour (window, step, threshold, k, features, PCA,
+outputs) is fixed in the blueprint at promote time. The package adds the pinned
+model versions; the instance adds only the data source and the mode.
+
 ## 2. What changed in the example
 
 There are three separate effects. They are easy to confuse:
@@ -49,8 +62,15 @@ There are three separate effects. They are easy to confuse:
 | 4 optimize, 5 promote + eval | step 8 | step 8 (unchanged) |
 | 6 deliver | step 1, bundle override, ~15 min | step 8, package, 3–9 min |
 | 8 serve | a query per sample, bundle, ~25 min | a query per 8 samples, package, ~3 min |
-| 9 app | step 4 or 1, bundle, embeddings on | step 8, package, embeddings off |
-| 9 library embeddings | step 8, bundle | step 8, **still a bundle** (needs `output_embeddings`) |
+| 9 app | step 4 or 1, bundle, embeddings on | step 8, package of the app's blueprint, embeddings on |
+| 9 library embeddings | step 8, bundle | step 8, package of the app's blueprint |
+
+Stages 4–8 keep `output_embeddings: false`: on, every delivery file would grow from
+about 100 KB to hundreds of MB. `fit/app_blueprint.py` runs a 1-trial optimization
+that pins every winning value plus `output_embeddings: true` and promotes it; on
+Dev its trial scored the same validation macro-F1 as Stage 5's winner (0.8547,
+recall 0.7805, precision 0.9886). A blueprint copy (`POST /blueprints`) also works
+on Dev, but needs the admin role on Staging and loses the link to the trial.
 
 ## 3. Results on Dev (2026-10-26)
 
@@ -129,8 +149,9 @@ quickstart sends a window every 8 samples, the cadence its numbers describe.
    from bundles keeps passing `step_size: 1` and gets step-8 output with no
    warning. This should be a 400.
 2. **Output switches are tied to the configuration.** `output_embeddings` isn't a
-   modelling choice, but a package can't turn it on, so the app's embedding
-   view and its reference cloud still need a bundle.
+   modelling choice, but a package can't turn it on, so the app needs a blueprint
+   of its own: a second optimization (about 5 minutes) and a second fitted
+   detector, just to switch an output on.
 3. **Query-based serving doesn't enforce the configuration.** See section 4.
    The client has to rebuild the window node (buffer, `window_size`,
    `step_size`), and nothing tells it the step.

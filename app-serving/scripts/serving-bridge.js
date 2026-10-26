@@ -34,9 +34,11 @@
  *   waiting, running, replacing, stopped. An MQTT will clears a stale
  *   "running" if this process dies without saying so.
  * - A PACKAGE, NOT A BUNDLE (Agent Lifecycle 2.0). A package carries no values,
- *   so the agent runs the blueprint as promoted. Step is the bridge's own (one
- *   window per query), but `output_embeddings` stays as promoted (false), so
- *   the page's live embedding trail stays empty.
+ *   so the agent runs a blueprint exactly as promoted. Stage 5's blueprint has
+ *   `output_embeddings: false`; fit/app_blueprint.py promotes the same
+ *   configuration with embeddings on, and the bridge serves that one when it
+ *   exists, so the page's embedding view gets its live trail. Without it the
+ *   bridge serves Stage 5's blueprint and the trail stays empty.
  *
  * Env (repo .env): ATAI_API_ENDPOINT (dev or staging), ATAI_API_KEY.
  * Env (app-serving/.env): MQTT_PORT, AGENT_PORT.
@@ -91,8 +93,16 @@ if (test.endpoint && deployment(test.endpoint) !== deployment(ENDPOINT)) {
 	);
 	process.exit(1);
 }
-const PROMOTED = test.blueprint.key;
-const PROMOTED_ID = test.blueprint.id;
+/** fit/app_blueprint.py's blueprint, if it was made from this promoted blueprint on this deployment. */
+const app = readJson(path.join(REPO, 'fit', 'out', 'app_blueprint_state.json'));
+const served =
+	app?.blueprint && app.source === test.blueprint.key && deployment(app.endpoint) === deployment(ENDPOINT)
+		? app.blueprint
+		: test.blueprint;
+if (served === test.blueprint)
+	console.warn('bridge: no fit/out/app_blueprint_state.json for this blueprint: serving it without embeddings (run python3 fit/app_blueprint.py for the trail)');
+const PROMOTED = served.key;
+const PROMOTED_ID = served.id;
 const CHANNELS = test.blueprint.values.data_columns;
 const WINDOW = test.blueprint.values.window_size;
 const step = Number(test.blueprint.values.step_size ?? 8);
