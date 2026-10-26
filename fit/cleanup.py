@@ -14,7 +14,7 @@ What it deletes, from the ids the stages recorded in fit/out/:
             cancelled or idle 20 min. And the bundle of
             fit/library_embeddings.py (library_state.json; it deletes its own
             agents as it goes, and the embeddings are already on disk).
-  Stage 6   the delivery agents and their bundle (deliver_state.json). Their
+  Stage 6   the delivery agents and their package (deliver_state.json). Their
             outputs are already in eval_out/delivery/.
 
 Agents go first (a bundle or package that still has an agent can't be deleted), a running one is
@@ -26,7 +26,7 @@ cites. A served copy (`<key>-served-records`) is deleted too if an earlier
 version of fit/serve.py or the bridge made one; they serve the promoted
 blueprint itself now.
 After a cleanup, rerunning fit/deliver.py needs fit/out/deliver_state.json moved
-aside, since its bundle is gone.
+aside, since its package is gone.
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ import argparse
 import sys
 
 from atai import agents_base, load_dotenv, load_state, log, request, save_state, state_path
-from ad_api import list_bundle_runs, list_package_runs
+from ad_api import list_package_runs
 
 
 def call(method: str, path: str, body=None):
@@ -74,12 +74,12 @@ def main() -> int:
     if library.get("bundle"):
         targets += [("Stage 9", "instances", a) for a in sorted(set(library.get("agents", {}).values()))]
         targets += [("Stage 9", "bundles", library["bundle"])]
-    if deliver.get("bundle"):
-        # the state holds each file's last attempt; the bundle's listing also finds replaced ones
+    if deliver.get("package"):
+        # the state holds each file's last attempt; the package's listing also finds replaced ones
         agents = set(deliver.get("agents", {}).values())
-        agents |= {r["id"] for r in list_bundle_runs(deliver["bundle"])}
+        agents |= {r["id"] for r in list_package_runs(deliver["package"])}
         targets += [("Stage 6", "instances", a) for a in sorted(agents)]
-        targets += [("Stage 6", "bundles", deliver["bundle"])]
+        targets += [("Stage 6", "packages", deliver["package"])]
 
     done_path = state_path("cleanup")
     done = load_state(done_path)

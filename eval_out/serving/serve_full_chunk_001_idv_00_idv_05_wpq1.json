@@ -1,40 +1,40 @@
 {
  "blueprint": "ad-tep-qs-otr_10jmfqnatn8q3vc8rh9d4e03a2",
- "served_blueprint": "ad-tep-qs-otr_10jmfqnatn8q3vc8rh9d4e03a2-served-records",
  "file": "full_chunk_001",
+ "step_size": 8,
  "runs": [
   {
    "fault_id": "idv_00",
    "sim": 96,
-   "windows": 913,
+   "windows": 115,
    "first_alarm_h": {
-    "served": 12.3,
-    "batch": 12.3
+    "served": null,
+    "batch": null
    },
    "onset_h": null
   },
   {
    "fault_id": "idv_05",
    "sim": 26,
-   "windows": 913,
+   "windows": 115,
    "first_alarm_h": {
-    "served": 8.2,
-    "batch": 8.2
+    "served": 9.2,
+    "batch": 9.2
    },
    "onset_h": 8.0
   }
  ],
- "windows": 1826,
+ "windows": 230,
  "windows_per_query": 1,
- "queries": 1826,
- "same_label": 1826,
- "same_score": 1825,
- "max_score_rel_diff": 0.020229050187152042,
+ "queries": 230,
+ "same_label": 230,
+ "same_score": 230,
+ "max_score_rel_diff": 1.637808889431991e-05,
  "invalid": 0,
  "latency_ms": {
-  "median": 813,
-  "p95": 977,
-  "max": 1168
+  "median": 797,
+  "p95": 888,
+  "max": 943
  },
- "replay_seconds": 1524.3
+ "replay_seconds": 192.5
 }

@@ -10,8 +10,9 @@
  * agent is scripts/serving-bridge.js, which implements the edge runtime's admin
  * API (/status, /reset, /start) on :9100, so the replay logic below is app/'s.
  * What differs: the ports, the detector's facts (read from fit/test.py's
- * promoted blueprint, not Stage 5's fit record), a `step` the viewer can switch
- * between 4 and 1, and pacing that counts the windows a block really completes.
+ * promoted blueprint, not Stage 5's fit record), the blueprint's own step (8,
+ * the step Optimize chose, used throughout), and pacing that counts the windows
+ * a block really completes.
  *
  * Topics
  *   sensors/tep    replayer -> agent   key=value, `timestamp=<ms>,xmeas_1=<f>,...`
@@ -39,7 +40,7 @@
  *
  * WHY IT WAITS FOR THE AGENT. At 33 channels the encoder scores ~2.6
  * windows/s on the CPU backend (app/README.md has the measurements), so about
- * 10 samples/s at step 4. Publishing faster just grows a queue inside the
+ * 20 samples/s at step 8. Publishing faster just grows a queue inside the
  * broker: the run would look fast while the scores arrived a minute behind the
  * trace. The replayer publishes a block and waits for its windows to come back
  * (or `--block-timeout` elapses), which self-paces to whatever the host can do.
@@ -168,8 +169,8 @@ if (!REGISTRY.length) {
  * Read rather than hardcoded. The panel that shows these is proof-of-life for a
  * room that wants to know the agent is real, and a hand-typed "LOF k=20" beside
  * a detector fitted at k=5 is worse than showing nothing. The fitted values come
- * from Stage 5's record; `step_size` is the one thing the blueprint overrides at
- * inference time, so it is read from the blueprint instead.
+ * from Stage 5's record, and the stride is the blueprint's own `step_size`:
+ * the example uses the optimized step throughout.
  */
 function agentConfig() {
 	const out = { encoder: 'Omega 1.5', serving: true };
@@ -182,7 +183,7 @@ function agentConfig() {
 		out.fittedStep = v.step_size;
 		out.detector = `kNN k=${v.n_neighbors} ${v.metric} · PCA ${v.pca_components}`;
 	} catch { /* the demo runs without it; the panel just shows fewer facts */ }
-	out.stepSize = Number(process.env.STEP ?? args.step ?? 4);
+	out.stepSize = Number(out.fittedStep ?? 8);
 	return out;
 }
 const AGENT_CONFIG = agentConfig();
@@ -525,15 +526,6 @@ client.on('message', async (topic, payload) => {
 		case 'reveal':
 			state.revealed = true;
 			break;
-		// Settings: 4 (watchable, the default) or 1 (every window the platform scores).
-		case 'step': {
-			const v = Number(msg.value);
-			if (v === 1 || v === 4) {
-				AGENT_CONFIG.stepSize = v;
-				console.log(`replayer: step ${v}`);
-			}
-			break;
-		}
 		default:
 			return;
 	}

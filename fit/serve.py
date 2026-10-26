@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Stage 8 -- serve: the promoted detector answering over /query, checked against Stage 6.
 
-    python3 fit/serve.py                          # delivery file 1's fault-free run and IDV 5 (~25 min)
+    python3 fit/serve.py                          # delivery file 1's fault-free run and IDV 5 (~3 min)
     python3 fit/serve.py --faults idv_01 idv_19   # other runs of the file
     python3 fit/serve.py --file full_chunk_002    # another delivery file
-    python3 fit/serve.py --faults all             # all 21 runs of the file (~4 h)
+    python3 fit/serve.py --faults all             # all 21 runs of the file (~30 min)
 
 Stage 6 delivered the detector in batch: an agent run per file, the output read
 when the run is done. Serving keeps an agent loaded and answers a window in one
-round trip, as a plant historian would ask it every 3 minutes for the latest
-48 samples. This replays delivery runs that way and checks every answer against
+round trip, as a plant historian would ask it every 24 minutes (8 samples) for
+the latest 48 samples. This replays delivery runs that way and checks every answer against
 Stage 6's batch output for the same window:
 
   1. a package of fit/test.py's promoted blueprint, as it is (Agent Lifecycle
@@ -17,10 +17,9 @@ Stage 6's batch output for the same window:
      no values, so the agent runs at the blueprint's own step; the platform
      supplies the serving connectors, so no served copy is made (atai_core #7286);
   2. an instance of that package in serving mode;
-  3. each run replayed one sample at a time: every query holds exactly the
-     latest `window_size` samples, so it is answered with one window whatever
-     the blueprint's step (`--windows-per-query N` sends N windows at once,
-     which needs a blueprint promoted at step 1);
+  3. each run replayed at the blueprint's step, the one Optimize chose and
+     Stage 6 delivered at: a query every `step_size` samples holding the latest
+     `window_size` (`--windows-per-query N` sends N windows at once);
   4. every answer against Stage 6: `predicted_label`, and `anomaly_score` to
      within 1e-4 relative (served and batch differ by ~1e-5, float32 noise);
      the first sustained alarm (3 consecutive anomaly windows) of each run,
@@ -87,26 +86,28 @@ def main() -> int:
                  "(e.g. https://platform.dev.u1.archetypeai.app, https://platform.stage.u1.archetypeai.app)")
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
     channels, window = bp["values"]["data_columns"], bp["values"]["window_size"]
-    step = int(bp["values"].get("step_size", 1))
-    if args.windows_per_query > 1 and step != 1:
-        # a package can't override step_size: N windows in one query come back as ceil(N / step)
-        sys.exit(f"--windows-per-query needs a blueprint at step 1; {bp['key']} is at step {step}")
+    step = int(bp["values"]["step_size"])
     data = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}.csv")
     labels = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}_labels.csv")
     batch = pd.read_csv(REPO / "eval_out" / "delivery" / f"ad-output-{args.file}.csv")
-    if len(batch) != len(data) - window + 1:
-        sys.exit(f"{args.file}: Stage 6's output has {len(batch)} windows, expected {len(data) - window + 1}")
+    if len(batch) != (len(data) - window) // step + 1:
+        sys.exit(f"{args.file}: Stage 6's output has {len(batch)} windows, "
+                 f"expected {(len(data) - window) // step + 1} at step {step}")
 
-    runs = []                                   # (fault id, sim, first row, windows to replay)
+    # Batch windows start at rows 0, step, 2*step, ... of the file; a run replays the ones inside it.
+    runs = []                                   # (fault id, sim, run's first row, first window's row, windows)
     for (fault, sim), rows in labels.groupby(["fault_id", "simulationrun"], sort=False):
         if args.faults == ["all"] or fault in args.faults:
-            n = len(rows) - window + 1
-            runs.append((fault, int(sim), rows.index[0], min(n, args.max_windows or n)))
+            start, end = rows.index[0], rows.index[-1] + 1
+            lo = -(-start // step) * step
+            n = max(0, (end - window - lo) // step + 1)
+            runs.append((fault, int(sim), start, lo, min(n, args.max_windows or n)))
     if not runs:
         sys.exit(f"none of {args.faults} in {args.file}")
     wpq = max(1, min(args.windows_per_query, 16))
     X = data[channels].to_numpy(dtype=float)
-    log(f"{args.file}: {len(runs)} run(s), {sum(r[3] for r in runs):,} windows, {wpq} per query; model {bp['key']}")
+    log(f"{args.file}: {len(runs)} run(s), {sum(r[4] for r in runs):,} windows at step {step}, "
+        f"{wpq} per query; model {bp['key']}")
 
     live = state_path("serve")
     state = load_state(live)
@@ -126,12 +127,12 @@ def main() -> int:
             if status in ("failed", "completed", "cancelled", "canceled") or time.time() - t_start > 600:
                 sys.exit(f"agent {agent} is {status}, not running")
             time.sleep(3)
-        for fault, sim, first, n in runs:
+        for fault, sim, _, first, n in runs:
             got = served[(fault, sim)] = []
             for k in range(0, n, wpq):
                 count = min(wpq, n - k)
-                lo = first + k
-                chunk = X[lo:lo + window + count - 1]
+                lo = first + k * step
+                chunk = X[lo:lo + window + (count - 1) * step]
                 body = {"model": MODEL, "query": "", "events": [{"type": "data.numeric_array",
                         "event_data": {"contents": [chunk[:, c].tolist() for c in range(len(channels))]}}]}
                 t = time.time()
@@ -152,11 +153,12 @@ def main() -> int:
     elapsed = time.time() - t_start
 
     rows, per_run = [], []
-    for fault, sim, first, n in runs:
-        ref = batch.iloc[first:first + n]
+    for fault, sim, start, first, n in runs:
+        ref = batch.iloc[first // step:first // step + n]
+        offset = first - start                  # the run's first window starts this many rows in
         got = served[(fault, sim)]
         for k, (s, (_, b)) in enumerate(zip(got, ref.iterrows())):
-            rows.append({"fault_id": fault, "sim": sim, "window": k, "end_sample": k + window,
+            rows.append({"fault_id": fault, "sim": sim, "window": k, "end_sample": offset + k * step + window,
                          "batch_label": b.predicted_label, "served_label": s["predicted_label"],
                          "batch_score": b.anomaly_score, "served_score": s["anomaly_score"],
                          "served_invalid": s["invalid"],
@@ -165,8 +167,8 @@ def main() -> int:
         alarms = {}
         for who, labs in (("served", [s["predicted_label"] for s in got]), ("batch", ref.predicted_label.tolist())):
             i = first_alarm(labs)
-            # window i ends on sample i + window: hours into the run
-            alarms[who] = None if i is None else round((i + window) * SAMPLE_H, 2)
+            # window i ends on sample offset + i * step + window: hours into the run
+            alarms[who] = None if i is None else round((offset + i * step + window) * SAMPLE_H, 2)
         per_run.append({"fault_id": fault, "sim": sim, "windows": n, "first_alarm_h": alarms,
                         "onset_h": None if fault == "idv_00" else ONSET * SAMPLE_H})
 
@@ -176,7 +178,7 @@ def main() -> int:
     stem = OUT / f"serve_{args.file}_{label}_wpq{wpq}"
     df.to_csv(stem.with_suffix(".csv"), index=False)
     ms = sorted(x * 1000 for x in latency)
-    summary = {"blueprint": bp["key"], "file": args.file, "runs": per_run,
+    summary = {"blueprint": bp["key"], "file": args.file, "step_size": step, "runs": per_run,
                "windows": len(df), "windows_per_query": wpq, "queries": len(latency),
                "same_label": int(df.same_label.sum()), "same_score": int(df.same_score.sum()),
                "max_score_rel_diff": float((df.served_score.astype(float) / df.batch_score - 1).abs().max()),

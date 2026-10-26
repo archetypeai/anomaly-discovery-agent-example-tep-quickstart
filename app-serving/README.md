@@ -28,14 +28,14 @@ checked against Stage 6's batch output.
 │ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ serving agent (Dev)      │
 │ waits for each block's    │  admin :9100    │ one query per window         │  the latest 48  │ promoted detector,       │
 │ windows before the next   │                 │                              │  samples        │ atai-records,            │
-└───────────────────────────┘                 └──────────────────────────────┘◀────────────────│ embeddings on            │
+└───────────────────────────┘                 └──────────────────────────────┘◀────────────────│ embeddings off           │
   pub │ sensors/tep (z-scored)                   sub ▲ sensors/tep   │ pub        one record   └──────────────────────────┘
   pub │ tep/raw, tep/status (eng. units)         sub ▲ tep/status    │ ad/results (score, label,
-  sub ▲ tep/control, ad/results (pacing)             │ (the Pace)    ▼ 33 × 768 embedding)
+  sub ▲ tep/control, ad/results (pacing)             │ (the step)    ▼ invalid; no embeddings)
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                     mosquitto · TCP :1890 · WebSockets :9008                        │
 └─────────────────────────────────────────────────────────────────────────────────────┘
-               sub ▼ tep/raw, tep/status, ad/results, ad/agent   pub ▲ tep/control (play, pause, run, restart, reveal, Pace)
+               sub ▼ tep/raw, tep/status, ad/results, ad/agent   pub ▲ tep/control (play, pause, run, restart, reveal)
                      web app (SvelteKit, :5180, mqtt.js over ws): flowsheet · 33 tags · score · embedding space · detections
 ```
 
@@ -104,17 +104,12 @@ When you're done, stop it and check it cleaned up: [Stop and clean up](#stop-and
 
 ### Pace
 
-The platform answers a window in under a second with embeddings on, so the replay is
-paced by the platform: the replayer publishes a block of samples and waits for its
-windows. Settings → Pace chooses how many windows to ask about:
-
-| | windows per run | a run takes | a detection (3 windows over the line) spans |
-|---|---:|---|---|
-| **every 4th sample** (default) | 229 | ~3–4 min | 36 min of process time; alarm times approximate |
-| every sample (exact) | 913 | ~15 min | 9 min; alarms match Stage 6's delivery to the sample |
-
-A window scores the same either way; the step only decides which windows are asked
-about.
+The platform answers a window in under a second, so the replay is paced by the
+platform: the replayer publishes a block of samples and waits for its windows.
+It asks about a window every 8 samples, the step Stage 4's optimization chose and
+every stage uses (read from `fit/out/test_state.json`, not set here): about 115
+windows and 2 minutes a run, with the same windows, scores and alarms as Stage 6's
+delivery. A detection (3 windows over the line) spans 48 minutes of process time.
 
 ## Stop and clean up
 
@@ -190,10 +185,10 @@ The same slot as the full example's `app-serving/`, so run one of the two at a t
 |---|---|
 | `scripts/common.js` | the repo and the two `.env` files, shared by the bridge and the replayer |
 | `scripts/serving-bridge.js` | the agent's local end: broker ↔ serving agent on the platform, and the admin API the replayer calls |
-| `scripts/replayer.js` | replays Stage 6's delivery runs one at a time, paced by the agent, with the step switch |
+| `scripts/replayer.js` | replays Stage 6's delivery runs one at a time, paced by the agent, at the blueprint's step |
 | `scripts/run-broker.sh`, `scripts/stop.sh`, `mosquitto/` | the broker on 1890 / 9008, and stopping everything (matched by `--app=tep-serving`, so other demos are left alone) |
 | `static/detector-view.{json,bin}` | the recomputed reference cloud and projection, from `fit/library_embeddings.py` |
-| `src/` | the SvelteKit workbench on the Archetype AI design system (0.19: the labs Menubar, Pane captions in its `Label`, segmented Tabs, Table, Progress), with the Pace switch in Settings |
+| `src/` | the SvelteKit workbench on the Archetype AI design system (0.19: the labs Menubar, Pane captions in its `Label`, segmented Tabs, Table, Progress) |
 | `CLAUDE.md`, `ds-manifest.json` | the design system's rules and component catalogue for a coding agent, from `npx @archetypeai/ds-cli add ds-config-codeagent --claude` |
 
 ## Licence and data

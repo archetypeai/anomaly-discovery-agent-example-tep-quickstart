@@ -14,7 +14,7 @@
  *   .env and is the only thing that talks to the platform.
  * - A QUERY CARRIES THE WHOLE WINDOW. A served agent keeps nothing between
  *   queries (fit/serve.py, Stage 8), so the bridge keeps the buffer and sends the latest
- *   `window_size` samples every `step` samples.
+ *   `window_size` samples every `step_size` samples, the blueprint's own step.
  * - THE SAME MESSAGE AS THE EDGE RUNTIME. `ad/results` gets the record the
  *   agent answered (anomaly_score, predicted_label, invalid, embedding_<tag>),
  *   with the window's timestamps put back: the served agent numbers samples
@@ -39,7 +39,7 @@
  *   the page's live embedding trail stays empty.
  *
  * Env (repo .env): ATAI_API_ENDPOINT (dev or staging), ATAI_API_KEY.
- * Env (app-serving/.env): MQTT_PORT, AGENT_PORT, STEP.
+ * Env (app-serving/.env): MQTT_PORT, AGENT_PORT.
  */
 import mqtt from 'mqtt';
 import fs from 'node:fs';
@@ -95,7 +95,7 @@ const PROMOTED = test.blueprint.key;
 const PROMOTED_ID = test.blueprint.id;
 const CHANNELS = test.blueprint.values.data_columns;
 const WINDOW = test.blueprint.values.window_size;
-let step = Number(process.env.STEP ?? 4);
+const step = Number(test.blueprint.values.step_size ?? 8);
 
 // ------------------------------------------------------------------ the platform
 
@@ -319,16 +319,6 @@ client.on('connect', () => {
 });
 client.on('message', (topic, payload) => {
 	if (topic === 'sensors/tep') return onSample(payload);
-	// The replayer says which stride the viewer chose (Settings).
-	try {
-		const s = JSON.parse(payload.toString());
-		const want = Number(s.agent?.stepSize);
-		if (Number.isFinite(want) && want > 0 && want !== step) {
-			step = want;
-			console.log(`bridge: step ${step}`);
-			announce(live.phase);
-		}
-	} catch { /* not ours to parse */ }
 });
 client.on('error', (e) => console.error('bridge mqtt error:', e.message));
 

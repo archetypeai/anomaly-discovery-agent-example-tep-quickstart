@@ -2,8 +2,9 @@
 
 ## TL;DR
 
-- **What:** an agent that watches a chemical plant's 33 process variables, every
-  3 minutes, and scores how far the process has moved from normal. It is fitted
+- **What:** an agent that watches a chemical plant's 33 process variables,
+  sampled every 3 minutes, and every 24 minutes scores how far the process has
+  moved from normal over the last 2.4 hours. It is fitted
   on **normal operation only**: no fault is labelled, collected or shown to it
   before deployment. Each window is embedded with frozen Omega 1.5, fused with
   per-channel statistics, and scored by a Local Outlier Factor detector.
@@ -23,13 +24,19 @@
 | 2–3 | build the files the platform receives, and check them | ~1 s |
 | 4 | **Optimize:** fit on the normal runs, score 2 settings on validation | 6 min |
 | 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
-| 6 | **deliver:** a bundle from that blueprint, run over the delivery files | 15 min |
+| 6 | **deliver:** a package of that blueprint, run over the delivery files | 9 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
-| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~25 min |
+| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~3 min |
 | 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~8 min once, then ~4 min a run |
 
-  About **30 minutes** end to end, 24 of them on the platform. Platform times
-  vary with load.
+  About **30 minutes** end to end, 21 of them on the platform. Platform times
+  vary with load. Stages 6 and 8 were measured on Dev on 2026-10-26.
+
+- **One configuration throughout.** Stage 4's optimization chooses the
+  configuration, and every later stage runs exactly what it chose, step
+  included: the eval, the delivery, serving and the app all score a window every
+  8 samples (24 minutes). Agent Lifecycle 2.0 packages run a promoted blueprint as
+  it is, with no per-run overrides; see [PACKAGES.md](PACKAGES.md).
 
 - **Skip the 1.4 GB download:** Stage 1's prepared files and the role files are
   in the repo, in Git LFS. See [Shortcuts](#shortcuts-skip-the-download).
@@ -225,7 +232,10 @@ python3 fit/optimize.py
 3. **Search space:** two settings, window 48, step 8, L2, PCA 16, threshold
    1.215, features `std,range,slope,median`, with **k = 5** and **k = 10**. That is
    the winner of the full example's 24-trial search, where k was 10. A space with
-   fewer points than the budget runs every point.
+   fewer points than the budget runs every point. The step chosen here is the
+   step every later stage uses: window 48 at step 8 means a score every 24
+   minutes, from the eval to the app. Choosing among steps (and windows) is the
+   full example's broader search.
 
 **Expect:** `uploading 42 of 42 files (16 MB)`, `2 trial(s), searching
 ['n_neighbors']`, then the ranking. Ours:
@@ -281,14 +291,15 @@ ones across a gap between runs.
 python3 fit/deliver.py
 ```
 
-1. **Bundle:** create a bundle from Stage 5's blueprint. It adds only
-   `step_size: 1`, so every 3-minute sample gets a score (a bundle's values
-   override its blueprint's), plus scores in the output and checkpointing off.
-2. **Run** it over `data/roles/delivery/`: the 4 delivery files and `val_normal`,
-   all five at once, each uploaded without labels.
+1. **Package:** package Stage 5's blueprint as it is (`POST /api/agents/packages`).
+   It runs at the optimized step 8, a score every 24 minutes, the same windows
+   Stage 5's eval scored; the blueprint already writes scores into the output.
+2. **Run** an instance of it (`POST /api/agents/instances`) over each of
+   `data/roles/delivery/`'s files: the 4 delivery files and `val_normal`, all
+   five at once, each uploaded without labels.
 3. **Download** each output, checking it covers its input in full.
 
-**Expect:** `bundle bnd_… on ad-tep-qs-otr_…`, five `agent agt_…` lines, five
+**Expect:** `package pkg_… (ready) on ad-tep-qs-otr_…`, five `agent agt_…` lines, five
 `verified: output covers the full input (100.0%)`, then `5 outputs in
 eval_out/delivery`. **Writes:** `eval_out/delivery/ad-output-*.csv` and
 `fit/out/deliver_state.json`.
@@ -300,35 +311,42 @@ python3 fit/score_delivery.py
 ```
 
 - **Pairing:** each window is paired with the held-back label of its last row;
-  windows the platform marked invalid (940 per file, as Stage 1c predicted) are
-  left out.
+  windows the platform marked invalid (100 per file at step 8, the windows that
+  span two runs) are left out.
 - **Two thresholds:** the trial's own (1.215, what the agent's labels used) and
   one set to a **1% false-alarm rate on `val_normal`**'s scores, the convention
   TEP papers use.
 - **Reported, per fault type:** detection rate (share of post-onset windows over
-  the threshold), runs detected (3 consecutive windows over it, so one spike does
-  not count), delay to that detection, and AUROC; overall, the false-alarm rate on
-  normal windows.
+  the threshold), runs detected (3 consecutive windows over it, 48 minutes apart
+  end to end at step 8, so one spike does not count), delay to the first of those
+  windows, and AUROC; overall, the false-alarm rate on normal windows.
 
 **Expect** (ours), at the 1%-false-alarm threshold:
 
 ```
-val_normal: 9,130 windows, 423 invalid; FAR at threshold 1.215 = 1.34%; threshold for 1% FAR = 1.223
-=== AD agent — calibrated threshold 1.223, sustain 3 ===
-  idv_01 step  A/C feed ratio              99.2       4/4     0.32  0.997
+ad-output-val_normal.csv: 1,150 windows, 45 invalid; FAR at threshold 1.215 = 1.48%; threshold for 1% FAR = 1.219
+=== AD agent — calibrated threshold 1.219, sustain 3 ===
+  idv_01 step  A/C feed ratio              99.8       4/4     0.00  1.000
   …
-  false-alarm rate on normal windows: 1.41%  (179 / 12,692)
-  mean detection rate: 78.0%  (excl. 3/9/15: 91.5%)   sims detected: 71/80   macro AUROC: 0.901
+  false-alarm rate on normal windows: 2.11%  (35 / 1,660)
+  mean detection rate: 78.5%  (excl. 3/9/15: 92.0%)   sims detected: 70/80   macro AUROC: 0.903
 ```
 
 - **Every detectable fault type is caught in all 4 of its runs**, 17 of 17. IDV 3,
   9 and 15 are the misses (1–2% of windows, near-chance AUROC); a "detection" there
   is a false alarm that happens to fall after onset.
-- **Step faults are caught within minutes** (IDV 4, 6, 7 at 0.00 h, IDV 1 at
-  0.3 h); the slow ones take hours (IDV 13's drift 2.3 h, IDV 10 and 16 about 5 h).
-- **The delivery reads like the test:** 78.0% mean window detection in both.
-- **False alarms:** 1.41% on the delivery's normal windows, against the 1% the
-  threshold was set to on `val_normal`.
+- **Step faults are caught at the first window after onset** (IDV 1, 4, 5, 6, 7
+  and 14 at 0.00 h; delays are counted in 24-minute steps). The slow ones take
+  hours (IDV 13's drift 2.2 h, IDV 10 7.6 h, IDV 16 9.2 h).
+- **The delivery reads like the test:** 78.5% mean window detection, against
+  78.0% on the test.
+- **False alarms:** 2.11% on the delivery's normal windows (35 of 1,660), against
+  the 1% the threshold was set to on `val_normal`. At step 8 there are 8 times
+  fewer normal windows to set and check it on, so both numbers are coarser.
+- **Against a step-1 delivery** (one score every 3 minutes, which `main` makes with
+  a bundle override): the same label in every shared window and the same
+  detection rate and AUROC within 0.5 points; slow faults' delays read up to a
+  few hours longer, because each is timed in 24-minute steps.
 
 **Writes:** `eval_out/delivery/evaluation.json`.
 
@@ -337,29 +355,28 @@ val_normal: 9,130 windows, 423 invalid; FAR at threshold 1.215 = 1.34%; threshol
 ```sh
 python3 fit/serve.py                          # delivery file 1's fault-free run and IDV 5
 python3 fit/serve.py --faults idv_01 idv_19   # other runs of the file; --file full_chunk_002 for another file
-python3 fit/serve.py --windows-per-query 16   # up to 16 windows per query
+python3 fit/serve.py --windows-per-query 16   # up to 16 consecutive windows per query
 ```
 
 Stage 6 delivers in batch: upload a file, run an agent over it, download the output
 when the run is done. **Agent serving** keeps an agent loaded and answers a window
 of samples in one round trip, with no upload, queue or polling: what a plant
-historian would call every 3 minutes with the latest 48 samples. It is on Dev and
+historian would call every 24 minutes (8 samples) with the latest 48 samples. It is on Dev and
 Staging only, for first internal tests; Dev has 3 serving workers for everyone. The
 [agent-serving example](https://github.com/archetypeai/agent-serving-example) has the
 calls and their limits.
 
 1. **A package of Stage 5's blueprint, as it is** (`POST /api/agents/packages`):
    the same detector, encoder and values. Packages are Agent Lifecycle 2.0's
-   replacement for bundles, and need no admin role. A package carries no values,
-   so the agent runs at the blueprint's own step 8; one window per query gets one
-   answer whatever the step. In serving mode the platform supplies the serving
+   replacement for bundles, and need no admin role. A package carries no values:
+   the agent is exactly what Stage 5 promoted. In serving mode the platform supplies the serving
    connectors itself, an `atai-records` endpoint that answers one named record per
    window, so no copy of the blueprint is made.
 2. **An instance of the package in serving mode** (`POST /api/agents/instances`
    with `package_id` and `mode: "serving"`): an agent that answers over
-   `POST /agents/instances/{id}/query`. `--windows-per-query` above 1 needs a
-   blueprint promoted at step 1, since a package can't override the step.
-3. **Each run replayed sample by sample.** Every query carries the latest 48
+   `POST /agents/instances/{id}/query`.
+3. **Each run replayed at the optimized step,** a query every 8 samples, so the
+   served windows are exactly Stage 6's. Every query carries the latest 48
    samples of the 33 tags, one list per tag, and gets one record back:
    `{"anomaly_score": …, "predicted_label": "normal", "invalid": "false",
    "start_timestamp": 0, "finish_timestamp": 47}`. A served agent keeps nothing
@@ -371,35 +388,32 @@ calls and their limits.
 5. **Cleanup:** the agent is cancelled and deleted, and the package deleted, however
    the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
 
-**Expect** (ours, Dev, 2026-10-15), delivery file 1's fault-free run (sim 96) and
-its IDV 5 run (sim 26), 913 windows each:
+**Expect** (ours, Dev, 2026-10-26), delivery file 1's fault-free run (sim 96) and
+its IDV 5 run (sim 26), 115 windows each:
 
 ```
-Stage 8: 1,826 windows of 2 run(s) served in 1,826 queries, 1524 s
-  against Stage 6 (batch): predicted_label identical in 1,826/1,826, anomaly_score within 1e-4 in 1,825/1,826 (max relative difference 2.0e-02); invalid 0
-  latency per query: median 813 ms, p95 977 ms, max 1168 ms
-  idv_00 sim 96: first sustained alarm, served 12.30 h into the run (a false alarm); batch 12.30 h into the run (a false alarm)
-  idv_05 sim 26: first sustained alarm, served 0.20 h after onset; batch 0.20 h after onset
+Stage 8: 230 windows of 2 run(s) served in 230 queries, 192 s
+  against Stage 6 (batch): predicted_label identical in 230/230, anomaly_score within 1e-4 in 230/230 (max relative difference 1.6e-05); invalid 0
+  latency per query: median 797 ms, p95 888 ms, max 943 ms
+  idv_00 sim 96: first sustained alarm, served none; batch none
+  idv_05 sim 26: first sustained alarm, served 1.20 h after onset; batch 1.20 h after onset
 ```
 
-- **The served agent gives the delivery's answers:** every label, and both runs'
-  first alarms, the fault-free run's false alarm included. Each answer comes back
-  in about 0.8 s, for a sample that arrives every 3 minutes.
-- **A score can differ by a step, and often does not.** The run above had one such
-  window: IDV 5's window 473, 1.527 served against 1.497 in batch, both well over
-  the 1.215 threshold, with the other 1,825 agreeing to within 3×10⁻⁵. Serving and
-  batch embeddings differ by about 2×10⁻⁴, and with k = 5 that is sometimes enough
-  to change which reference window is the 5th nearest, so the score moves by a step
-  rather than by rounding. **It is not reproducible:** a 2026-10-20 rerun on
-  platform.dev.u1, with the delivery regenerated the same day, had no such window —
-  all 1,826 scores agreed to within 3.7×10⁻⁵. Expect either outcome; the labels and
-  the alarm times are what should match. The full example's k = 10 detector averages
-  twice as many neighbours and so swaps one less often, but it is not immune: its
-  2026-10-20 run turned up such a window too, 4×10⁻³ on a score 0.175 from the
-  threshold.
-- **One window per query is the way to serve it.** Sending 16 at once
-  (`--windows-per-query 16`) saves little, and in a live plant it would mean waiting
-  45 minutes for 15 more samples before asking.
+- **The served agent gives the delivery's answers:** every label and score, and
+  both runs' first alarms. Each answer comes back in about 0.8 s, for a window
+  due every 24 minutes.
+- **The alarm time is when the third window over the threshold ends:** 1.20 h
+  after onset here. Stage 7 times the first of the three, so it reports IDV 5 at
+  0.00 h; the two are 48 minutes apart at step 8.
+- **A score can differ by a step, now and then.** Serving and batch embeddings
+  differ by about 2×10⁻⁴, and with k = 5 that is sometimes enough to change which
+  reference window is the 5th nearest. An earlier step-1 run (2026-10-15) had one
+  such window in 1,826; this run had none. The labels and the alarm times are what
+  should match.
+- **One window per query is the way to serve it.** `--windows-per-query 16` sends
+  16 consecutive windows (168 samples) and gets 16 answers, but each query took
+  about 11 s, and in a live plant it would mean waiting 6 hours of samples before
+  asking.
 
 **Writes:** `eval_out/serving/serve_<file>_<runs>_wpq<N>.{csv,json}` (a row per
 window; a summary).
@@ -416,7 +430,8 @@ open http://localhost:5180
 [`app-serving/`](app-serving/README.md) replays Stage 6's delivery runs, one at a
 time, as if the plant were running now, and sends every window to a **serving
 agent** of Stage 5's blueprint: an agent that stays loaded on the platform and
-answers a window in one round trip, under a second. A flowsheet, the 33 tags, the
+answers a window in one round trip, under a second, every 8 samples, the step
+Stage 4 chose. A flowsheet, the 33 tags, the
 anomaly score and an embedding space show the answers as they come. Agent serving
 is on Dev and Staging only, for first tests (Dev has 3 workers for everyone); the app holds one
 while it runs and gives it back on `npm run stop`.
@@ -428,17 +443,18 @@ while it runs and gives it back on `npm run stop`.
   promoted detector can't be downloaded and the APIs return no embeddings. So
   `fit/library_embeddings.py` recomputes them: the 40 library runs through the
   promoted blueprint in batch with embeddings on, 2,280 windows, then PCA 1–2.
-- **Pace:** every 4th sample by default, a run in about 4 minutes; Settings →
-  Pace switches to every sample, as Stage 6 delivered, at ~15 minutes a run.
+- **Pace:** a window every 8 samples, the optimized step that every stage uses,
+  so the app's alarms are Stage 6's, window for window; a run takes about 2
+  minutes.
 
-**Checked on Dev, 2026-10-15,** with delivery file 1's IDV 5 run at every 4th
-sample: all 229 windows had Stage 6's label, with scores within 1.5×10⁻⁵ of batch,
-33 embeddings per window and 866 ms per window; the run took about 4½ minutes.
-The reference library came out at 2,280 windows scored 0.949–1.108, all under the
+**Checked on Dev, 2026-10-15** (on `main`, bundles, every 4th sample): all 229
+windows of delivery file 1's IDV 5 run had Stage 6's label, with scores within
+1.5×10⁻⁵ of batch, 33 embeddings per window and 866 ms per window. The reference library came out at 2,280 windows scored 0.949–1.108, all under the
 1.215 threshold, as the detector's own normal data should be. Stopping the app
 (`npm run stop`, or Ctrl-C) cancels and deletes the bridge's agent and package.
-On the `explore/packages` branch the bridge runs a package, which can't turn on
-`output_embeddings`, so the page's live embedding trail stays empty (Dev, 2026-10-26).
+The bridge runs a package, which can't turn on `output_embeddings`, so the page's
+live embedding trail stays empty; `fit/library_embeddings.py` still uses a bundle
+for the reference cloud (Dev, 2026-10-26).
 
 ### Clean up the platform
 
@@ -449,7 +465,7 @@ python3 fit/cleanup.py --yes     # delete it
 
 [`fit/cleanup.py`](fit/cleanup.py) deletes the agents, packages and bundles this quickstart
 left on Dev, from the ids the stages recorded in `fit/out/`: Stage 6's delivery
-agents and bundle; Stage 8's serving agent and package if `fit/serve.py` was killed
+agents and package; Stage 8's serving agent and package if `fit/serve.py` was killed
 before its own cleanup; and Stage 9's serving bridge leftovers and the 40 batch
 agents of `fit/library_embeddings.py`. The promoted blueprint stays, and so do
 the optimization and the eval; a `-served-records` copy left by an earlier
@@ -505,7 +521,7 @@ expected outputs above show at which stage.
 | `fit/score_delivery.py`, `fit/evaluate_detection.py`, `fit/tep_common.py` | Stage 7 |
 | `fit/serve.py` | Stage 8: the promoted blueprint served over `/query` (Dev), delivery runs replayed one window per query, every answer checked against Stage 6 |
 | `fit/library_embeddings.py`, `app-serving/` | Stage 9: the reference library's embeddings; the live app, served from the platform ([README](app-serving/README.md)) |
-| `fit/cleanup.py` | delete the agents and bundles Stages 6, 8 and 9 left on the platform (`--yes`) |
+| `fit/cleanup.py` | delete the agents, packages and bundles Stages 6, 8 and 9 left on the platform (`--yes`) |
 | `eval_out/serving/` | Stage 8's replay: a row per window, served against batch, and a summary |
 | `data/prepared/` | Stage 1's output: library, validation, test and delivery files with their label sidecars (Git LFS) |
 | `data/roles/` | Stage 2's output: the role files and label sidecars Stages 3–7 read (Git LFS) |

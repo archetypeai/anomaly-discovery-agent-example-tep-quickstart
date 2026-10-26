@@ -3,10 +3,11 @@
 
     python3 fit/deliver.py
 
-One bundle on fit/test.py's promoted blueprint, which already holds the detector
-and every value the trial pinned. The bundle adds only `step_size: 1` (one score
-per sample; bundle values override a promoted blueprint's), `output_score` and
-checkpointing off. It runs over the delivery chunks and val_normal, all five at
+One package of fit/test.py's promoted blueprint, which already holds the detector
+and every value the trial pinned, `output_score` included. A package adds nothing
+(Agent Lifecycle 2.0: no values), so delivery runs at the trial's own step 8, the
+step Optimize chose and the eval scored: one score every 8 samples (24 minutes).
+An instance of it runs over each delivery chunk and val_normal, all five at
 once. The inputs are data/roles/delivery/, which carry no label column: the labels
 stay in data/roles/labels/ until Stage 7 reads them.
 
@@ -25,8 +26,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from atai import REPO, load_dotenv, load_state, log, manifest, request, save_state, state_path
-from ad_api import CHECKPOINTING_OFF, bundles_url, download_results, poll_agent, upload_file
+from atai import REPO, agents_base, load_dotenv, load_state, log, manifest, request, save_state, state_path
+from ad_api import create_package, download_results, poll_agent, upload_file
 
 OUT = REPO / "eval_out" / "delivery"
 TIMEOUT_S = 3 * 3600
@@ -55,13 +56,13 @@ def main() -> int:
         with lock:
             save_state(STATE, state)
 
-    if "bundle" not in state:
-        b = request("POST", bundles_url(), body={
-            "blueprint": bp["key"], "name": "AD TEP quickstart delivery, stride 1",
-            "values": {"step_size": 1, "output_score": True, "runner_config": CHECKPOINTING_OFF}})
-        state["bundle"] = b["id"]
+    if "bundle" in state:
+        raise SystemExit(f"{STATE} is from a bundle-based delivery: move it aside to deliver through a package")
+    if "package" not in state:
+        pkg = create_package(bp["id"], "AD TEP quickstart delivery")
+        state["package"] = pkg["id"]
         save()
-        log(f"bundle {b['id']} ({b.get('status')}) on {bp['key']}")
+        log(f"package {pkg['id']} ({pkg['status']}) on {bp['key']}")
 
     files = [REPO / "data" / "roles" / f["file"] for f in m["delivery"]]
     if not files:
@@ -76,7 +77,8 @@ def main() -> int:
         if src.stem not in runs:
             stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             fid = upload_file(str(src), rename=f"ad-tep-qs-{src.stem}-{stamp}.csv")["file_id"]
-            agent = request("POST", f"{bundles_url(state['bundle'])}/run", body={
+            agent = request("POST", f"{agents_base()}/instances", body={
+                "package_id": state["package"],
                 "connectors": {"source": [{"type": "file", "id": fid, "format": "csv"}]}})
             with lock:
                 runs[src.stem] = agent["id"]
