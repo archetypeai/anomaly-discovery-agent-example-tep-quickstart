@@ -1,12 +1,12 @@
 {
  "endpoint": "https://platform.dev.u1.archetypeai.app/api",
- "blueprint": "ad-tep-qs-otr_10jmfqnatn8q3vc8rh9d4e03a2",
- "package": "pkg_3xtm4r20gp8bctta9znesy633m",
+ "blueprint": "ad-tep-qs-otr_3dxrv2g4bn9y0rd9cda5qp3spq",
+ "package": "pkg_04p50d725s953se6yz7qnse46r",
  "agents": {
-  "tep_val_normal": "agt_3qpy3zpkej88fbc3yfp9zc2edm",
-  "tep_full_chunk_003": "agt_73q61neh65823rghaxv6a730t8",
-  "tep_full_chunk_002": "agt_3zd6c2mnsf8zbtbyymxsrsbyxk",
-  "tep_full_chunk_004": "agt_5zrm02sd278aqs7f31a96x5adb",
-  "tep_full_chunk_001": "agt_0w5nxfjn839abaa8txjk4fw7dj"
+  "tep_val_normal": "agt_6180he2n1d910a88x2rx85m1bj",
+  "tep_full_chunk_003": "agt_2st6ngsnyq8y39dymj219nv2tj",
+  "tep_full_chunk_004": "agt_0fgb2aa5x09hd92n2tqcpbdvx4",
+  "tep_full_chunk_002": "agt_3cryjtwnmh9jr8jswbb4xxbq8n",
+  "tep_full_chunk_001": "agt_2effbaa63p973tvkyhqcapvt77"
  }
 }

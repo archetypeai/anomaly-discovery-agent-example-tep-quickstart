@@ -28,7 +28,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 0.8,
-    "auroc": 0.9935135542168675
+    "auroc": 0.9935150602409638
    },
    "idv_03": {
     "type": "step  D feed temp",
@@ -38,7 +38,7 @@
     "sims": 4,
     "sims_detected": 1,
     "median_delay_h": 32.0,
-    "auroc": 0.4805120481927711
+    "auroc": 0.48051506024096385
    },
    "idv_04": {
     "type": "step  reactor coolant temp",
@@ -94,11 +94,11 @@
     "type": "rand  D feed temp",
     "hard": true,
     "n_fault": 400,
-    "detection_rate": 0.0175,
+    "detection_rate": 0.015,
     "sims": 4,
-    "sims_detected": 1,
-    "median_delay_h": 32.8,
-    "auroc": 0.4745707831325301
+    "sims_detected": 0,
+    "median_delay_h": null,
+    "auroc": 0.4745722891566265
    },
    "idv_10": {
     "type": "rand  C feed temp",
@@ -108,7 +108,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 7.6000000000000005,
-    "auroc": 0.8689947289156627
+    "auroc": 0.8689939759036145
    },
    "idv_11": {
     "type": "rand  reactor coolant temp",
@@ -128,7 +128,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 0.2,
-    "auroc": 0.9969593373493976
+    "auroc": 0.9969894578313253
    },
    "idv_13": {
     "type": "drift reaction kinetics",
@@ -138,7 +138,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 2.2,
-    "auroc": 0.9737650602409639
+    "auroc": 0.9737665662650602
    },
    "idv_14": {
     "type": "stick reactor coolant valve",
@@ -158,7 +158,7 @@
     "sims": 4,
     "sims_detected": 1,
     "median_delay_h": 32.0,
-    "auroc": 0.5045097891566265
+    "auroc": 0.5044472891566265
    },
    "idv_16": {
     "type": "unknown",
@@ -168,7 +168,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 9.2,
-    "auroc": 0.8658027108433735
+    "auroc": 0.8657725903614458
    },
    "idv_17": {
     "type": "unknown",
@@ -178,7 +178,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 1.2000000000000002,
-    "auroc": 0.9827439759036145
+    "auroc": 0.9827424698795181
    },
    "idv_18": {
     "type": "unknown",
@@ -188,7 +188,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 2.0,
-    "auroc": 0.9711671686746988
+    "auroc": 0.9711694277108434
    },
    "idv_19": {
     "type": "unknown",
@@ -208,23 +208,23 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 2.8,
-    "auroc": 0.9703772590361446
+    "auroc": 0.970378765060241
    }
   },
   "overall": {
    "n_normal": 1660,
    "false_alarms": 35,
    "far": 0.02108433734939759,
-   "mean_detection_rate": 0.786875,
+   "mean_detection_rate": 0.78675,
    "mean_detection_rate_excl_hard": 0.9222058823529412,
-   "sims_detected": 71,
+   "sims_detected": 70,
    "sims_total": 80,
-   "macro_auroc": 0.9032135165662651,
+   "macro_auroc": 0.903210843373494,
    "unmatched": 0
   }
  },
  "calibrated": {
-  "threshold": 1.218998548,
+  "threshold": 1.219005529,
   "per_idv": {
    "idv_01": {
     "type": "step  A/C feed ratio",
@@ -244,7 +244,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 0.8,
-    "auroc": 0.9935135542168675
+    "auroc": 0.9935150602409638
    },
    "idv_03": {
     "type": "step  D feed temp",
@@ -254,7 +254,7 @@
     "sims": 4,
     "sims_detected": 1,
     "median_delay_h": 32.0,
-    "auroc": 0.4805120481927711
+    "auroc": 0.48051506024096385
    },
    "idv_04": {
     "type": "step  reactor coolant temp",
@@ -314,7 +314,7 @@
     "sims": 4,
     "sims_detected": 0,
     "median_delay_h": null,
-    "auroc": 0.4745707831325301
+    "auroc": 0.4745722891566265
    },
    "idv_10": {
     "type": "rand  C feed temp",
@@ -324,7 +324,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 7.6000000000000005,
-    "auroc": 0.8689947289156627
+    "auroc": 0.8689939759036145
    },
    "idv_11": {
     "type": "rand  reactor coolant temp",
@@ -344,7 +344,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 0.2,
-    "auroc": 0.9969593373493976
+    "auroc": 0.9969894578313253
    },
    "idv_13": {
     "type": "drift reaction kinetics",
@@ -354,7 +354,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 2.2,
-    "auroc": 0.9737650602409639
+    "auroc": 0.9737665662650602
    },
    "idv_14": {
     "type": "stick reactor coolant valve",
@@ -374,7 +374,7 @@
     "sims": 4,
     "sims_detected": 1,
     "median_delay_h": 32.0,
-    "auroc": 0.5045097891566265
+    "auroc": 0.5044472891566265
    },
    "idv_16": {
     "type": "unknown",
@@ -384,7 +384,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 9.2,
-    "auroc": 0.8658027108433735
+    "auroc": 0.8657725903614458
    },
    "idv_17": {
     "type": "unknown",
@@ -394,7 +394,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 1.2000000000000002,
-    "auroc": 0.9827439759036145
+    "auroc": 0.9827424698795181
    },
    "idv_18": {
     "type": "unknown",
@@ -404,7 +404,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 2.0,
-    "auroc": 0.9711671686746988
+    "auroc": 0.9711694277108434
    },
    "idv_19": {
     "type": "unknown",
@@ -424,7 +424,7 @@
     "sims": 4,
     "sims_detected": 4,
     "median_delay_h": 2.8,
-    "auroc": 0.9703772590361446
+    "auroc": 0.970378765060241
    }
   },
   "overall": {
@@ -435,7 +435,7 @@
    "mean_detection_rate_excl_hard": 0.9199999999999999,
    "sims_detected": 70,
    "sims_total": 80,
-   "macro_auroc": 0.9032135165662651,
+   "macro_auroc": 0.903210843373494,
    "unmatched": 0
   }
  }

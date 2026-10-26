@@ -1,11 +1,21 @@
 {
  "optimization": {
-  "id": "opt_209fz0am368yv94m6jj526eges",
-  "name": "ad-tep 20261013T063520Z",
+  "id": "opt_37eemevq828xjb4f1aawn2tg23",
+  "name": "ad-tep 20261026T211350Z",
   "org_id": "org_4460ne2c1b9bbv8b1e27fhj1m1",
+  "project_id": null,
   "blueprint_id": "blp_0z4r73zx0j84pb1zk0r4ra61n9",
   "primary": "anomaly.macro_f1",
   "objective": "macro_f1",
+  "resolved_targets": {
+   "anomaly": [
+    "macro_f1",
+    "accuracy",
+    "foreground_macro_f1",
+    "detection_recall",
+    "detection_precision"
+   ]
+  },
   "search_space": {
    "parameters": {
     "n_neighbors": {
@@ -75,6 +85,7 @@
   "budget": {
    "max_trials": 2
   },
+  "constraints": [],
   "training_examples": [
    {
     "name": "tep_ref_normal_sim001",
@@ -82,7 +93,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim001-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim001-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "4kzR2Q=="
      }
@@ -102,7 +113,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim002-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim002-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "6C/+UQ=="
      }
@@ -122,7 +133,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim003-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim003-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "VwdoVw=="
      }
@@ -142,7 +153,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim004-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim004-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "pLiBWA=="
      }
@@ -162,7 +173,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim005-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim005-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "wu17eQ=="
      }
@@ -182,7 +193,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim006-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim006-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "bPBsqA=="
      }
@@ -202,7 +213,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim007-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim007-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "G1yiWA=="
      }
@@ -222,7 +233,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim008-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim008-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "tmTKKw=="
      }
@@ -242,7 +253,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim009-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim009-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "imtx8A=="
      }
@@ -262,7 +273,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim010-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim010-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "zO8u9Q=="
      }
@@ -282,7 +293,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim011-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim011-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "gClVsQ=="
      }
@@ -302,7 +313,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim012-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim012-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "X47xaw=="
      }
@@ -322,7 +333,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim013-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim013-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "eyDF5g=="
      }
@@ -342,7 +353,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim014-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim014-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "T9Fa2Q=="
      }
@@ -362,7 +373,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim015-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim015-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "etQOQA=="
      }
@@ -382,7 +393,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim016-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim016-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "/PTaFA=="
      }
@@ -402,7 +413,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim017-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim017-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "gaNA4g=="
      }
@@ -422,7 +433,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim018-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim018-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "vvQItg=="
      }
@@ -442,7 +453,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim019-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim019-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "1ERu1w=="
      }
@@ -462,7 +473,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim020-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim020-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "5NCf4w=="
      }
@@ -482,7 +493,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim021-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim021-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "vWlGeA=="
      }
@@ -502,7 +513,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim022-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim022-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "2ilGvw=="
      }
@@ -522,7 +533,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim023-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim023-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "kelsWg=="
      }
@@ -542,7 +553,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim024-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim024-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "6wQPfQ=="
      }
@@ -562,7 +573,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim025-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim025-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "9G/cHw=="
      }
@@ -582,7 +593,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim026-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim026-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "VAKbGg=="
      }
@@ -602,7 +613,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim027-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim027-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "kBlQhQ=="
      }
@@ -622,7 +633,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim028-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim028-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "px3Iog=="
      }
@@ -642,7 +653,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim029-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim029-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "gYO5xg=="
      }
@@ -662,7 +673,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim030-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim030-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "QBLVXg=="
      }
@@ -682,7 +693,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim031-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim031-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "qAYwXg=="
      }
@@ -702,7 +713,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim032-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim032-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "g4kQzw=="
      }
@@ -722,7 +733,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim033-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim033-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "WzkE8g=="
      }
@@ -742,7 +753,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim034-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim034-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "FTGldA=="
      }
@@ -762,7 +773,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim035-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim035-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "A8bPpw=="
      }
@@ -782,7 +793,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim036-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim036-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "TquiCQ=="
      }
@@ -802,7 +813,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim037-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim037-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "xhjmgw=="
      }
@@ -822,7 +833,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim038-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim038-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "u0bKQg=="
      }
@@ -842,7 +853,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim039-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim039-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "zW2sgg=="
      }
@@ -862,7 +873,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim040-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim040-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "Mw2X3Q=="
      }
@@ -884,7 +895,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__validation__tep_eval_slice_01-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__validation__tep_eval_slice_01-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "idiiCQ=="
      }
@@ -904,7 +915,7 @@
     "inputs": [
      {
       "type": "file",
-      "id": "ad-tep-qs-data__roles__validation__tep_val_normal-20261013T063514Z.csv",
+      "id": "ad-tep-qs-data__roles__validation__tep_val_normal-20261026T211345Z.csv",
       "format": "csv",
       "crc32c": "g6tZdQ=="
      }
@@ -919,10 +930,10 @@
     }
    }
   ],
-  "best_trial_id": "otr_10jmfqnatn8q3vc8rh9d4e03a2",
+  "best_trial_id": "otr_3dxrv2g4bn9y0rd9cda5qp3spq",
   "best_trial": {
-   "id": "otr_10jmfqnatn8q3vc8rh9d4e03a2",
-   "optimization_id": "opt_209fz0am368yv94m6jj526eges",
+   "id": "otr_3dxrv2g4bn9y0rd9cda5qp3spq",
+   "optimization_id": "opt_37eemevq828xjb4f1aawn2tg23",
    "trial_number": 2,
    "trial_values": {
     "models": {},
@@ -1017,7 +1028,7 @@
        ],
        "f1": [
         0.872310701313216,
-        0.837121212121212
+        0.8371212121212122
        ],
        "support": [
         2000,
@@ -1056,8 +1067,8 @@
    "objective_value": 0.854715956717214,
    "feasible": true,
    "status": "completed",
-   "created_at": "2026-10-13T06:35:20.600962Z",
-   "completed_at": "2026-10-13T06:40:46.216544Z"
+   "created_at": "2026-10-26T21:13:51.304233Z",
+   "completed_at": "2026-10-26T21:19:56.901042Z"
   },
   "status": "completed",
   "progress": {
@@ -1066,17 +1077,18 @@
    "completed": 2,
    "failed": 0,
    "cancelled": 0,
-   "infeasible": 0
+   "infeasible": 0,
+   "unjudged": 0
   },
   "created_by": "usr_4805ybgs8j9m6av1rg4q2fv3kn",
-  "created_at": "2026-10-13T06:35:20.600962Z",
-  "started_at": "2026-10-13T06:35:20.658239Z",
-  "completed_at": "2026-10-13T06:40:49.704155Z"
+  "created_at": "2026-10-26T21:13:51.304233Z",
+  "started_at": "2026-10-26T21:13:51.346514Z",
+  "completed_at": "2026-10-26T21:20:00.568365Z"
  },
  "trials": [
   {
-   "id": "otr_10jmfqnatn8q3vc8rh9d4e03a2",
-   "optimization_id": "opt_209fz0am368yv94m6jj526eges",
+   "id": "otr_3dxrv2g4bn9y0rd9cda5qp3spq",
+   "optimization_id": "opt_37eemevq828xjb4f1aawn2tg23",
    "trial_number": 2,
    "trial_values": {
     "models": {},
@@ -1171,7 +1183,7 @@
        ],
        "f1": [
         0.872310701313216,
-        0.837121212121212
+        0.8371212121212122
        ],
        "support": [
         2000,
@@ -1210,12 +1222,12 @@
    "objective_value": 0.854715956717214,
    "feasible": true,
    "status": "completed",
-   "created_at": "2026-10-13T06:35:20.600962Z",
-   "completed_at": "2026-10-13T06:40:46.216544Z"
+   "created_at": "2026-10-26T21:13:51.304233Z",
+   "completed_at": "2026-10-26T21:19:56.901042Z"
   },
   {
-   "id": "otr_7mnk556s5z8w29rrsn7c1w9wps",
-   "optimization_id": "opt_209fz0am368yv94m6jj526eges",
+   "id": "otr_3q2nw6gzk09pg920pbmsa4cqbg",
+   "optimization_id": "opt_37eemevq828xjb4f1aawn2tg23",
    "trial_number": 1,
    "trial_values": {
     "models": {},
@@ -1228,7 +1240,7 @@
     "primary": {
      "target": "anomaly",
      "name": "macro_f1",
-     "value": 0.8540102708865409,
+     "value": 0.8540102708865408,
      "aggregation": "pooled"
     },
     "example_count": 2,
@@ -1244,8 +1256,8 @@
        "accuracy": 0.8369272237196765,
        "detection_precision": 0.9974160206718348,
        "detection_recall": 0.772,
-       "foreground_macro_f1": 0.870349492671928,
-       "macro_f1": 0.8540102708865409
+       "foreground_macro_f1": 0.8703494926719278,
+       "macro_f1": 0.8540102708865408
       },
       "per_example": {
        "accuracy": {
@@ -1287,8 +1299,8 @@
        "macro_f1": {
         "mean": 0.6123115503290575,
         "excluded": 0,
-        "stderr": 0.12277716331496091,
-        "min": 0.4895343870140966,
+        "stderr": 0.12277716331496094,
+        "min": 0.4895343870140965,
         "median": 0.6123115503290575,
         "max": 0.7350887136440184,
         "p90": 0.7105332809810262
@@ -1309,7 +1321,7 @@
         0.9128654970760234
        ],
        "f1": [
-        0.870349492671928,
+        0.8703494926719278,
         0.8376710491011538
        ],
        "support": [
@@ -1346,11 +1358,11 @@
      }
     }
    },
-   "objective_value": 0.8540102708865409,
+   "objective_value": 0.8540102708865408,
    "feasible": true,
    "status": "completed",
-   "created_at": "2026-10-13T06:35:20.600962Z",
-   "completed_at": "2026-10-13T06:39:10.713076Z"
+   "created_at": "2026-10-26T21:13:51.304233Z",
+   "completed_at": "2026-10-26T21:18:17.309191Z"
   }
  ]
 }

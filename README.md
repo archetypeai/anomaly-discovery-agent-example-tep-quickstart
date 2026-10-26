@@ -24,7 +24,7 @@
 | 2–3 | build the files the platform receives, and check them | ~1 s |
 | 4 | **Optimize:** fit on the normal runs, score 2 settings on validation | 6 min |
 | 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
-| 6 | **deliver:** a package of that blueprint, run over the delivery files | 9 min |
+| 6 | **deliver:** a package of that blueprint, run over the delivery files | 3–9 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
 | 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~3 min |
 | 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~8 min once, then ~4 min a run |
