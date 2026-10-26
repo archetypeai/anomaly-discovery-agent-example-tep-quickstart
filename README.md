@@ -493,7 +493,15 @@ same:
 | 6 | delivery outputs | 5 files, full coverage | byte-identical |
 | 7 | detection / false alarms / AUROC at the 1% threshold | 78.0% / 1.41% / 0.901 | same |
 
-So the prep, the platform and the scoring are deterministic here. If your run
+Those two runs were on `main` (bundles, step-1 delivery). On this branch, two
+package deliveries at step 8 on Dev (2026-10-26, each from its own optimization
+and blueprint) gave the same Stage 4, 5 and 8 numbers and the same Stage 7
+headline at the 1% threshold (78.5% / 2.11% / 0.903), but not byte-identical
+outputs: a few scores moved in the last digits, enough to flip IDV 9's one
+borderline "detection" (a false alarm after onset) at the trial's threshold.
+
+So the prep, the platform and the scoring are deterministic here, up to those
+near-tie score differences. If your run
 gives different numbers, something differs in your data or setup, and the
 expected outputs above show at which stage.
 
