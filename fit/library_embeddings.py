@@ -7,8 +7,9 @@ The promoted detector was fitted on the library's 40 fault-free runs at the
 trial's window 48 and step 8, but it is a registry artifact (`aar_…`) with no
 download route, so its reference windows can't be read back the way app/ reads
 them from the archived `.safetensors`. They can be recomputed: a bundle on the
-promoted blueprint at `step_size: 8` with `output_embeddings: true` runs each
-library file through the same encoder, on the same windows, and returns each
+promoted blueprint at its own step with `output_embeddings: true` (still a
+bundle: a package can't turn embeddings on) runs each library file through the
+same encoder, on the same windows, and returns each
 window's 33 x 768 Omega embedding with its score (2,280 windows in all).
 
 The view is PCA 1-2 of those embeddings, whitened, in the layout app/ already
@@ -39,7 +40,6 @@ from ad_api import CHECKPOINTING_OFF, bundles_url, download_results, poll_agent
 
 OUT = REPO / "fit" / "out" / "library_embeddings"
 VIEW = REPO / "app-serving" / "static"
-STEP = 8
 TIMEOUT_S = 3600
 lock = threading.Lock()
 
@@ -52,11 +52,11 @@ def deliver(m: dict, bp: dict) -> list[Path]:
     if "bundle" not in state:
         b = request("POST", bundles_url(), body={
             "blueprint": bp["key"], "name": "AD TEP library embeddings",
-            "values": {"step_size": STEP, "output_score": True, "output_embeddings": True,
+            "values": {"output_score": True, "output_embeddings": True,
                        "runner_config": CHECKPOINTING_OFF}})
         state["bundle"] = b["id"]
         save()
-        log(f"bundle {b['id']} on {bp['key']} (step {STEP}, embeddings on)")
+        log(f"bundle {b['id']} on {bp['key']} (step {bp['values']['step_size']}, embeddings on)")
     paths = [ROLES / f["file"] for f in m["library"]]
     ids = upload_all(paths)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -93,7 +93,7 @@ def main() -> int:
     load_dotenv()
     m = manifest()
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
-    channels, window = m["channels"], bp["values"]["window_size"]
+    channels, window, step = m["channels"], bp["values"]["window_size"], bp["values"]["step_size"]
     outs = deliver(m, bp)
 
     vecs, scores, labels = [], [], []
@@ -139,18 +139,18 @@ def main() -> int:
         "channels": channels, "embeddingDim": dim // len(channels), "totalDim": dim, "nReference": n,
         "nPcaComponents": v["pca_components"], "whiten": True, "explainedVariance": [round(float(e), 4) for e in explained],
         "threshold": v["threshold"], "nNeighbors": v["n_neighbors"], "metric": v["metric"],
-        "windowSize": window, "stepSize": STEP, "blueprint": bp["key"],
+        "windowSize": window, "stepSize": step, "blueprint": bp["key"],
         "layout": layout, "dtype": "float32-le"}, indent=2))
 
     s = np.array(scores)
-    summary = {"blueprint": bp["key"], "window_size": window, "step_size": STEP, "files": len(outs),
+    summary = {"blueprint": bp["key"], "window_size": window, "step_size": step, "files": len(outs),
                "windows": n, "dim": dim, "explained_variance_pc1_pc2": [round(float(e), 4) for e in explained],
                "score": {"min": round(float(s.min()), 4), "median": round(float(np.median(s)), 4),
                          "max": round(float(s.max()), 4), "threshold": v["threshold"]},
                "anomaly_windows": labels.count("anomaly"),
                "view_bytes": offset}
     (REPO / "fit" / "out" / "library_embeddings.json").write_text(json.dumps(summary, indent=1))
-    print(f"\nreference library: {n:,} windows from {len(outs)} runs, window {window}, step {STEP}")
+    print(f"\nreference library: {n:,} windows from {len(outs)} runs, window {window}, step {step}")
     print(f"  scores {s.min():.3f}-{s.max():.3f} (median {np.median(s):.3f}) against threshold {v['threshold']:.3f}; "
           f"{labels.count('anomaly')} labelled anomaly")
     print(f"  PCA 1-2 explain {explained[0]:.1%} and {explained[1]:.1%} of the variance")
