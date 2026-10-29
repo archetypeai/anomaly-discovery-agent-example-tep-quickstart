@@ -14,8 +14,7 @@ Stage 6's batch output for the same window:
 
   1. a bundle of fit/test.py's promoted blueprint, as it is, at step 1 (bundle
      values override a blueprint's): the platform supplies the serving
-     connectors when it runs a bundle in serving mode, so no served copy of the
-     blueprint is made (atai_core #7286; creating one takes the admin role);
+     connectors when it runs a bundle in serving mode;
   2. that bundle run in serving mode;
   3. each run replayed one sample at a time: every query holds the latest
      `window_size` samples (`--windows-per-query N` sends N windows at once);
