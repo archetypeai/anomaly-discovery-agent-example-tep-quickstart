@@ -28,7 +28,6 @@ Stage 6's batch output for the same window:
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
 
-Agent serving: https://github.com/archetypeai/agent-serving-example.
 Each query is answered on its own: a served agent keeps no window between
 queries, so a query must carry the whole window. Writes eval_out/serving/.
 """
