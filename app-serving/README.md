@@ -5,16 +5,12 @@ replayed as if the plant were running now, and every window goes to a **serving
 agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answers
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
-> **Dev and Staging only.** Agent serving is on Dev (`https://platform.dev.u1.archetypeai.app`)
-> and Staging (`https://platform.stage.u1.archetypeai.app`) for first internal tests. Dev has
-> **3 serving workers for everyone**: this app holds one while it runs, and gives it back when
-> you stop it.
+> **It holds a serving agent while it runs,** and gives it back when you stop it.
+> Free-trial accounts serve on CPU only, so answers can be slower.
 
-It is the same app as the [full example's
-`app-serving/`](https://github.com/archetypeai/anomaly-discovery-agent-example-tep/tree/main/app-serving),
-with two differences: it serves this repo's winning configuration (k 5), and it
-replays the **delivery** runs (Stage 6's 4 files, 84 runs), so every served window can
-be checked against Stage 6's batch output.
+It serves this repo's winning configuration (k 5) and replays the **delivery** runs
+(Stage 6's 4 files, 84 runs), so every served window can be checked against Stage 6's
+batch output.
 
 ## Architecture
 
@@ -25,7 +21,7 @@ be checked against Stage 6's batch output.
 ┌───────────────────────────┐  GET /status    ┌──────────────────────────────┐          │
 │ replayer (node)           │  POST /reset    │ serving bridge (node)        │◀─────────┘
 │ one delivery run at a     │  POST /start    │ the API key stays here;      │   POST /query   ┌──────────────────────────┐
-│ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ serving agent (Dev)      │
+│ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ serving agent            │
 │ waits for each block's    │  admin :9100    │ one query per window         │  the latest 48  │ promoted detector,       │
 │ windows before the next   │                 │                              │  samples        │ atai-records,            │
 └───────────────────────────┘                 └──────────────────────────────┘◀────────────────│ embeddings on            │
@@ -43,7 +39,7 @@ be checked against Stage 6's batch output.
   start it creates a package of the app's blueprint (see
   [The app's blueprint](#the-apps-blueprint-the-winning-configuration-with-embeddings-on))
   and starts a serving agent from it: the platform supplies the
-  `atai-records` serving connectors itself, so no copy of the blueprint is made. For every window it sends the
+  `atai-records` serving connectors itself. For every window it sends the
   latest 48 samples as one query, and publishes the answer on `ad/results` with the
   window's timestamps put back (a served agent numbers the samples 0–47 within a
   query).
@@ -57,11 +53,11 @@ be checked against Stage 6's batch output.
   deletes its package. If it's killed hard, the ids are still in
   `fit/out/app_serving_state.json`, and `python3 fit/cleanup.py --yes` removes them.
   An agent the platform released after 20 minutes without a query (a replay paused that
-  long) is deleted and replaced on the next window, retrying while Dev's serving workers
+  long) is deleted and replaced on the next window, retrying while the serving workers
   are all taken. If anything can't be deleted on exit, the bridge says so and keeps the
   ids for `fit/cleanup.py`. See [Stop and clean up](#stop-and-clean-up).
 - **It holds the agent for as long as it runs, and says what it is doing.** Starting
-  an agent retries (15 s, doubling to 2 min) while Dev's serving workers are all
+  an agent retries (15 s, doubling to 2 min) while the serving workers are all
   taken, and windows wait in the bridge's queue until the agent is running; the
   replayer waits too. The phase (starting, waiting, running, replacing, stopped) goes out on
   `ad/agent`, retained, and shows in the menubar badge and in Settings; an MQTT will
@@ -87,8 +83,7 @@ python3 fit/app_blueprint.py          # once, from the repo root: a 1-trial opti
   (window, step, k, metric, PCA, threshold, features) plus
   `output_embeddings: true`, and one trial; then it promotes that trial.
 - **Promoted, not copied.** The blueprint comes from an optimization trial like
-  Stage 5's, so it needs no admin role, and the platform records where it came
-  from.
+  Stage 5's, so the platform records where it came from.
 - **A refitted detector.** The trial fits its own detector on the same library;
   its validation scores are printed next to Stage 5's. It serves the app and
   `fit/library_embeddings.py`, nothing else.
@@ -122,11 +117,12 @@ encoder as the fit, 2,280 of them. PCA 1–2 of their embeddings, whitened, give
 projection, in `static/detector-view.{json,bin}`. Each live window's embedding from
 the served agent goes through the same projection. The detector's own PCA is fitted
 on these embeddings too, but it can't be read to confirm the axes, so the view is a
-recomputed one.
+recomputed one. The repo has its output, so rerun it only for a different window or
+step.
 
 ## Run it
 
-Prerequisites: Node 20+, `brew install mosquitto`, and Stages 4–6 run on Dev or Staging (where the app will serve). In the [repo README](../README.md) this is Stage 9
+Prerequisites: Node 20+, `brew install mosquitto`, and Stages 4–6 run on the deployment the app will serve from. In the [repo README](../README.md) this is Stage 9
 (`fit/out/test_state.json` names the promoted blueprint). Then:
 
 ```sh
@@ -150,8 +146,7 @@ delivery. A detection (3 windows over the line) spans 48 minutes of process time
 
 ## Stop and clean up
 
-A running app holds a serving agent, and so one of the deployment's serving workers (Dev has 3),
-until the bridge deletes the agent or the platform releases it after 20 minutes
+A running app holds a serving agent, and so a serving worker, until the bridge deletes the agent or the platform releases it after 20 minutes
 without a query. Closing the browser tab does not stop it.
 
 1. **Stop the app.** Press Ctrl-C **once** in the `npm run dev` terminal and
@@ -213,8 +208,6 @@ path's agents (see the [repo README](../README.md)), whenever you're done with t
 | MQTT TCP | MQTT WS | Web | Agent admin |
 |---|---|---|---|
 | 1890 | 9008 | 5180 | 9100 (the serving bridge) |
-
-The same slot as the full example's `app-serving/`, so run one of the two at a time.
 
 ## Layout
 

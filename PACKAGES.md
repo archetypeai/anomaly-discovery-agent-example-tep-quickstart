@@ -1,9 +1,10 @@
 # Bundles vs packages: what changed, and is it better?
 
 Agent Lifecycle 2.0 replaces bundles with packages. This branch
-(`explore/packages`) moves the TEP Anomaly Discovery quickstart to packages and
-runs Stages 4–8 end to end on Dev (2026-10-26). **Packages are new and still
-changing on Dev**: re-check the calls below before relying on them.
+(`explore/packages`) is a **preview**: it moves the TEP Anomaly Discovery
+quickstart to packages and runs Stages 4–8 end to end (2026-10-26, on a
+pre-release deployment). **Packages are new and still changing**: re-check the
+calls below before relying on them.
 
 ## Summary
 
@@ -25,16 +26,15 @@ changing on Dev**: re-check the calls below before relying on them.
 | | Bundles (`main`) | Packages (this branch) |
 |---|---|---|
 | What it is | a blueprint **plus values that override it** | the promoted blueprint **as it is**, plus the models it resolved to |
-| Create | `POST /agents/bundles` `{blueprint: <key>, name, values}` | `POST /agents/packages` `{blueprint_ids: [<id>], target: {kind: "platform"}, name}`, then poll until `ready` (immediate on Dev) |
+| Create | `POST /agents/bundles` `{blueprint: <key>, name, values}` | `POST /agents/packages` `{blueprint_ids: [<id>], target: {kind: "platform"}, name}`, then poll until `ready` (immediate in our runs) |
 | Run | `POST /agents/bundles/{id}/run` `{mode, connectors}` | `POST /agents/instances` `{package_id, mode, connectors}` |
 | Query, cancel, delete an agent | — | unchanged |
 | An agent's siblings | `GET /agents/instances?bundle_id=` | `GET /agents/instances?package_id=` |
 | Delete | `DELETE /agents/bundles/{id}`, 409 while it has agents | `DELETE /agents/packages/{id}`, 409 while it has agents |
-| Admin role | none; but changing a blueprint (`POST /blueprints`) needs it on Staging | none |
 
 Stages 4 and 5 (Optimizations, promote, Evals) touch neither, and didn't change.
 
-**What a user can set after promote** (Dev, 2026-10-26):
+**What a user can set after promote** (2026-10-26):
 
 | | Settable | Not settable |
 |---|---|---|
@@ -67,12 +67,12 @@ There are three separate effects. They are easy to confuse:
 
 Stages 4–8 keep `output_embeddings: false`: on, every delivery file would grow from
 about 100 KB to hundreds of MB. `fit/app_blueprint.py` runs a 1-trial optimization
-that pins every winning value plus `output_embeddings: true` and promotes it; on
-Dev its trial scored the same validation macro-F1 as Stage 5's winner (0.8547,
-recall 0.7805, precision 0.9886). A blueprint copy (`POST /blueprints`) also works
-on Dev, but needs the admin role on Staging and loses the link to the trial.
+that pins every winning value plus `output_embeddings: true` and promotes it; its
+trial scored the same validation macro-F1 as Stage 5's winner (0.8547, recall
+0.7805, precision 0.9886). Copying the blueprint instead would lose the link to the
+trial.
 
-## 3. Results on Dev (2026-10-26)
+## 3. Results (2026-10-26)
 
 Stages 4–8 were run from a fresh optimization, all through packages, in 16½ minutes:
 
@@ -137,8 +137,7 @@ quickstart sends a window every 8 samples, the cadence its numbers describe.
    agent that is already deployed.
 3. **One object for batch and serving.** The same package runs over files or
    answers queries. Only `mode` differs.
-4. **No admin role, no blueprint copies.** Nothing in the example needs a
-   derived blueprint any more.
+4. **No blueprint copies.** Nothing in the example copies a blueprint any more.
 5. **A simpler model to explain:** blueprint (a configuration) → package (fixed,
    deployable) → instance (running).
 
@@ -159,19 +158,18 @@ quickstart sends a window every 8 samples, the cadence its numbers describe.
    optimization. And Optimize uses one step to fit *and* validate, so "fit at
    step 8, validate at step 1" (what a step-1 serving client needs evaluated)
    can't be expressed.
-5. **Still moving on Dev.** For example, Staging dropped a package's `name`,
-   while Dev kept it.
+5. **Still changing.** Packages are new, and details such as whether a package
+   keeps its `name` have differed between platform versions.
 
-## 6. Questions for the platform team
+## 6. Known limitations
 
-1. Can unknown fields, `values` included, be rejected with a 400 instead of
-   dropped?
-2. How should a user turn on outputs such as embeddings for a promoted blueprint,
-   without changing its configuration?
-3. Will platform serving get a streaming source (MQTT or a records stream) where
-   the agent keeps the buffer and applies its own `window_size` and
-   `step_size`? Until then, could an instance expose those two values so a
-   query client can follow them?
-4. Could Optimize validate at a different step from the one it fits at, so the
-   cadence a client will serve at can be evaluated?
-5. Is the Staging/Dev difference in package `name` a version gap?
+1. **Unknown fields, `values` included, are dropped rather than rejected.** A 400
+   would catch scripts ported from bundles.
+2. **No way yet to turn on an output such as embeddings** for a promoted blueprint
+   without changing its configuration. This branch's stop-gap is
+   `fit/app_blueprint.py`.
+3. **Platform serving has no streaming source** where the agent keeps the buffer
+   and applies its own `window_size` and `step_size`, and an instance doesn't
+   expose those values, so a query client has to follow them itself.
+4. **Optimize can't validate at a different step from the one it fits at,** so
+   the cadence a client will serve at can't be evaluated directly.

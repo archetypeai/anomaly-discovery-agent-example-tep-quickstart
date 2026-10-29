@@ -10,8 +10,8 @@ output on, this is the stop-gap: a second optimization that pins every value
 of Stage 5's winning trial (window, step, k, metric, PCA, threshold, features)
 plus `output_embeddings: true`, on the same library and validation files, with
 one trial. Promoting that trial gives a blueprint that is the winning
-configuration with embeddings on, promoted like any other (no admin role, no
-copied document), which the bridge and fit/library_embeddings.py package.
+configuration with embeddings on, promoted like any other (no copied
+document), which the bridge and fit/library_embeddings.py package.
 
 The trial refits the detector, so it is a second artifact of the same
 configuration; its validation scores are printed next to the winner's, and

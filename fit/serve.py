@@ -13,9 +13,9 @@ the latest 48 samples. This replays delivery runs that way and checks every answ
 Stage 6's batch output for the same window:
 
   1. a package of fit/test.py's promoted blueprint, as it is (Agent Lifecycle
-     2.0: packages replace bundles, and need no admin role). A package carries
+     2.0: packages replace bundles). A package carries
      no values, so the agent runs at the blueprint's own step; the platform
-     supplies the serving connectors, so no served copy is made (atai_core #7286);
+     supplies the serving connectors;
   2. an instance of that package in serving mode;
   3. each run replayed at the blueprint's step, the one Optimize chose and
      Stage 6 delivered at: a query every `step_size` samples holding the latest
@@ -29,7 +29,6 @@ Stage 6's batch output for the same window:
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
 
-Dev and Staging only, like serving (https://github.com/archetypeai/agent-serving-example).
 Each query is answered on its own: a served agent keeps no window between
 queries, so a query must carry the whole window. Writes eval_out/serving/.
 """
@@ -80,10 +79,6 @@ def main() -> int:
     args = ap.parse_args()
 
     load_dotenv()
-    # Match the deployment, not one host: dev is api.dev.* and platform.dev.*, staging platform.stage.*
-    if not any(d in agents_base() for d in (".dev.", ".stage.")):
-        sys.exit("agent serving is on dev and staging only for now "
-                 "(e.g. https://platform.dev.u1.archetypeai.app, https://platform.stage.u1.archetypeai.app)")
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
     channels, window = bp["values"]["data_columns"], bp["values"]["window_size"]
     step = int(bp["values"]["step_size"])

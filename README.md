@@ -17,7 +17,7 @@
     labels held back.
 - **The lifecycle:**
 
-| stage | what happens | time (measured 2026-10-13) |
+| stage | what happens | time |
 |---|---|---|
 | 0 | download the dataset (1.4 GB) and convert it | ~7 min |
 | 1a–1c | check the raw data, cut it into runs, check again | ~50 s |
@@ -26,11 +26,11 @@
 | 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
 | 6 | **deliver:** a package of that blueprint, run over the delivery files | 3–9 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
-| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~3 min |
-| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~5 min once (the app's blueprint), then ~2 min a run |
+| 8 | **serve:** the same blueprint answering one window per query (agent serving), checked against Stage 6 | ~3 min |
+| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md)) | ~5 min once (the app's blueprint), then ~2 min a run |
 
   About **30 minutes** end to end, 21 of them on the platform. Platform times
-  vary with load. Stages 6 and 8 were measured on Dev on 2026-10-26.
+  vary with load; Stages 6 and 8 were measured on 2026-10-26.
 
 - **One configuration throughout.** Stage 4's optimization chooses the
   configuration, and every later stage runs exactly what it chose, step
@@ -93,8 +93,7 @@ Each simulation run is independent (its own noise and disturbance seeds), so the
   - *40 runs* because one 500-row run is short (the preflight wants about 2,000
     rows), and 40 give 2,280 windows: well above what the detector's k ≤ 20
     neighbours and 20 PCA components need, and still a fit of about a minute.
-    The full example measured fits slowing to 12–20 minutes above about 3,200
-    windows. The dataset has 500 fault-free 25-hour runs; the other 460 are
+    Fits slow to 12–20 minutes above about 3,200 windows. The dataset has 500 fault-free 25-hour runs; the other 460 are
     unused.
 
 ## Setup
@@ -230,12 +229,11 @@ python3 fit/optimize.py
    with Omega 1.5, fits the detector on the library and reports macro-F1 on
    validation.
 3. **Search space:** two settings, window 48, step 8, L2, PCA 16, threshold
-   1.215, features `std,range,slope,median`, with **k = 5** and **k = 10**. That is
-   the winner of the full example's 24-trial search, where k was 10. A space with
+   1.215, features `std,range,slope,median`, with **k = 5** and **k = 10**: the
+   winner of an earlier 24-trial search on this data, where k was 10. A space with
    fewer points than the budget runs every point. The step chosen here is the
    step every later stage uses: window 48 at step 8 means a score every 24
-   minutes, from the eval to the app. Choosing among steps (and windows) is the
-   full example's broader search.
+   minutes, from the eval to the app.
 
 **Expect:** `uploading 42 of 42 files (16 MB)`, `2 trial(s), searching
 ['n_neighbors']`, then the ranking. Ours:
@@ -245,8 +243,7 @@ otr_…  completed {"n_neighbors": 5}   macro_f1 0.8547  foreground_macro_f1 0.8
 otr_…  completed {"n_neighbors": 10}  macro_f1 0.8540  foreground_macro_f1 0.8703  detection_recall 0.7720  detection_precision 0.9974
 ```
 
-k = 5 wins here by 0.0007, a tie in practice; k = 10's score is exactly what the
-same setting scored in the full example's search. Try others with `--new` and
+k = 5 wins by 0.0007, a tie in practice. Try others with `--new` and
 `--window`, `--step`, `--k`, `--metric`, `--pca`, `--threshold LOW:HIGH`,
 `--features`, `--trials`. **Writes:** `fit/out/optimize_<optimization id>.json`.
 
@@ -361,17 +358,16 @@ python3 fit/serve.py --windows-per-query 16   # up to 16 consecutive windows per
 Stage 6 delivers in batch: upload a file, run an agent over it, download the output
 when the run is done. **Agent serving** keeps an agent loaded and answers a window
 of samples in one round trip, with no upload, queue or polling: what a plant
-historian would call every 24 minutes (8 samples) with the latest 48 samples. It is on Dev and
-Staging only, for first internal tests; Dev has 3 serving workers for everyone. The
-[agent-serving example](https://github.com/archetypeai/agent-serving-example) has the
-calls and their limits.
+historian would call every 24 minutes (8 samples) with the latest 48 samples.
+Free-trial accounts serve on CPU only, so expect slower answers there than the
+times below.
 
 1. **A package of Stage 5's blueprint, as it is** (`POST /api/agents/packages`):
    the same detector, encoder and values. Packages are Agent Lifecycle 2.0's
-   replacement for bundles, and need no admin role. A package carries no values:
-   the agent is exactly what Stage 5 promoted. In serving mode the platform supplies the serving
-   connectors itself, an `atai-records` endpoint that answers one named record per
-   window, so no copy of the blueprint is made.
+   replacement for bundles. A package carries no values: the agent is exactly
+   what Stage 5 promoted. In serving mode the platform supplies the serving
+   connectors itself: an `atai-records` endpoint that answers one named record per
+   window.
 2. **An instance of the package in serving mode** (`POST /api/agents/instances`
    with `package_id` and `mode: "serving"`): an agent that answers over
    `POST /agents/instances/{id}/query`.
@@ -388,8 +384,8 @@ calls and their limits.
 5. **Cleanup:** the agent is cancelled and deleted, and the package deleted, however
    the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
 
-**Expect** (ours, Dev, 2026-10-26), delivery file 1's fault-free run (sim 96) and
-its IDV 5 run (sim 26), 115 windows each:
+**Expect** (ours, 2026-10-26), delivery file 1's fault-free run (sim 96) and its
+IDV 5 run (sim 26), 115 windows each:
 
 ```
 Stage 8: 230 windows of 2 run(s) served in 230 queries, 192 s
@@ -400,16 +396,15 @@ Stage 8: 230 windows of 2 run(s) served in 230 queries, 192 s
 ```
 
 - **The served agent gives the delivery's answers:** every label and score, and
-  both runs' first alarms. Each answer comes back in about 0.8 s, for a window
+  both runs' first alarms. Each answer comes back in under a second, for a window
   due every 24 minutes.
 - **The alarm time is when the third window over the threshold ends:** 1.20 h
   after onset here. Stage 7 times the first of the three, so it reports IDV 5 at
   0.00 h; the two are 48 minutes apart at step 8.
-- **A score can differ by a step, now and then.** Serving and batch embeddings
-  differ by about 2×10⁻⁴, and with k = 5 that is sometimes enough to change which
-  reference window is the 5th nearest. An earlier step-1 run (2026-10-15) had one
-  such window in 1,826; this run had none. The labels and the alarm times are what
-  should match.
+- **A score can now and then differ by a step.** Serving and batch embeddings
+  differ by about 2×10⁻⁴, and with k = 5 that is occasionally enough to change
+  which reference window is the 5th nearest. This run had none. The labels and
+  the alarm times are what should match.
 - **One window per query is the way to serve it.** `--windows-per-query 16` sends
   16 consecutive windows (168 samples) and gets 16 answers, but each query took
   about 11 s, and in a live plant it would mean waiting 6 hours of samples before
@@ -431,10 +426,9 @@ open http://localhost:5180
 time, as if the plant were running now, and sends every window to a **serving
 agent** of Stage 5's blueprint: an agent that stays loaded on the platform and
 answers a window in one round trip, under a second, every 8 samples, the step
-Stage 4 chose. A flowsheet, the 33 tags, the
-anomaly score and an embedding space show the answers as they come. Agent serving
-is on Dev and Staging only, for first tests (Dev has 3 workers for everyone); the app holds one
-while it runs and gives it back on `npm run stop`.
+Stage 4 chose. A flowsheet, the 33 tags, the anomaly score and an embedding space
+show the answers as they come. The app holds a serving agent while it runs and
+gives it back on `npm run stop`.
 
 - **A small Node bridge** keeps the latest 48 samples, sends each window as one
   query, and publishes the answer to the browser. It holds the API key, which never
@@ -456,11 +450,9 @@ while it runs and gives it back on `npm run stop`.
   so the app's alarms are Stage 6's, window for window; a run takes about 2
   minutes.
 
-**Checked on Dev, 2026-10-15** (on `main`, bundles, every 4th sample): all 229
-windows of delivery file 1's IDV 5 run had Stage 6's label, with scores within
-1.5×10⁻⁵ of batch, 33 embeddings per window and 866 ms per window. The reference library came out at 2,280 windows scored 0.949–1.108, all under the
+The reference library comes out at 2,280 windows scored 0.949–1.108, all under the
 1.215 threshold, as the detector's own normal data should be. Stopping the app
-(`npm run stop`, or Ctrl-C) cancels and deletes the bridge's agent and package.
+(`npm run stop`, or Ctrl-C once) cancels and deletes the bridge's agent and package.
 Without `fit/app_blueprint.py`'s blueprint, the bridge serves Stage 5's, which has
 no embeddings, and the page's live embedding trail stays empty.
 
@@ -472,12 +464,11 @@ python3 fit/cleanup.py --yes     # delete it
 ```
 
 [`fit/cleanup.py`](fit/cleanup.py) deletes the agents, packages and bundles this quickstart
-left on Dev, from the ids the stages recorded in `fit/out/`: Stage 6's delivery
+left on the platform, from the ids the stages recorded in `fit/out/`: Stage 6's delivery
 agents and package; Stage 8's serving agent and package if `fit/serve.py` was killed
 before its own cleanup; and Stage 9's serving bridge leftovers and the 40 batch
 agents of `fit/library_embeddings.py`. The promoted blueprint stays, and so do
-the optimization and the eval; a `-served-records` copy left by an earlier
-version goes. Don't run it while `fit/serve.py` or `app-serving/` is running. To
+the optimization and the eval. Don't run it while `fit/serve.py` or `app-serving/` is running. To
 check that no serving agent of yours is still holding a worker:
 
 ```sh
@@ -488,39 +479,29 @@ curl -s "$ATAI_API_ENDPOINT/agents/instances?status=running&limit=100" -H "Autho
 
 ## Results, and they reproduce
 
-We ran the quickstart twice from scratch on Dev, the second time in a separate
-copy with nothing from the first: new prepared files, role files, uploads,
-optimization, promoted blueprint, eval and delivery. Every number came out the
-same:
+The numbers above are our runs of this branch, through packages at step 8, on
+2026-10-26 on a pre-release deployment. `fit/out/` and `eval_out/` hold the ids
+and outputs.
 
-| stage | measure | first run | second run |
-|---|---|---|---|
-| 1–3 | delivery rows; runs in a role; role checks | 80,640; 218; all passed | same, and every prepared file byte-identical |
-| 4 | validation macro-F1, k 5 / k 10 | 0.8547 / 0.8540 | same, from its own optimization |
-| 5 | test macro-F1; mean window detection | 0.7331; 78.0% | same, from its own blueprint, with all 7,545 predictions identical |
-| 6 | delivery outputs | 5 files, full coverage | byte-identical |
-| 7 | detection / false alarms / AUROC at the 1% threshold | 78.0% / 1.41% / 0.901 | same |
+| stage | measure | result |
+|---|---|---|
+| 1–3 | delivery rows; runs in a role; role checks | 80,640; 218; 180,835 passed |
+| 4 | validation macro-F1, k 5 / k 10 | 0.8547 / 0.8540 |
+| 5 | test macro-F1 | 0.7331 |
+| 6 | delivery outputs | 5 files, full coverage, step 8 |
+| 7 | detection / false alarms / AUROC at the 1% threshold | 78.5% / 2.11% / 0.903 |
+| 8 | served against batch, 230 windows | every label and score; median 797 ms a query |
 
-Those two runs were on `main` (bundles, step-1 delivery). On this branch, two
-package deliveries at step 8 on Dev (2026-10-26, each from its own optimization
-and blueprint) gave the same Stage 4, 5 and 8 numbers and the same Stage 7
-headline at the 1% threshold (78.5% / 2.11% / 0.903), but not byte-identical
+Independent package runs, each from its own optimization and blueprint, gave the
+same Stage 4, 5 and 8 numbers and the same Stage 7 headline, but not byte-identical
 outputs: a few scores moved in the last digits, enough to flip IDV 9's one
-borderline "detection" (a false alarm after onset) at the trial's threshold.
+borderline "detection" (a false alarm after onset) at the trial's threshold. On
+`main` (bundles, a step-1 delivery), the same prep scores 78.0% / 1.41% / 0.901 on
+production.
 
 So the prep, the platform and the scoring are deterministic here, up to those
-near-tie score differences. If your run
-gives different numbers, something differs in your data or setup, and the
-expected outputs above show at which stage.
-
-## What's left out, compared with the full example
-
-| full example | here | why |
-|---|---|---|
-| delivery over every remaining run: 10,406 runs in 496 files | 84 runs in 4 files | time: hours of agent runs instead of minutes |
-| a 24-trial search | 2 trials at its winner | each search costs platform time; the winner is already known |
-| the PCA T²/SPE bar every TEP paper compares against | none | the quickstart shows the lifecycle, not a benchmark |
-| the first design, through `ad-fitting`, and a live on-device app | none; the live app here is `app-serving/`, served from the platform | |
+near-tie score differences. If your run gives different numbers, something
+differs in your data or setup, and the expected outputs above show at which stage.
 
 ## Repo layout
 
@@ -535,7 +516,7 @@ expected outputs above show at which stage.
 | `fit/test.py` | Stage 5 |
 | `fit/deliver.py` | Stage 6 |
 | `fit/score_delivery.py`, `fit/evaluate_detection.py`, `fit/tep_common.py` | Stage 7 |
-| `fit/serve.py` | Stage 8: the promoted blueprint served over `/query` (Dev), delivery runs replayed one window per query, every answer checked against Stage 6 |
+| `fit/serve.py` | Stage 8: the promoted blueprint served, delivery runs replayed one window per query, every answer checked against Stage 6 |
 | `fit/app_blueprint.py`, `fit/library_embeddings.py`, `app-serving/` | Stage 9: the app's blueprint (embeddings on); the reference library's embeddings; the live app, served from the platform ([README](app-serving/README.md)) |
 | `fit/cleanup.py` | delete the agents, packages and bundles Stages 6, 8 and 9 left on the platform (`--yes`) |
 | `eval_out/serving/` | Stage 8's replay: a row per window, served against batch, and a summary |
