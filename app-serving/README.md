@@ -5,15 +5,12 @@ replayed as if the plant were running now, and every window goes to a **serving
 agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answers
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
-> **It holds a serving agent while it runs.** Agent serving is on production, Staging and Dev
-> (Dev has **3 serving workers for everyone**); this app holds one while it runs, and gives it
-> back when you stop it. Free-trial accounts serve on CPU only, so answers can be slower.
+> **It holds a serving agent while it runs,** and gives it back when you stop it.
+> Free-trial accounts serve on CPU only, so answers can be slower.
 
-It is the same app as the [full example's
-`app-serving/`](https://github.com/archetypeai/anomaly-discovery-agent-example-tep/tree/main/app-serving),
-with two differences: it serves this repo's promoted blueprint (k 5), and it replays
-the **delivery** runs (Stage 6's 4 files, 84 runs), so every served window can be
-checked against Stage 6's batch output.
+It serves this repo's promoted blueprint (k 5) and replays the **delivery** runs
+(Stage 6's 4 files, 84 runs), so every served window can be checked against Stage 6's
+batch output.
 
 ## Architecture
 
@@ -24,7 +21,7 @@ checked against Stage 6's batch output.
 ┌───────────────────────────┐  GET /status    ┌──────────────────────────────┐          │
 │ replayer (node)           │  POST /reset    │ serving bridge (node)        │◀─────────┘
 │ one delivery run at a     │  POST /start    │ the API key stays here;      │   POST /query   ┌──────────────────────────┐
-│ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ serving agent (Dev)      │
+│ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ serving agent            │
 │ waits for each block's    │  admin :9100    │ one query per window         │  the latest 48  │ promoted detector,       │
 │ windows before the next   │                 │                              │  samples        │ atai-records,            │
 └───────────────────────────┘                 └──────────────────────────────┘◀────────────────│ embeddings on            │
@@ -41,7 +38,7 @@ checked against Stage 6's batch output.
 - **The serving bridge** (`scripts/serving-bridge.js`) is the agent's local end. On
   start it creates a bundle of the promoted blueprint as it is, at step 1 with
   `output_embeddings: true`, and starts a serving agent: the platform supplies the
-  `atai-records` serving connectors itself, so no copy of the blueprint is made. For every window it sends the
+  `atai-records` serving connectors itself. For every window it sends the
   latest 48 samples as one query, and publishes the answer on `ad/results` with the
   window's timestamps put back (a served agent numbers the samples 0–47 within a
   query).
@@ -74,7 +71,7 @@ the Optimizations and Evals APIs return values, metrics and predictions, not
 embeddings. So the windows the detector was fitted on are recomputed:
 
 ```sh
-python3 fit/library_embeddings.py     # once, from the repo root: 40 batch runs, ~8 min
+python3 fit/library_embeddings.py     # optional, from the repo root: 40 batch runs, ~8 min
 ```
 
 It runs the 40 library files through the promoted blueprint in **batch**, at the
@@ -83,7 +80,8 @@ fit, 2,280 of them. PCA 1–2 of their embeddings, whitened, gives the cloud and
 projection, in `static/detector-view.{json,bin}`. Each live window's embedding from
 the served agent goes through the same projection. The detector's own PCA is fitted
 on these embeddings too, but it can't be read to confirm the axes, so the view is a
-recomputed one.
+recomputed one. The repo has its output, so rerun it only for a different window or
+step.
 
 ## Run it
 
@@ -116,8 +114,7 @@ about.
 
 ## Stop and clean up
 
-A running app holds a serving agent, and so one of the deployment's serving workers (Dev has 3),
-until the bridge deletes the agent or the platform releases it after 20 minutes
+A running app holds a serving agent, and so a serving worker, until the bridge deletes the agent or the platform releases it after 20 minutes
 without a query. Closing the browser tab does not stop it.
 
 1. **Stop the app.** Press Ctrl-C **once** in the `npm run dev` terminal and
@@ -179,8 +176,6 @@ path's agents (see the [repo README](../README.md)), whenever you're done with t
 | MQTT TCP | MQTT WS | Web | Agent admin |
 |---|---|---|---|
 | 1890 | 9008 | 5180 | 9100 (the serving bridge) |
-
-The same slot as the full example's `app-serving/`, so run one of the two at a time.
 
 ## Layout
 

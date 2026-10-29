@@ -1,5 +1,5 @@
 #!/bin/sh
-# Dev broker for the AD TEP demo, platform-served (app-serving/): TCP for the agent and replayer, WebSockets
+# Local broker for the AD TEP demo, platform-served (app-serving/): TCP for the agent and replayer, WebSockets
 # for the browser. Config in mosquitto/mosquitto.conf.
 set -e
 HERE=$(cd "$(dirname "$0")/.." && pwd)

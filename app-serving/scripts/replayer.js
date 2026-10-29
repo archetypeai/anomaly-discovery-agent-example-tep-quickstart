@@ -6,12 +6,10 @@
  * the "ongoing operation" the agent was delivered to), from data/prepared/full/,
  * so every served window can be checked against Stage 6's batch output.
  *
- * app-serving/: the copy of the full example's replayer for the platform-served agent. The
- * agent is scripts/serving-bridge.js, which implements the edge runtime's admin
- * API (/status, /reset, /start) on :9100, so the replay logic below is app/'s.
- * What differs: the ports, the detector's facts (read from fit/test.py's
- * promoted blueprint, not Stage 5's fit record), a `step` the viewer can switch
- * between 4 and 1, and pacing that counts the windows a block really completes.
+ * The agent is scripts/serving-bridge.js, which answers an admin API
+ * (/status, /reset, /start) on :9100. The detector's facts are read from
+ * fit/test.py's promoted blueprint; the viewer can switch the `step` between 4
+ * and 1, and pacing counts the windows a block really completes.
  *
  * Topics
  *   sensors/tep    replayer -> agent   key=value, `timestamp=<ms>,xmeas_1=<f>,...`
@@ -89,7 +87,7 @@ const WINDOWS_PER_BLOCK = Number(args['windows-per-block'] ?? 8);
 const BLOCK_TIMEOUT = Number(args['block-timeout'] ?? 60000);
 /** How long to wait for the bridge's admin API to answer at all before
  *  replaying without it. Once it answers, the replayer waits for as long as the
- *  serving agent takes to start (minutes when Dev's workers are all taken). */
+ *  serving agent takes to start (minutes when all serving workers are taken). */
 const AGENT_WAIT_S = Number(args['agent-wait'] ?? 90);
 /** Per-request bound on the admin API. A reset lands while the graph is still
  *  draining, so it is not instant — but it is not unbounded either. */

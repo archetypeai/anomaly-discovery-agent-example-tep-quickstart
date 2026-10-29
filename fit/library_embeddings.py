@@ -5,13 +5,13 @@
 
 The promoted detector was fitted on the library's 40 fault-free runs at the
 trial's window 48 and step 8, but it is a registry artifact (`aar_…`) with no
-download route, so its reference windows can't be read back the way app/ reads
-them from the archived `.safetensors`. They can be recomputed: a bundle on the
+download route, so its reference windows can't be read back. They can be
+recomputed: a bundle on the
 promoted blueprint at `step_size: 8` with `output_embeddings: true` runs each
 library file through the same encoder, on the same windows, and returns each
 window's 33 x 768 Omega embedding with its score (2,280 windows in all).
 
-The view is PCA 1-2 of those embeddings, whitened, in the layout app/ already
+The view is PCA 1-2 of those embeddings, whitened, in the layout the app
 reads: `app-serving/static/detector-view.{json,bin}` holds the 2,280 reference
 points, the mean and the two projection rows, so a live window's embedding lands
 in the same coordinates. The detector's own PCA is fitted on these embeddings

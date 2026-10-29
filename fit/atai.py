@@ -27,7 +27,7 @@ TERMINAL = {"completed", "failed", "canceled", "cancelled"}
 # no timestamp overrides: the default 5% sampling-rate tolerance invalidates
 # exactly the windows that straddle a seam. zscore_std_floor is not exposed by
 # `ad`; the platform fit uses its default.
-# The quickstart's search: the full example's 24-trial winner, with k 5 and 10
+# The quickstart's search: an earlier 24-trial search's winner, with k 5 and 10
 # (10 won there). A 2-point space runs both points.
 SEARCH = {"window_size": "48", "step_size": "8", "n_neighbors": "5,10", "metric": "l2",
           "pca_components": "16", "threshold": "1.215", "feature_names": "std,range,slope,median",

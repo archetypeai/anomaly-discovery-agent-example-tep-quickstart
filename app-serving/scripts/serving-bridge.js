@@ -2,9 +2,8 @@
  * The agent, on the Archetype AI platform: a bridge between the local broker
  * and a serving agent of the promoted TEP detector.
  *
- * In app/ the agent is `agent_edge_runtime` on this laptop, subscribed to the
- * broker. Here the agent runs on the platform (Dev's agent serving), and this
- * process stands where the runtime stood:
+ * The agent runs on the platform (agent serving), and this process connects it
+ * to the local broker:
  *
  *   sensors/tep ──► bridge: the latest 48 samples ──POST /query──► serving agent
  *                     ▲                                               │
@@ -22,7 +21,7 @@
  * - THE SAME ADMIN API AS THE EDGE RUNTIME, so the replayer is unchanged:
  *   GET /status answers once the serving agent is running, POST /reset drops
  *   the buffer and anything queued (a run switch), POST /start is a no-op.
- * - ONE SERVING WORKER, HELD WHILE THIS RUNS (Dev has 3 for everyone). On exit
+ * - ONE SERVING WORKER, HELD WHILE THIS RUNS. On exit
  *   the agent is cancelled and deleted, and the bundle deleted; the ids sit in
  *   fit/out/app_serving_state.json until then, so `python3 fit/cleanup.py`
  *   finds them after a hard kill. An agent the platform released (20 minutes
@@ -196,7 +195,7 @@ async function shutdown(sig) {
 	}
 }
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => shutdown(sig));
-// Anything unexpected still cleans up: an exit without it would hold a Dev worker.
+// Anything unexpected still cleans up: an exit without it would hold a serving worker.
 process.on('uncaughtException', (e) => { console.error('bridge:', e); shutdown('error'); });
 process.on('unhandledRejection', (e) => { console.error('bridge:', e); shutdown('error'); });
 
