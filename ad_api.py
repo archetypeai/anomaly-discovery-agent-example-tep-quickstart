@@ -33,11 +33,8 @@ import urllib.error
 import urllib.request
 import uuid
 
-# First runtime with atai_core #6317 ("identify stream boundaries and align
-# barrier copies at fan-ins"). Before it, a periodic checkpoint aborted the
-# forked `ad` graph in ConcatColumnsNode; run_ad_eval.py --chunk is the
-# workaround for environments still on an older build. tools/check_docs.py
-# reads this constant to keep the README's runtime floor in step.
+# The first platform runtime that aligns stream boundaries at fan-ins. Before
+# it, a periodic checkpoint aborted the forked `ad` graph in ConcatColumnsNode.
 BARRIER_FIX_RUNTIME = "1.1.9-590-194e878"
 
 # runner_config that turns the runner's automatic checkpoint triggers off
