@@ -25,8 +25,8 @@
 | 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
 | 6 | **deliver:** a bundle from that blueprint, run over the delivery files | 15 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
-| 8 | **serve:** the same blueprint answering one window per query (agent serving, Dev and Staging), checked against Stage 6 | ~25 min |
-| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md), Dev and Staging) | ~8 min once, then ~4 min a run |
+| 8 | **serve:** the same blueprint answering one window per query (agent serving), checked against Stage 6 | ~30 min |
+| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md)) | ~8 min once, then ~4 min a run |
 
   About **30 minutes** end to end, 24 of them on the platform. Platform times
   vary with load.
@@ -343,8 +343,9 @@ python3 fit/serve.py --windows-per-query 16   # up to 16 windows per query
 Stage 6 delivers in batch: upload a file, run an agent over it, download the output
 when the run is done. **Agent serving** keeps an agent loaded and answers a window
 of samples in one round trip, with no upload, queue or polling: what a plant
-historian would call every 3 minutes with the latest 48 samples. It is on Dev and
-Staging only, for first internal tests; Dev has 3 serving workers for everyone. The
+historian would call every 3 minutes with the latest 48 samples. It runs on
+production, Staging and Dev (Dev has 3 serving workers for everyone). Free-trial
+accounts serve on CPU only, so expect slower answers there than the times below. The
 [agent-serving example](https://github.com/archetypeai/agent-serving-example) has the
 calls and their limits.
 
@@ -367,23 +368,24 @@ calls and their limits.
 5. **Cleanup:** the agent is cancelled and deleted, and the bundle deleted, however
    the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
 
-**Expect** (ours, Dev, 2026-10-15), delivery file 1's fault-free run (sim 96) and
-its IDV 5 run (sim 26), 913 windows each:
+**Expect** (ours, production, 2026-10-29), delivery file 1's fault-free run (sim 96)
+and its IDV 5 run (sim 26), 913 windows each:
 
 ```
-Stage 8: 1,826 windows of 2 run(s) served in 1,826 queries, 1524 s
-  against Stage 6 (batch): predicted_label identical in 1,826/1,826, anomaly_score within 1e-4 in 1,825/1,826 (max relative difference 2.0e-02); invalid 0
-  latency per query: median 813 ms, p95 977 ms, max 1168 ms
+Stage 8: 1,826 windows of 2 run(s) served in 1,826 queries, 1727 s
+  against Stage 6 (batch): predicted_label identical in 1,826/1,826, anomaly_score within 1e-4 in 1,826/1,826 (max relative difference 3.7e-05); invalid 0
+  latency per query: median 928 ms, p95 1031 ms, max 1908 ms
   idv_00 sim 96: first sustained alarm, served 12.30 h into the run (a false alarm); batch 12.30 h into the run (a false alarm)
   idv_05 sim 26: first sustained alarm, served 0.20 h after onset; batch 0.20 h after onset
 ```
 
 - **The served agent gives the delivery's answers:** every label, and both runs'
   first alarms, the fault-free run's false alarm included. Each answer comes back
-  in about 0.8 s, for a sample that arrives every 3 minutes.
-- **A score can differ by a step, and often does not.** The run above had one such
-  window: IDV 5's window 473, 1.527 served against 1.497 in batch, both well over
-  the 1.215 threshold, with the other 1,825 agreeing to within 3×10⁻⁵. Serving and
+  in under a second, for a sample that arrives every 3 minutes.
+- **A score can differ by a step, and often does not.** The run above had none. Our
+  2026-10-15 run on Dev had one such window: IDV 5's window 473, 1.527 served
+  against 1.497 in batch, both well over the 1.215 threshold, with the other 1,825
+  agreeing to within 3×10⁻⁵ (1524 s, median 813 ms a query). Serving and
   batch embeddings differ by about 2×10⁻⁴, and with k = 5 that is sometimes enough
   to change which reference window is the 5th nearest, so the score moves by a step
   rather than by rounding. **It is not reproducible:** a 2026-10-20 rerun on
@@ -413,9 +415,8 @@ open http://localhost:5180
 time, as if the plant were running now, and sends every window to a **serving
 agent** of Stage 5's blueprint: an agent that stays loaded on the platform and
 answers a window in one round trip, under a second. A flowsheet, the 33 tags, the
-anomaly score and an embedding space show the answers as they come. Agent serving
-is on Dev and Staging only, for first tests (Dev has 3 workers for everyone); the app holds one
-while it runs and gives it back on `npm run stop`.
+anomaly score and an embedding space show the answers as they come. The app holds a
+serving agent while it runs and gives it back on `npm run stop`.
 
 - **A small Node bridge** keeps the latest 48 samples, sends each window as one
   query, and publishes the answer to the browser. It holds the API key, which never
@@ -427,7 +428,8 @@ while it runs and gives it back on `npm run stop`.
 - **Pace:** every 4th sample by default, a run in about 4 minutes; Settings →
   Pace switches to every sample, as Stage 6 delivered, at ~15 minutes a run.
 
-**Checked on Dev, 2026-10-15,** with delivery file 1's IDV 5 run at every 4th
+**Run on production, 2026-10-29,** with the committed `detector-view` files: it
+served and cleaned up as below. **Checked on Dev, 2026-10-15,** with delivery file 1's IDV 5 run at every 4th
 sample: all 229 windows had Stage 6's label, with scores within 1.5×10⁻⁵ of batch,
 33 embeddings per window and 866 ms per window; the run took about 4½ minutes.
 The reference library came out at 2,280 windows scored 0.949–1.108, all under the

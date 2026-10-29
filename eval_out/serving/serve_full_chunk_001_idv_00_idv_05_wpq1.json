@@ -1,6 +1,5 @@
 {
- "blueprint": "ad-tep-qs-otr_10jmfqnatn8q3vc8rh9d4e03a2",
- "served_blueprint": "ad-tep-qs-otr_10jmfqnatn8q3vc8rh9d4e03a2-served-records",
+ "blueprint": "ad-tep-qs-otr_503mjky34p9tfbd6sxh5crtkf7",
  "file": "full_chunk_001",
  "runs": [
   {
@@ -28,13 +27,13 @@
  "windows_per_query": 1,
  "queries": 1826,
  "same_label": 1826,
- "same_score": 1825,
- "max_score_rel_diff": 0.020229050187152042,
+ "same_score": 1826,
+ "max_score_rel_diff": 3.707525884899532e-05,
  "invalid": 0,
  "latency_ms": {
-  "median": 813,
-  "p95": 977,
-  "max": 1168
+  "median": 928,
+  "p95": 1031,
+  "max": 1908
  },
- "replay_seconds": 1524.3
+ "replay_seconds": 1726.8
 }

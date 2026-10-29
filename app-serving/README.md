@@ -5,10 +5,9 @@ replayed as if the plant were running now, and every window goes to a **serving
 agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answers
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
-> **Dev and Staging only.** Agent serving is on Dev (`https://platform.dev.u1.archetypeai.app`)
-> and Staging (`https://platform.stage.u1.archetypeai.app`) for first internal tests. Dev has
-> **3 serving workers for everyone**: this app holds one while it runs, and gives it back when
-> you stop it.
+> **It holds a serving agent while it runs.** Agent serving is on production, Staging and Dev
+> (Dev has **3 serving workers for everyone**); this app holds one while it runs, and gives it
+> back when you stop it. Free-trial accounts serve on CPU only, so answers can be slower.
 
 It is the same app as the [full example's
 `app-serving/`](https://github.com/archetypeai/anomaly-discovery-agent-example-tep/tree/main/app-serving),
@@ -56,11 +55,11 @@ checked against Stage 6's batch output.
   deletes its bundle. If it's killed hard, the ids are still in
   `fit/out/app_serving_state.json`, and `python3 fit/cleanup.py --yes` removes them.
   An agent the platform released after 20 minutes without a query (a replay paused that
-  long) is deleted and replaced on the next window, retrying while Dev's serving workers
+  long) is deleted and replaced on the next window, retrying while the serving workers
   are all taken. If anything can't be deleted on exit, the bridge says so and keeps the
   ids for `fit/cleanup.py`. See [Stop and clean up](#stop-and-clean-up).
 - **It holds the agent for as long as it runs, and says what it is doing.** Starting
-  an agent retries (15 s, doubling to 2 min) while Dev's serving workers are all
+  an agent retries (15 s, doubling to 2 min) while the serving workers are all
   taken, and windows wait in the bridge's queue until the agent is running; the
   replayer waits too. The phase (starting, waiting, running, replacing, stopped) goes out on
   `ad/agent`, retained, and shows in the menubar badge and in Settings; an MQTT will
@@ -88,7 +87,7 @@ recomputed one.
 
 ## Run it
 
-Prerequisites: Node 20+, `brew install mosquitto`, and Stages 4–6 run on Dev or Staging (where the app will serve). In the [repo README](../README.md) this is Stage 9
+Prerequisites: Node 20+, `brew install mosquitto`, and Stages 4–6 run on the deployment the app will serve from. In the [repo README](../README.md) this is Stage 9
 (`fit/out/test_state.json` names the promoted blueprint). Then:
 
 ```sh

@@ -22,7 +22,7 @@
  * - THE SAME ADMIN API AS THE EDGE RUNTIME, so the replayer is unchanged:
  *   GET /status answers once the serving agent is running, POST /reset drops
  *   the buffer and anything queued (a run switch), POST /start is a no-op.
- * - ONE SERVING WORKER, HELD WHILE THIS RUNS. Dev has 3 for everyone. On exit
+ * - ONE SERVING WORKER, HELD WHILE THIS RUNS (Dev has 3 for everyone). On exit
  *   the agent is cancelled and deleted, and the bundle deleted; the ids sit in
  *   fit/out/app_serving_state.json until then, so `python3 fit/cleanup.py`
  *   finds them after a hard kill. An agent the platform released (20 minutes
@@ -34,7 +34,7 @@
  *   waiting, running, replacing, stopped. An MQTT will clears a stale
  *   "running" if this process dies without saying so.
  *
- * Env (repo .env): ATAI_API_ENDPOINT (dev or staging), ATAI_API_KEY.
+ * Env (repo .env): ATAI_API_ENDPOINT, ATAI_API_KEY.
  * Env (app-serving/.env): MQTT_PORT, AGENT_PORT, STEP.
  */
 import mqtt from 'mqtt';
@@ -56,11 +56,6 @@ const ENDPOINT = ROOT ? `${ROOT}/api` : '';
 const KEY = process.env.ATAI_API_KEY;
 if (!ENDPOINT || !KEY) {
 	console.error('bridge: set ATAI_API_ENDPOINT and ATAI_API_KEY in the repo .env');
-	process.exit(1);
-}
-// Match the deployment, not one host: dev is api.dev.* and platform.dev.*, staging platform.stage.*
-if (!['.dev.', '.stage.'].some((d) => ROOT.includes(d))) {
-	console.error(`bridge: ${ENDPOINT}: agent serving is on dev and staging only for now`);
 	process.exit(1);
 }
 const MQTT_PORT = Number(process.env.MQTT_PORT ?? 1890);
@@ -205,7 +200,7 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => shutdow
 process.on('uncaughtException', (e) => { console.error('bridge:', e); shutdown('error'); });
 process.on('unhandledRejection', (e) => { console.error('bridge:', e); shutdown('error'); });
 
-/** Start an agent, retrying while Dev's serving workers are all taken. */
+/** Start an agent, retrying while the serving workers are all taken. */
 async function startWithRetry() {
 	live.running = false;
 	for (let wait = 15_000; !stopping; wait = Math.min(wait * 2, 120_000)) {
