@@ -131,7 +131,7 @@
 
 	<!-- agent -->
 	{@render box(600, 130, 290, 118, 'Anomaly Discovery Agent', agentAlive)}
-	<text x="626" y="168" font-size="10" fill={MUTED}>agent serving · platform (Dev)</text>
+	<text x="626" y="168" font-size="10" fill={MUTED}>agent serving · platform</text>
 	<text x="626" y="184" font-size="10" fill={MUTED}>
 		window {cfg.windowSize ?? 48} · a query every {cfg.stepSize ?? 4} samples
 	</text>

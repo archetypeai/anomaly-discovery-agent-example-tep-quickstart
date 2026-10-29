@@ -8,9 +8,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	// 5180 is app-serving's slot, next to app/'s 5179 in the allocation every
-	// canonical-agent app follows (app/README.md has the table), so both TEP
-	// monitors can run side by side. strictPort makes a clash FAIL rather than silently
+	// 5180 is the app's fixed port. strictPort makes a clash FAIL rather than silently
 	// drift to 5178 — an unpinned vite lands on whatever is free, which is how
 	// this demo came to answer on a port its own README did not name.
 	server: { port: 5180, strictPort: true },

@@ -52,7 +52,7 @@
 
 	// IDENTITY, not explanation: model · where it runs, in the shape of
 	// field · operator. Here the agent runs on the platform, through agent serving.
-	const SUBTITLE = 'Omega 1.5 + kNN · Archetype AI platform (Dev), agent serving';
+	const SUBTITLE = 'Omega 1.5 + kNN · Archetype AI platform, agent serving';
 
 	// The agent's call on the newest window, in words — OSM's `PREDICTION STATE`
 	// pair and RED's `Detection State`, applied to a continuous output. Three

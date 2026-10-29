@@ -3,7 +3,7 @@
 # bridge cancels and deletes its platform agent and bundle on SIGTERM, which
 # can take a while when the platform is slow: it gets up to 60 s.
 # npm starts the bridge and replayer with `--app=tep-serving`, which is what is
-# matched: the RED example's bridge and app/'s replayer share their script names.
+# matched: other demos' bridges and replayers can share these script names.
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 pkill -TERM -f "serving-bridge.js --app=tep-serving" 2>/dev/null
 i=0

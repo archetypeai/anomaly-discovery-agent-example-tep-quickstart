@@ -48,13 +48,6 @@ CHECKPOINTING_OFF = {"checkpointing": {
     "trigger_after_delay_ms": 0,
 }}
 
-# The JOS bucket backing job outputs on dev. A fitted classifier lands at a
-# fixed convention path under it; the /results endpoint hands back a presigned
-# URL instead, which expires and so cannot be used as a bundle artifact.
-JOS_S3_BUCKET = "atai-platform-dev-platform-data-us-west-2"
-JOS_OUTPUT_TEMPLATE = ("s3://{bucket}/jos/jobs/{job_id}/agent/worker-0/"
-                       "outputs/output/{filename}")
-
 
 def load_dotenv(path: str = ".env") -> None:
     if not os.path.exists(path):
@@ -92,14 +85,13 @@ def require_key() -> str:
 def deployment(endpoint: str) -> str:
     """What deployment an endpoint addresses, whatever hostname it arrives under.
 
-    api.dev.u1.archetypeai.app and platform.dev.u1.archetypeai.app are one
-    deployment under two names: an agent created through either is visible
-    through the other. Verified on 2026-10-20, when a bundle and its agents
-    recorded against api.dev.u1 all resolved through platform.dev.u1.
+    A deployment can answer under two names, api.<deployment> and
+    platform.<deployment>: an agent created through either is visible
+    through the other.
 
     So state written through one name has to load through the other. The
     generation (api, platform) is everything left of the first dot; the rest
-    names the deployment, which still separates dev.u1 from u1 from u2.
+    names the deployment, which still separates u1 from u2.
     """
     host = re.sub(r"^[a-z]+://", "", endpoint.strip()).split("/")[0].split(":")[0]
     return re.sub(r"^(api|platform)\.", "", host).lower()
@@ -113,7 +105,7 @@ def bundles_url(bundle_id: str = "") -> str:
     """Bundle collection endpoint.
 
     NOTE the plural. OSM and RED both use `/agents/bundle` (singular) in their
-    code and READMEs; that path now returns 404. Verified on dev 2026-08-14:
+    code and READMEs; that path now returns 404. Verified 2026-08-14:
       POST /agents/bundles          -> 201
       POST /agents/bundle           -> 404
       POST /agents/bundles/{id}/run -> 422 (reached the handler)
@@ -155,20 +147,20 @@ def list_bundle_runs(bundle_id: str, progress: bool = True) -> list:
 
     The instance listing takes `bundle_id=` and the platform validates it (a
     malformed id answers 400), so one filtered request replaces walking the
-    whole listing. Verified on dev 2026-10-20: the delivery bundle answered
+    whole listing. Verified 2026-10-20: the delivery bundle answered
     with its five runs and `has_more` false, and the scan below found the same
     five in 37 pages. If a deployment ever ignores the parameter the rows come
     back unfiltered, so the result is checked and the scan runs instead.
 
     The scan is kept as that fallback. It is slower than it sounds:
-    5,100 instances across 51 pages took ~10 s on dev, and it used to print
+    5,100 instances across 51 pages took ~10 s, and it used to print
     nothing while doing it, which reads exactly like a hang.
 
     The listing paginates with `after=<last id>`, and `next_cursor` is that id.
     It does NOT take `cursor=`: an unknown query parameter is ignored rather than
     rejected, so a client that passed one got the first page back on every
     request, matched the same run each time, and looped forever printing
-    "10 pages, 10 runs; 20 pages, 20 runs; ...". Verified on dev 2026-09-04.
+    "10 pages, 10 runs; 20 pages, 20 runs; ...". Verified 2026-09-04.
     The seen-id guard below makes a repeat page a hard stop rather than a loop,
     in case the parameter name moves again.
     """

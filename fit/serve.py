@@ -28,7 +28,6 @@ Stage 6's batch output for the same window:
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
 
-Dev and Staging only, like serving (https://github.com/archetypeai/agent-serving-example).
 Each query is answered on its own: a served agent keeps no window between
 queries, so a query must carry the whole window. Writes eval_out/serving/.
 """
@@ -78,10 +77,6 @@ def main() -> int:
     args = ap.parse_args()
 
     load_dotenv()
-    # Match the deployment, not one host: dev is api.dev.* and platform.dev.*, staging platform.stage.*
-    if not any(d in agents_base() for d in (".dev.", ".stage.")):
-        sys.exit("agent serving is on dev and staging only for now "
-                 "(e.g. https://platform.dev.u1.archetypeai.app, https://platform.stage.u1.archetypeai.app)")
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
     channels, window = bp["values"]["data_columns"], bp["values"]["window_size"]
     data = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}.csv")
