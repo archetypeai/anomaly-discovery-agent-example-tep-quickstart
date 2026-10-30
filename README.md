@@ -44,7 +44,16 @@
   optimizes the copy, promotes the best trial, tests it, then **packages** it
   (models resolved once), **deploys** the package as `batch` or `serving`, and
   runs **sessions** on the deployment: a batch session runs over input files, a
-  serving session answers `/query`. No step needs an org-admin key.
+  serving session answers `/query`. No step needs an org-admin key. Moving from
+  bundles and instances: [MIGRATION.md](MIGRATION.md).
+
+```mermaid
+flowchart LR
+  p["project"] --> c["copy of <code>ad</code>"] --> o["optimization<br/>Stage 4"] --> b["promoted blueprint<br/>Stage 5, + eval"]
+  b --> k["package"]
+  k --> db["deployment: batch"] --> sb["a session per file<br/>Stages 6, 9 library"]
+  k --> ds["deployment: serving"] --> ss["a session, <code>/query</code><br/>Stage 8, the app"]
+```
 
 - **Skip the 1.4 GB download:** Stage 1's prepared files and the role files are
   in the repo, in Git LFS. See [Shortcuts](#shortcuts-skip-the-download).
@@ -115,6 +124,14 @@ pip install -r requirements.txt    # numpy, pandas, pyreadr
 cp .env.example .env               # then set ATAI_API_KEY (needed from Stage 4 on)
 ```
 
+- **The API key** can have any role: no stage needs an org admin. Your platform
+  deployment must serve the lifecycle APIs; `curl -s -o /dev/null -w '%{http_code}\n'
+  "${ATAI_API_ENDPOINT%/api}/api/agents/sessions?limit=1" -H "Authorization: Bearer
+  $ATAI_API_KEY"` should print `200`.
+- **The project** is created by Stage 4 the first time, named `AD TEP quickstart`
+  (`PROJECT` in `fit/atai.py`), or reused if you already have one of that name.
+  Its id and its copy of `ad` are kept in `fit/out/project_state.json`.
+
 ### Shortcuts: skip the download
 
 Both Stage 1's output (`data/prepared/`, 66 MB) and Stage 2's (`data/roles/`,
@@ -143,7 +160,10 @@ Then go to [Stage 4](#stage-4-optimize).
 
 **To run again from scratch,** move `fit/out/` and `eval_out/` aside first: they
 hold this repo's run (state files with its ids), and with them `test.py` and
-`deliver.py` resume that run instead of starting a new one. Every script runs
+`deliver.py` resume that run instead of starting a new one. Without
+`fit/out/project_state.json`, Stage 4 finds your `AD TEP quickstart` project by
+name and copies `ad` into it again (under the same key, so delete the old copy
+first, or rename `BASE_KEY` in `fit/atai.py`). Every script runs
 from the repo root and is safe to rerun.
 
 ### Stage 0: download
@@ -480,6 +500,76 @@ and deletes them and the package.
 Without `fit/app_blueprint.py`'s blueprint, the bridge serves Stage 5's, which has
 no embeddings, and the page's live embedding trail stays empty.
 
+### Try the lifecycle by hand
+
+Stages 6 and 8 do this in Python; here it is with `curl`, one object at a time,
+from Stage 5's promoted blueprint. Run it from the repo root after Stage 5, with
+`jq` installed.
+
+```sh
+set -a; source .env; set +a                                  # the key and endpoint into the shell
+A="${ATAI_API_ENDPOINT%/api}/api/agents"; H="Authorization: Bearer $ATAI_API_KEY"; J="Content-Type: application/json"
+BP=$(jq -r .blueprint.id fit/out/test_state.json)            # Stage 5's promoted blueprint (blp_…)
+```
+
+1. **Package it.** The package lands in the blueprint's project, and
+   `resolved_models` shows the encoder (`mdl_…`) and the fitted detector (`aar_…`)
+   pinned for every run.
+
+   ```sh
+   PKG=$(curl -s -X POST "$A/packages" -H "$H" -H "$J" \
+     -d "{\"blueprint_ids\":[\"$BP\"],\"target\":{\"kind\":\"platform\"},\"name\":\"by hand\"}" | jq -r .id)
+   curl -s "$A/packages/$PKG" -H "$H" | jq '{status, project_id, blueprints}'    # until "ready"
+   ```
+
+2. **Batch: a deployment, and a session over one file.** The session runs as a
+   job; follow it, then download its output.
+
+   ```sh
+   DB=$(curl -s -X POST "$A/deployments" -H "$H" -H "$J" -d "{\"package_id\":\"$PKG\",\"kind\":\"batch\"}" | jq -r .id)
+   FID=$(curl -s -X POST "${ATAI_API_ENDPOINT%/api}/api/files" -H "$H" -F "file=@data/roles/delivery/tep_val_normal.csv" | jq -r .file_id)
+   SB=$(curl -s -X POST "$A/sessions" -H "$H" -H "$J" \
+     -d "{\"deployment_id\":\"$DB\",\"connectors\":{\"source\":[{\"type\":\"file\",\"id\":\"$FID\",\"format\":\"csv\"}]}}" | jq -r .id)
+   curl -s "$A/sessions/$SB" -H "$H" | jq '{status, error}'                     # until "completed", about a minute
+   curl -s "$A/sessions/$SB/events" -H "$H" | jq -r '.data[].message'
+   REF=$(curl -s "$A/sessions/$SB/results" -H "$H" | jq -r '.data[0].data.ref')
+   curl -s "${ATAI_API_ENDPOINT%/api}$REF" -H "$H" | head -5                   # the ref already starts with /api
+   ```
+
+3. **Serving: a deployment, and a session you query.** The deployment loads the
+   agent on a worker; the session is your handle on it. A query carries one
+   whole window, 48 samples of the 33 tags, one list per tag.
+
+   ```sh
+   DS=$(curl -s -X POST "$A/deployments" -H "$H" -H "$J" -d "{\"package_id\":\"$PKG\",\"kind\":\"serving\"}" | jq -r .id)
+   curl -s "$A/deployments/$DS" -H "$H" | jq .status                          # until "ready", seconds
+   SS=$(curl -s -X POST "$A/sessions" -H "$H" -H "$J" -d "{\"deployment_id\":\"$DS\"}" | jq -r .id)
+   curl -s "$A/sessions/$SS" -H "$H" | jq .status                             # until "running"
+   Q=$(mktemp)
+   python3 -c "
+   import csv, json
+   rows = list(csv.DictReader(open('data/roles/delivery/tep_val_normal.csv')))[:48]
+   tags = json.load(open('data/roles/manifest.json'))['channels']
+   print(json.dumps({'model': 'tep-ad', 'query': '', 'events': [{'type': 'data.numeric_array',
+         'event_data': {'contents': [[float(r[t]) for r in rows] for t in tags]}}]}))" > "$Q"
+   curl -s -X POST "$A/sessions/$SS/query" -H "$H" -H "$J" -d @"$Q" | jq '{status, query_response_time_ms, response}'
+   ```
+
+   A second session on the same `$DS` shares the same loaded agent. Cancelling a
+   session leaves the deployment `ready`, holding its worker, until it is stopped.
+
+4. **Clean up:** sessions, then deployments, then the package; each holds the next.
+
+   ```sh
+   curl -s -X POST "$A/sessions/$SS/cancel" -H "$H" -H "$J" -d '{}' > /dev/null
+   for s in $SS $SB; do curl -s -X DELETE "$A/sessions/$s" -H "$H"; done
+   for d in $DS $DB; do
+     curl -s -X POST "$A/deployments/$d/stop" -H "$H" -H "$J" -d '{}' > /dev/null
+     curl -s -X DELETE "$A/deployments/$d" -H "$H"
+   done
+   curl -s -X DELETE "$A/packages/$PKG" -H "$H"
+   ```
+
 ### Clean up the platform
 
 ```sh
@@ -545,6 +635,7 @@ differs in your data or setup, and the expected outputs above show at which stag
 | `fit/serve.py` | Stage 8: the promoted blueprint served, delivery runs replayed one window per query, every answer checked against Stage 6 |
 | `fit/app_blueprint.py`, `fit/library_embeddings.py`, `app-serving/` | Stage 9: the app's blueprint (embeddings on); the reference library's embeddings; the live app, served from the platform ([README](app-serving/README.md)) |
 | `fit/cleanup.py` | delete the sessions, deployments and packages Stages 6, 8 and 9 left on the platform (`--yes`) |
+| `MIGRATION.md` | moving from bundles and instances to projects, packages, deployments and sessions |
 | `eval_out/serving/` | Stage 8's replay: a row per window, served against batch, and a summary |
 | `data/prepared/` | Stage 1's output: library, validation, test and delivery files with their label sidecars (Git LFS) |
 | `data/roles/` | Stage 2's output: the role files and label sidecars Stages 3–7 read (Git LFS) |
