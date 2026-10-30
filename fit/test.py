@@ -58,8 +58,9 @@ def promote(opt_id: str, trial_id: str | None) -> dict:
         bp = trial["promoted_blueprint"]
         log(f"{tid} already promoted -> {bp['blueprint_key']} ({bp['id']})")
         return {"id": bp["id"], "key": bp["blueprint_key"], "trial": tid, "values": vals}
+    # No `blueprint_key`: choosing one takes the admin role. The default,
+    # <base key>-<trial id>, is ad-tep-qs-otr_... (fit/atai.py's BASE_KEY).
     bp = request("POST", f"{agents_base()}/optimizations/{opt_id}/trials/{tid}/promote", body={
-        "blueprint_key": f"ad-tep-qs-{tid}",
         "name": f"AD TEP quickstart (w {vals['window_size']}, step {vals['step_size']}, k {vals['n_neighbors']}, "
                 f"{vals['metric']}, PCA {vals['pca_components']}, threshold {vals['threshold']:.3f})",
         "description": f"Promoted from {opt_id}; detector fitted on the 40 fault-free reference sims."})

@@ -8,7 +8,6 @@
 	 * sat exactly where the eye lands when you are trying not to know yet.
 	 */
 	import * as Dialog from '@archetypeai/ds-ui-svelte-console/primitives/dialog';
-	import * as Tabs from '@archetypeai/ds-ui-svelte-console/primitives/tabs';
 	import { Button } from '@archetypeai/ds-ui-svelte-console/primitives/button';
 	import { Badge } from '@archetypeai/ds-ui-svelte-console/primitives/badge';
 	import { Label } from '@archetypeai/ds-ui-svelte-console/primitives/label';
@@ -27,7 +26,7 @@
 	const st = $derived(s.status);
 	const a = $derived(s.agent);
 	const cfg = $derived(st?.agent ?? {});
-	const step = $derived(Number(cfg.stepSize ?? 4));
+	const step = $derived(Number(cfg.stepSize ?? 8));
 	const hours = (/** @type {number} */ samples) => (samples * (st?.sampleSeconds ?? 180)) / 3600;
 
 	/** IDV 3, 9 and 15 are the ones the literature, and this repo's own evaluation
@@ -57,7 +56,7 @@
 						>{a?.phase ?? 'no bridge'}</Badge
 					>
 					<span><span class="text-muted-foreground">agent</span> {a?.agent ?? '—'}</span>
-					<span><span class="text-muted-foreground">bundle</span> {a?.bundle ?? '—'}</span>
+					<span><span class="text-muted-foreground">package</span> {a?.package ?? '—'}</span>
 					<span
 						><span class="text-muted-foreground">median query</span>
 						{a?.medianLatencyMs != null ? `${a.medianLatencyMs} ms` : '—'}</span
@@ -69,20 +68,12 @@
 
 			<section class="space-y-2">
 				<Label variant="sectionHeader">Pace</Label>
-				<Tabs.Root
-					value={String(step)}
-					onValueChange={(/** @type {string} */ v) => tep.setStep(Number(v))}
-				>
-					<Tabs.List variant="segmented">
-						<Tabs.Trigger value="4">Every 4th sample</Tabs.Trigger>
-						<Tabs.Trigger value="1">Every sample (exact)</Tabs.Trigger>
-					</Tabs.List>
-				</Tabs.Root>
 				<p class={PROSE}>
+					A window every {step} samples ({(hours(step) * 60).toFixed(0)} min of process time), the step
+					the optimization chose and every stage uses, so alarms match Stage 6's output window for
+					window. A detection (3 windows over the line) spans {(hours(2 * step) * 60).toFixed(0)} min.
 					Paced by the platform at {s.rate.toFixed(1)} windows/s: the replayer waits for each block's
-					windows. Every 4th sample plays a run in a few minutes, but a detection (3 windows over the
-					line) then spans 36 min of process time and its time is approximate. Every sample is how Stage
-					6 delivered: alarms match its output to the sample, at ~15 min a run.
+					windows.
 				</p>
 			</section>
 

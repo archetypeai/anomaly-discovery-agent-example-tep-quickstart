@@ -34,6 +34,39 @@ SEARCH = {"window_size": "48", "step_size": "8", "n_neighbors": "5,10", "metric"
           "trials": 2}
 
 
+PROJECT = "AD TEP quickstart"
+BASE_KEY = "ad-tep-qs"           # promoted trials are keyed <BASE_KEY>-<trial id>
+
+
+def base_blueprint() -> dict:
+    """The quickstart's project and its copy of the canonical `ad` blueprint.
+
+    Everything after it lives in the project: an optimization lands in its
+    blueprint's project, and so do the blueprints it promotes, their packages,
+    deployments and sessions. A deployment needs one, and the canonical `ad`
+    is outside any, so the optimizations search this copy instead. Copying
+    needs no admin role, unlike registering a blueprint.
+
+    Writes fit/out/project_state.json; returns {project, id, key}.
+    """
+    path = state_path("project")
+    state = load_state(path)
+    if "project" not in state:
+        found = [p for p in request("GET", f"{api_base()}/projects?limit=1000")["data"] if p["name"] == PROJECT]
+        state["project"] = found[0]["id"] if found else request(
+            "POST", f"{api_base()}/projects", body={
+                "name": PROJECT, "description": "Anomaly Discovery on the Tennessee Eastman process"})["id"]
+        save_state(path, state)
+        log(f"project {state['project']} ({PROJECT})")
+    if "base" not in state:
+        bp = request("POST", f"{agents_base()}/blueprints/ad/copy",
+                     body={"project_id": state["project"], "blueprint_key": BASE_KEY})
+        state["base"] = {"id": bp["id"], "key": bp["blueprint_key"]}
+        save_state(path, state)
+        log(f"copied ad into {state['project']} as {BASE_KEY} ({bp['id']})")
+    return {"project": state["project"], **state["base"]}
+
+
 def load_dotenv() -> None:
     """The repo's .env, wherever the script is run from."""
     ad_api.load_dotenv(str(REPO / ".env"))

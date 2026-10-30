@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
 """Stage 8 -- serve: the promoted detector answering over /query, checked against Stage 6.
 
-    python3 fit/serve.py                          # delivery file 1's fault-free run and IDV 5 (~25 min)
+    python3 fit/serve.py                          # delivery file 1's fault-free run and IDV 5 (~3 min)
     python3 fit/serve.py --faults idv_01 idv_19   # other runs of the file
     python3 fit/serve.py --file full_chunk_002    # another delivery file
-    python3 fit/serve.py --faults all             # all 21 runs of the file (~4 h)
+    python3 fit/serve.py --faults all             # all 21 runs of the file (~30 min)
 
-Stage 6 delivered the detector in batch: an agent run per file, the output read
-when the run is done. Serving keeps an agent loaded and answers a window in one
-round trip, as a plant historian would ask it every 3 minutes for the latest
-48 samples. This replays delivery runs that way and checks every answer against
+Stage 6 delivered the detector in batch: a session per file, the output read
+when the session is done. Serving keeps an agent loaded and answers a window in one
+round trip, as a plant historian would ask it every 24 minutes (8 samples) for
+the latest 48 samples. This replays delivery runs that way and checks every answer against
 Stage 6's batch output for the same window:
 
-  1. a bundle of fit/test.py's promoted blueprint, as it is, at step 1 (bundle
-     values override a blueprint's): the platform supplies the serving
-     connectors when it runs a bundle in serving mode;
-  2. that bundle run in serving mode;
-  3. each run replayed one sample at a time: every query holds the latest
-     `window_size` samples (`--windows-per-query N` sends N windows at once);
+  1. a package of fit/test.py's promoted blueprint, as it is. A package carries
+     no values, so the agent runs at the blueprint's own step;
+  2. that package deployed as `serving` (the agent placed on a worker and
+     loaded), and a session opened on the deployment to query it;
+  3. each run replayed at the blueprint's step, the one Optimize chose and
+     Stage 6 delivered at: a query every `step_size` samples holding the latest
+     `window_size` (`--windows-per-query N` sends N windows at once);
   4. every answer against Stage 6: `predicted_label`, and `anomaly_score` to
      within 1e-4 relative (served and batch differ by ~1e-5, float32 noise);
      the first sustained alarm (3 consecutive anomaly windows) of each run,
      served and batch;
-  5. the agent cancelled and deleted, and the bundle deleted, however it went
+  5. the session cancelled, the deployment stopped, and all three deleted, however it went
      (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
@@ -41,7 +42,8 @@ import time
 
 import pandas as pd
 
-from atai import REPO, agents_base, load_dotenv, load_state, log, request, save_state, state_path
+from atai import REPO, load_dotenv, load_state, log, request, save_state, state_path
+from ad_api import create_package, deploy, end_deployment, end_session, open_session, packages_url, sessions_url, wait_running
 
 MODEL = "tep-ad"                 # the name a query gives in `model`
 ONSET = 160                      # TEP's 48-hour runs: the fault starts after sample 160 (8 h)
@@ -61,7 +63,7 @@ def first_alarm(labels: list[str]) -> int | None:
 
 
 def stop(signum, _frame):
-    sys.exit(f"stopped by signal {signum}")       # so `finally` deletes the agent and bundle
+    sys.exit(f"stopped by signal {signum}")       # so `finally` ends the session and deployment
 
 
 def main() -> int:
@@ -78,51 +80,54 @@ def main() -> int:
     load_dotenv()
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
     channels, window = bp["values"]["data_columns"], bp["values"]["window_size"]
+    step = int(bp["values"]["step_size"])
     data = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}.csv")
     labels = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}_labels.csv")
     batch = pd.read_csv(REPO / "eval_out" / "delivery" / f"ad-output-{args.file}.csv")
-    if len(batch) != len(data) - window + 1:
-        sys.exit(f"{args.file}: Stage 6's output has {len(batch)} windows, expected {len(data) - window + 1}")
+    if len(batch) != (len(data) - window) // step + 1:
+        sys.exit(f"{args.file}: Stage 6's output has {len(batch)} windows, "
+                 f"expected {(len(data) - window) // step + 1} at step {step}")
 
-    runs = []                                   # (fault id, sim, first row, windows to replay)
+    # Batch windows start at rows 0, step, 2*step, ... of the file; a run replays the ones inside it.
+    runs = []                                   # (fault id, sim, run's first row, first window's row, windows)
     for (fault, sim), rows in labels.groupby(["fault_id", "simulationrun"], sort=False):
         if args.faults == ["all"] or fault in args.faults:
-            n = len(rows) - window + 1
-            runs.append((fault, int(sim), rows.index[0], min(n, args.max_windows or n)))
+            start, end = rows.index[0], rows.index[-1] + 1
+            lo = -(-start // step) * step
+            n = max(0, (end - window - lo) // step + 1)
+            runs.append((fault, int(sim), start, lo, min(n, args.max_windows or n)))
     if not runs:
         sys.exit(f"none of {args.faults} in {args.file}")
     wpq = max(1, min(args.windows_per_query, 16))
     X = data[channels].to_numpy(dtype=float)
-    log(f"{args.file}: {len(runs)} run(s), {sum(r[3] for r in runs):,} windows, {wpq} per query; model {bp['key']}")
+    log(f"{args.file}: {len(runs)} run(s), {sum(r[4] for r in runs):,} windows at step {step}, "
+        f"{wpq} per query; model {bp['key']}")
 
     live = state_path("serve")
     state = load_state(live)
-    if state.get("bundle"):
-        sys.exit(f"{live} holds an earlier replay's agent and bundle: run fit/cleanup.py first")
-    state["bundle"] = request("POST", f"{agents_base()}/bundles", body={
-        "blueprint": bp["key"], "name": "TEP Stage 8", "values": {"step_size": 1}})["id"]
-    save_state(live, state)
-    state["agent"] = request("POST", f"{agents_base()}/bundles/{state['bundle']}/run", body={"mode": "serving"})["id"]
-    save_state(live, state)
-    bundle, agent = state["bundle"], state["agent"]
-    log(f"bundle {bundle} · agent {agent}")
+    if state.get("package"):
+        sys.exit(f"{live} holds an earlier replay's session, deployment and package: run fit/cleanup.py first")
     served, latency = {}, []
     t_start = time.time()
     try:
-        while (status := request("GET", f"{agents_base()}/instances/{agent}").get("status")) != "running":
-            if status in ("failed", "completed", "cancelled", "canceled") or time.time() - t_start > 600:
-                sys.exit(f"agent {agent} is {status}, not running")
-            time.sleep(3)
-        for fault, sim, first, n in runs:
+        state["package"] = create_package(bp["id"], "TEP Stage 8")["id"]
+        save_state(live, state)
+        state["deployment"] = deploy(state["package"], "serving")["id"]
+        save_state(live, state)
+        state["session"] = open_session(state["deployment"])["id"]
+        save_state(live, state)
+        log(f"package {state['package']} · serving deployment {state['deployment']} · session {state['session']}")
+        wait_running(state["session"])
+        for fault, sim, _, first, n in runs:
             got = served[(fault, sim)] = []
             for k in range(0, n, wpq):
                 count = min(wpq, n - k)
-                lo = first + k
-                chunk = X[lo:lo + window + count - 1]
+                lo = first + k * step
+                chunk = X[lo:lo + window + (count - 1) * step]
                 body = {"model": MODEL, "query": "", "events": [{"type": "data.numeric_array",
                         "event_data": {"contents": [chunk[:, c].tolist() for c in range(len(channels))]}}]}
                 t = time.time()
-                answer = request("POST", f"{agents_base()}/instances/{agent}/query", body=body)
+                answer = request("POST", f"{sessions_url(state['session'])}/query", body=body)
                 latency.append(time.time() - t)
                 records = (answer.get("response") or {}).get("data")
                 if not isinstance(records, list) or len(records) != count:
@@ -131,19 +136,23 @@ def main() -> int:
             log(f"  {fault} (sim {sim}): {n} windows, {time.time() - t_start:.0f} s so far")
     finally:
         signal.signal(signal.SIGINT, signal.SIG_IGN)     # a second Ctrl-C mustn't cut the cleanup short
-        request("POST", f"{agents_base()}/instances/{agent}/cancel", body={})
-        request("DELETE", f"{agents_base()}/instances/{agent}", raw=True)
-        request("DELETE", f"{agents_base()}/bundles/{bundle}", raw=True)
-        live.unlink()
-        log(f"cancelled and deleted {agent}, deleted {bundle}")
+        if state.get("session"):
+            end_session(state["session"])
+        if state.get("deployment"):
+            end_deployment(state["deployment"])
+        if state.get("package"):
+            request("DELETE", packages_url(state["package"]), raw=True)
+        live.unlink(missing_ok=True)
+        log(f"ended and deleted {', '.join(state[k] for k in ('session', 'deployment', 'package') if k in state)}")
     elapsed = time.time() - t_start
 
     rows, per_run = [], []
-    for fault, sim, first, n in runs:
-        ref = batch.iloc[first:first + n]
+    for fault, sim, start, first, n in runs:
+        ref = batch.iloc[first // step:first // step + n]
+        offset = first - start                  # the run's first window starts this many rows in
         got = served[(fault, sim)]
         for k, (s, (_, b)) in enumerate(zip(got, ref.iterrows())):
-            rows.append({"fault_id": fault, "sim": sim, "window": k, "end_sample": k + window,
+            rows.append({"fault_id": fault, "sim": sim, "window": k, "end_sample": offset + k * step + window,
                          "batch_label": b.predicted_label, "served_label": s["predicted_label"],
                          "batch_score": b.anomaly_score, "served_score": s["anomaly_score"],
                          "served_invalid": s["invalid"],
@@ -152,8 +161,8 @@ def main() -> int:
         alarms = {}
         for who, labs in (("served", [s["predicted_label"] for s in got]), ("batch", ref.predicted_label.tolist())):
             i = first_alarm(labs)
-            # window i ends on sample i + window: hours into the run
-            alarms[who] = None if i is None else round((i + window) * SAMPLE_H, 2)
+            # window i ends on sample offset + i * step + window: hours into the run
+            alarms[who] = None if i is None else round((offset + i * step + window) * SAMPLE_H, 2)
         per_run.append({"fault_id": fault, "sim": sim, "windows": n, "first_alarm_h": alarms,
                         "onset_h": None if fault == "idv_00" else ONSET * SAMPLE_H})
 
@@ -163,7 +172,7 @@ def main() -> int:
     stem = OUT / f"serve_{args.file}_{label}_wpq{wpq}"
     df.to_csv(stem.with_suffix(".csv"), index=False)
     ms = sorted(x * 1000 for x in latency)
-    summary = {"blueprint": bp["key"], "file": args.file, "runs": per_run,
+    summary = {"blueprint": bp["key"], "file": args.file, "step_size": step, "runs": per_run,
                "windows": len(df), "windows_per_query": wpq, "queries": len(latency),
                "same_label": int(df.same_label.sum()), "same_score": int(df.same_score.sum()),
                "max_score_rel_diff": float((df.served_score.astype(float) / df.batch_score - 1).abs().max()),

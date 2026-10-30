@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Stage 9, once -- the reference library's embeddings, for app-serving/'s embedding view.
 
+    python3 fit/app_blueprint.py             # first, once: the winning configuration with embeddings on
     python3 fit/library_embeddings.py        # 40 batch runs (~8 min), then the view
 
 The promoted detector was fitted on the library's 40 fault-free runs at the
 trial's window 48 and step 8, but it is a registry artifact (`aar_…`) with no
 download route, so its reference windows can't be read back. They can be
-recomputed: a bundle on the
-promoted blueprint at `step_size: 8` with `output_embeddings: true` runs each
-library file through the same encoder, on the same windows, and returns each
+recomputed: a package of fit/app_blueprint.py's blueprint (the winning
+configuration, refitted with `output_embeddings: true`, since a package can't
+turn embeddings on) runs each library file through the same encoder, on the
+same windows, and returns each
 window's 33 x 768 Omega embedding with its score (2,280 windows in all).
 
 The view is PCA 1-2 of those embeddings, whitened, in the layout the app
@@ -34,29 +36,30 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from atai import REPO, ROLES, load_dotenv, load_state, log, manifest, request, save_state, state_path, upload_all
-from ad_api import CHECKPOINTING_OFF, bundles_url, download_results, poll_agent
+from atai import REPO, ROLES, agents_base, load_dotenv, load_state, log, manifest, save_state, state_path, upload_all
+from ad_api import create_package, deploy, deployment, download_results, open_session, poll_session
 
 OUT = REPO / "fit" / "out" / "library_embeddings"
 VIEW = REPO / "app-serving" / "static"
-STEP = 8
 TIMEOUT_S = 3600
 lock = threading.Lock()
 
 
 def deliver(m: dict, bp: dict) -> list[Path]:
-    """One batch agent per library file, outputs checked complete; resumable."""
+    """One batch session per library file, outputs checked complete; resumable."""
     STATE = state_path("library")
     state = load_state(STATE)
     save = lambda: save_state(STATE, state)  # noqa: E731
-    if "bundle" not in state:
-        b = request("POST", bundles_url(), body={
-            "blueprint": bp["key"], "name": "AD TEP library embeddings",
-            "values": {"step_size": STEP, "output_score": True, "output_embeddings": True,
-                       "runner_config": CHECKPOINTING_OFF}})
-        state["bundle"] = b["id"]
+    if "bundle" in state or "agents" in state or state.get("blueprint", bp["key"]) != bp["key"]:
+        sys.exit(f"{STATE} and fit/out/library_embeddings/ are from an earlier run: move them aside")
+    if "package" not in state:
+        pkg = create_package(bp["id"], "AD TEP library embeddings")
+        state.update(blueprint=bp["key"], package=pkg["id"])
         save()
-        log(f"bundle {b['id']} on {bp['key']} (step {STEP}, embeddings on)")
+        log(f"package {pkg['id']} on {bp['key']} (step {bp['values']['step_size']}, embeddings on)")
+    if "deployment" not in state:
+        state["deployment"] = deploy(state["package"], "batch")["id"]
+        save()
     paths = [ROLES / f["file"] for f in m["library"]]
     ids = upload_all(paths)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -65,14 +68,13 @@ def deliver(m: dict, bp: dict) -> list[Path]:
         dst = OUT / src.name
         if dst.exists() and dst.stat().st_size:
             return dst
-        runs = state.setdefault("agents", {})
+        runs = state.setdefault("sessions", {})
         if src.stem not in runs:
-            agent = request("POST", f"{bundles_url(state['bundle'])}/run", body={
-                "connectors": {"source": [{"type": "file", "id": ids[src], "format": "csv"}]}})
+            ses = open_session(state["deployment"], [ids[src]])
             with lock:
-                runs[src.stem] = agent["id"]
+                runs[src.stem] = ses["id"]
                 save()
-        poll_agent(runs[src.stem], TIMEOUT_S, interval_s=15)
+        poll_session(runs[src.stem], TIMEOUT_S, interval_s=15)
         if download_results(runs[src.stem], str(dst), source_csv=str(src)):
             log(f"{src.name}: done")
             return dst
@@ -92,8 +94,13 @@ def deliver(m: dict, bp: dict) -> list[Path]:
 def main() -> int:
     load_dotenv()
     m = manifest()
-    bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
-    channels, window = m["channels"], bp["values"]["window_size"]
+    app = load_state(state_path("app_blueprint"))
+    test = load_state(state_path("test"))
+    if not app.get("blueprint") or app.get("source") != test.get("blueprint", {}).get("key") \
+            or deployment(app["endpoint"]) != deployment(agents_base()):
+        sys.exit("no app-serving blueprint for this promoted blueprint and deployment: run fit/app_blueprint.py")
+    bp = app["blueprint"]
+    channels, window, step = m["channels"], bp["values"]["window_size"], bp["values"]["step_size"]
     outs = deliver(m, bp)
 
     vecs, scores, labels = [], [], []
@@ -139,18 +146,18 @@ def main() -> int:
         "channels": channels, "embeddingDim": dim // len(channels), "totalDim": dim, "nReference": n,
         "nPcaComponents": v["pca_components"], "whiten": True, "explainedVariance": [round(float(e), 4) for e in explained],
         "threshold": v["threshold"], "nNeighbors": v["n_neighbors"], "metric": v["metric"],
-        "windowSize": window, "stepSize": STEP, "blueprint": bp["key"],
+        "windowSize": window, "stepSize": step, "blueprint": bp["key"],
         "layout": layout, "dtype": "float32-le"}, indent=2))
 
     s = np.array(scores)
-    summary = {"blueprint": bp["key"], "window_size": window, "step_size": STEP, "files": len(outs),
+    summary = {"blueprint": bp["key"], "window_size": window, "step_size": step, "files": len(outs),
                "windows": n, "dim": dim, "explained_variance_pc1_pc2": [round(float(e), 4) for e in explained],
                "score": {"min": round(float(s.min()), 4), "median": round(float(np.median(s)), 4),
                          "max": round(float(s.max()), 4), "threshold": v["threshold"]},
                "anomaly_windows": labels.count("anomaly"),
                "view_bytes": offset}
     (REPO / "fit" / "out" / "library_embeddings.json").write_text(json.dumps(summary, indent=1))
-    print(f"\nreference library: {n:,} windows from {len(outs)} runs, window {window}, step {STEP}")
+    print(f"\nreference library: {n:,} windows from {len(outs)} runs, window {window}, step {step}")
     print(f"  scores {s.min():.3f}-{s.max():.3f} (median {np.median(s):.3f}) against threshold {v['threshold']:.3f}; "
           f"{labels.count('anomaly')} labelled anomaly")
     print(f"  PCA 1-2 explain {explained[0]:.1%} and {explained[1]:.1%} of the variance")
