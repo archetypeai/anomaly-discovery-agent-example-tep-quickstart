@@ -1,12 +1,13 @@
 {
  "endpoint": "https://platform.dev.u1.archetypeai.app/api",
- "blueprint": "ad-tep-qs-otr_4j7wbyp9058d7sv5s0an4z7g9t",
- "package": "pkg_78x63snvxm8qbrwhtw193kk65a",
- "agents": {
-  "tep_val_normal": "agt_669nx0q85k9ph8rnn189yf3x14",
-  "tep_full_chunk_002": "agt_6695xmbd979err2zd64ha8x1v0",
-  "tep_full_chunk_004": "agt_3ms2sbh7sq9fnrgmc6rm54e43k",
-  "tep_full_chunk_003": "agt_2hb9dp6tt98apbjb2qfyr7f16m",
-  "tep_full_chunk_001": "agt_0akytyrf1n9tnrnr30g02x2eyz"
+ "blueprint": "ad-tep-qs-otr_5qv9n83m2w8bwadt336q5skb6d",
+ "package": "pkg_4c334y4xra83vsg5z75r9bvf13",
+ "deployment": "dpl_7efzbkpgmk8qast5cbf1399fe9",
+ "sessions": {
+  "tep_val_normal": "ses_57et31ybk49sqtqr8ke8khsbaa",
+  "tep_full_chunk_002": "ses_65x3rj8zm18s2949ed14d7t13m",
+  "tep_full_chunk_001": "ses_0whyb2fadd8p0sppphd3c9kq8y",
+  "tep_full_chunk_003": "ses_4hg9dq2py49cz9anp6qmy0hrfy",
+  "tep_full_chunk_004": "ses_4jn9ewszfe9asar3xqam5des3d"
  }
 }

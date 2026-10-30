@@ -1,5 +1,5 @@
 {
- "blueprint": "ad-tep-qs-otr_4j7wbyp9058d7sv5s0an4z7g9t",
+ "blueprint": "ad-tep-qs-otr_5qv9n83m2w8bwadt336q5skb6d",
  "file": "full_chunk_001",
  "step_size": 8,
  "runs": [
@@ -32,9 +32,9 @@
  "max_score_rel_diff": 1.6555999600487148e-05,
  "invalid": 0,
  "latency_ms": {
-  "median": 798,
-  "p95": 903,
-  "max": 1002
+  "median": 889,
+  "p95": 1018,
+  "max": 1862
  },
- "replay_seconds": 196.5
+ "replay_seconds": 220.2
 }
