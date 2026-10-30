@@ -6,17 +6,16 @@
     python3 fit/serve.py --file full_chunk_002    # another delivery file
     python3 fit/serve.py --faults all             # all 21 runs of the file (~30 min)
 
-Stage 6 delivered the detector in batch: an agent run per file, the output read
-when the run is done. Serving keeps an agent loaded and answers a window in one
+Stage 6 delivered the detector in batch: a session per file, the output read
+when the session is done. Serving keeps an agent loaded and answers a window in one
 round trip, as a plant historian would ask it every 24 minutes (8 samples) for
 the latest 48 samples. This replays delivery runs that way and checks every answer against
 Stage 6's batch output for the same window:
 
-  1. a package of fit/test.py's promoted blueprint, as it is (Agent Lifecycle
-     2.0: packages replace bundles). A package carries
-     no values, so the agent runs at the blueprint's own step; the platform
-     supplies the serving connectors;
-  2. an instance of that package in serving mode;
+  1. a package of fit/test.py's promoted blueprint, as it is. A package carries
+     no values, so the agent runs at the blueprint's own step;
+  2. that package deployed as `serving` (the agent placed on a worker and
+     loaded), and a session opened on the deployment to query it;
   3. each run replayed at the blueprint's step, the one Optimize chose and
      Stage 6 delivered at: a query every `step_size` samples holding the latest
      `window_size` (`--windows-per-query N` sends N windows at once);
@@ -24,7 +23,7 @@ Stage 6's batch output for the same window:
      within 1e-4 relative (served and batch differ by ~1e-5, float32 noise);
      the first sustained alarm (3 consecutive anomaly windows) of each run,
      served and batch;
-  5. the agent cancelled and deleted, and the package deleted, however it went
+  5. the session cancelled, the deployment stopped, and all three deleted, however it went
      (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
@@ -43,8 +42,8 @@ import time
 
 import pandas as pd
 
-from atai import REPO, agents_base, load_dotenv, load_state, log, request, save_state, state_path
-from ad_api import create_package, packages_url
+from atai import REPO, load_dotenv, load_state, log, request, save_state, state_path
+from ad_api import create_package, deploy, end_deployment, end_session, open_session, packages_url, sessions_url, wait_running
 
 MODEL = "tep-ad"                 # the name a query gives in `model`
 ONSET = 160                      # TEP's 48-hour runs: the fault starts after sample 160 (8 h)
@@ -64,7 +63,7 @@ def first_alarm(labels: list[str]) -> int | None:
 
 
 def stop(signum, _frame):
-    sys.exit(f"stopped by signal {signum}")       # so `finally` deletes the agent and package
+    sys.exit(f"stopped by signal {signum}")       # so `finally` ends the session and deployment
 
 
 def main() -> int:
@@ -107,21 +106,18 @@ def main() -> int:
     live = state_path("serve")
     state = load_state(live)
     if state.get("package"):
-        sys.exit(f"{live} holds an earlier replay's agent and package: run fit/cleanup.py first")
-    state["package"] = create_package(bp["id"], "TEP Stage 8")["id"]
-    save_state(live, state)
-    state["agent"] = request("POST", f"{agents_base()}/instances", body={
-        "package_id": state["package"], "mode": "serving"})["id"]
-    save_state(live, state)
-    package, agent = state["package"], state["agent"]
-    log(f"package {package} · agent {agent}")
+        sys.exit(f"{live} holds an earlier replay's session, deployment and package: run fit/cleanup.py first")
     served, latency = {}, []
     t_start = time.time()
     try:
-        while (status := request("GET", f"{agents_base()}/instances/{agent}").get("status")) != "running":
-            if status in ("failed", "completed", "cancelled", "canceled") or time.time() - t_start > 600:
-                sys.exit(f"agent {agent} is {status}, not running")
-            time.sleep(3)
+        state["package"] = create_package(bp["id"], "TEP Stage 8")["id"]
+        save_state(live, state)
+        state["deployment"] = deploy(state["package"], "serving")["id"]
+        save_state(live, state)
+        state["session"] = open_session(state["deployment"])["id"]
+        save_state(live, state)
+        log(f"package {state['package']} · serving deployment {state['deployment']} · session {state['session']}")
+        wait_running(state["session"])
         for fault, sim, _, first, n in runs:
             got = served[(fault, sim)] = []
             for k in range(0, n, wpq):
@@ -131,7 +127,7 @@ def main() -> int:
                 body = {"model": MODEL, "query": "", "events": [{"type": "data.numeric_array",
                         "event_data": {"contents": [chunk[:, c].tolist() for c in range(len(channels))]}}]}
                 t = time.time()
-                answer = request("POST", f"{agents_base()}/instances/{agent}/query", body=body)
+                answer = request("POST", f"{sessions_url(state['session'])}/query", body=body)
                 latency.append(time.time() - t)
                 records = (answer.get("response") or {}).get("data")
                 if not isinstance(records, list) or len(records) != count:
@@ -140,11 +136,14 @@ def main() -> int:
             log(f"  {fault} (sim {sim}): {n} windows, {time.time() - t_start:.0f} s so far")
     finally:
         signal.signal(signal.SIGINT, signal.SIG_IGN)     # a second Ctrl-C mustn't cut the cleanup short
-        request("POST", f"{agents_base()}/instances/{agent}/cancel", body={})
-        request("DELETE", f"{agents_base()}/instances/{agent}", raw=True)
-        request("DELETE", packages_url(package), raw=True)
-        live.unlink()
-        log(f"cancelled and deleted {agent}, deleted {package}")
+        if state.get("session"):
+            end_session(state["session"])
+        if state.get("deployment"):
+            end_deployment(state["deployment"])
+        if state.get("package"):
+            request("DELETE", packages_url(state["package"]), raw=True)
+        live.unlink(missing_ok=True)
+        log(f"ended and deleted {', '.join(state[k] for k in ('session', 'deployment', 'package') if k in state)}")
     elapsed = time.time() - t_start
 
     rows, per_run = [], []

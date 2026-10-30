@@ -1,25 +1,13 @@
 #!/usr/bin/env python3
-"""Minimal stdlib-only client for the Archetype AI Agent API.
+"""Minimal stdlib-only client for the Archetype AI Agents API (Agent Lifecycle 2.0).
 
-Shared by run_ad_fit.py (build phase) and run_ad_example.py (inference).
 Auth and endpoint come from the environment, with a local .env loaded if
 present: ATAI_API_KEY, ATAI_API_ENDPOINT.
 
-Adapted from the Rare Event Detection example's `red_api.py`; the endpoints and
-polling behaviour are identical, only the blueprint and artifact names differ.
-
-Two names matter and both are easy to get wrong:
-
-  * the inference blueprint is `ad`, and its artifact key is `ad-detector`.
-    A near-identical canonical blueprint `ada` also exists with the key
-    `ada-detector`. Mixing them is not caught at bundle creation -- the bundle
-    is accepted, reports `status: ready`, and then fails ~30 s into the run with
-    an error that names the job poller rather than the missing artifact. This is
-    the same failure RED documented for its `rad-` / `red-classifier` rename.
-
-  * the fitting blueprint is `ad-fitting`, which reports `is_canonical: false`.
-    It is org-scoped, so an org admin must register it once before anyone can
-    fit. `blueprint_must_exist` checks up front rather than failing mid-run.
+The lifecycle: a blueprint in a project is packaged (its models resolved once),
+the package is deployed as `batch` or `serving`, and work runs in sessions on a
+deployment. A batch session is one run over its input files; a serving session
+answers `/query`, one request at a time, until it is cancelled.
 """
 from __future__ import annotations
 
@@ -33,18 +21,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-# The first platform runtime that aligns stream boundaries at fan-ins. Before
-# it, a periodic checkpoint aborted the forked `ad` graph in ConcatColumnsNode.
-BARRIER_FIX_RUNTIME = "1.1.9-590-194e878"
-
-# runner_config that turns the runner's automatic checkpoint triggers off
-# (agent_runner/src/main.rs:50-51 defaults: 50 MiB of source input or 10 min;
-# `<= 0` disables). Both launch paths apply it unless --checkpointing is passed.
-CHECKPOINTING_OFF = {"checkpointing": {
-    "trigger_after_input_byte_size": 0,
-    "trigger_after_delay_ms": 0,
-}}
-
+TERMINAL = {"completed", "failed", "cancelled"}
 
 def load_dotenv(path: str = ".env") -> None:
     if not os.path.exists(path):
@@ -71,14 +48,6 @@ def api_base() -> str:
     return f"{endpoint}/api"
 
 
-def require_key() -> str:
-    load_dotenv()
-    key = os.environ.get("ATAI_API_KEY")
-    if not key:
-        sys.exit("ATAI_API_KEY is not set (put it in .env)")
-    return key
-
-
 def deployment(endpoint: str) -> str:
     """What deployment an endpoint addresses, whatever hostname it arrives under.
 
@@ -98,133 +67,81 @@ def agents_base() -> str:
     return f"{api_base()}/agents"
 
 
-def bundles_url(bundle_id: str = "") -> str:
-    """Bundle collection endpoint.
-
-    NOTE the plural. OSM and RED both use `/agents/bundle` (singular) in their
-    code and READMEs; that path now returns 404. Verified 2026-08-14:
-      POST /agents/bundles          -> 201
-      POST /agents/bundle           -> 404
-      POST /agents/bundles/{id}/run -> 422 (reached the handler)
-      DELETE /agents/bundles/{id}   -> 204
-    There is also no `/agents/bundles/{id}/runs` listing -- to recover a
-    bundle's runs, filter `/agents/instances` by `bundle_id`.
-    """
-    base = f"{api_base()}/agents/bundles"
-    return f"{base}/{bundle_id}" if bundle_id else base
-
-
 def packages_url(package_id: str = "") -> str:
-    """Package collection endpoint (Agent Lifecycle 2.0, replacing bundles).
-
-    A package pins blueprints and the models they resolve to; it carries no
-    values. Verified 2026-10-26: `values` on POST /packages
-    or POST /instances is accepted and silently dropped, so an agent runs with
-    exactly the values the blueprint was promoted with.
-    """
+    """A package pins one blueprint and the models it resolves to. It carries no
+    values: a package runs its blueprint exactly as it was promoted, so every
+    setting, outputs included, is chosen when the blueprint is made."""
     base = f"{agents_base()}/packages"
     return f"{base}/{package_id}" if package_id else base
 
 
+def deployments_url(deployment_id: str = "") -> str:
+    base = f"{agents_base()}/deployments"
+    return f"{base}/{deployment_id}" if deployment_id else base
+
+
+def sessions_url(session_id: str = "") -> str:
+    base = f"{agents_base()}/sessions"
+    return f"{base}/{session_id}" if session_id else base
+
+
+def _wait_for(url: str, status: str, waiting: str, timeout_s: int, every_s: int = 3) -> dict:
+    obj = request("GET", url)
+    t0 = time.time()
+    while obj["status"] == waiting:
+        if time.time() - t0 > timeout_s:
+            raise SystemExit(f"{obj['id']} still {waiting} after {timeout_s} s")
+        time.sleep(every_s)
+        obj = request("GET", url)
+    if obj["status"] != status:
+        raise SystemExit(f"{obj['id']} is {obj['status']}, not {status}: {obj.get('error')}")
+    return obj
+
+
 def create_package(blueprint_id: str, name: str, timeout_s: int = 600) -> dict:
-    """Package one blueprint for the platform and wait until it is ready."""
+    """Package one blueprint for the platform and wait until it is ready.
+
+    The package lands in its blueprint's project; deploying needs one."""
     pkg = request("POST", packages_url(), body={
         "blueprint_ids": [blueprint_id], "target": {"kind": "platform"}, "name": name})
-    t0 = time.time()
-    while pkg["status"] == "building":
-        if time.time() - t0 > timeout_s:
-            raise SystemExit(f"package {pkg['id']} still building after {timeout_s} s")
-        time.sleep(5)
-        pkg = request("GET", packages_url(pkg["id"]))
-    if pkg["status"] != "ready":
-        raise SystemExit(f"package {pkg['id']} is {pkg['status']}: {pkg}")
-    return pkg
+    return _wait_for(packages_url(pkg["id"]), "ready", "building", timeout_s, every_s=5)
 
 
-def _runs_by_filter(bundle_id: str, progress: bool = True, key: str = "bundle_id"):
-    """The bundle's (or package's) runs via `bundle_id=` (`package_id=`), or None if the filter is not honored."""
-    out, after = [], None
-    while True:
-        url = f"{agents_base()}/instances?{key}={bundle_id}&limit=100"
-        if after:
-            url += f"&after={after}"
-        try:
-            page = request("GET", url)
-        except SystemExit:
-            return None                            # unsupported: fall back to the scan
-        rows = page.get("data", [])
-        if any(r.get(key) != bundle_id for r in rows):
-            return None                            # ignored: the rows are everyone's
-        out += rows
-        if not rows or not page.get("has_more"):
-            break
-        after = page.get("next_cursor") or rows[-1].get("id")
-        if not after:
-            break
-    if progress:
-        print(f"  {len(out)} run(s) belong to {bundle_id}", flush=True)
-    return out
+def deploy(package_id: str, kind: str, timeout_s: int = 600) -> dict:
+    """Deploy a package as `batch` or `serving` and wait until it is ready.
+
+    A batch deployment is ready at once; a serving one is placed on a worker
+    first, usually within seconds."""
+    dpl = request("POST", deployments_url(), body={"package_id": package_id, "kind": kind})
+    return _wait_for(deployments_url(dpl["id"]), "ready", "deploying", timeout_s)
 
 
-def list_package_runs(package_id: str, progress: bool = True) -> list:
-    """Every agent launched from a package; [] if the listing ignores `package_id=`."""
-    return _runs_by_filter(package_id, progress, key="package_id") or []
+def open_session(deployment_id: str, file_ids: list[str] | None = None) -> dict:
+    """A batch session over `file_ids` (one output per input), or a serving
+    session when there are none."""
+    body = {"deployment_id": deployment_id}
+    if file_ids:
+        body["connectors"] = {"source": [{"type": "file", "id": f, "format": "csv"} for f in file_ids]}
+    return request("POST", sessions_url(), body=body)
 
 
-def list_bundle_runs(bundle_id: str, progress: bool = True) -> list:
-    """Every agent launched from a bundle, newest first.
+def wait_running(session_id: str, timeout_s: int = 600) -> dict:
+    """A serving session takes queries once it is `running`."""
+    return _wait_for(sessions_url(session_id), "running", "pending", timeout_s)
 
-    The instance listing takes `bundle_id=` and the platform validates it (a
-    malformed id answers 400), so one filtered request replaces walking the
-    whole listing. Verified 2026-10-20: the delivery bundle answered
-    with its five runs and `has_more` false, and the scan below found the same
-    five in 37 pages. If a deployment ever ignores the parameter the rows come
-    back unfiltered, so the result is checked and the scan runs instead.
 
-    The scan is kept as that fallback. It is slower than it sounds:
-    5,100 instances across 51 pages took ~10 s, and it used to print
-    nothing while doing it, which reads exactly like a hang.
+def end_session(session_id: str) -> None:
+    """Cancel a session that is still going, then delete it."""
+    if request("GET", sessions_url(session_id))["status"] not in TERMINAL:
+        request("POST", f"{sessions_url(session_id)}/cancel", body={})
+    request("DELETE", sessions_url(session_id), raw=True)
 
-    The listing paginates with `after=<last id>`, and `next_cursor` is that id.
-    It does NOT take `cursor=`: an unknown query parameter is ignored rather than
-    rejected, so a client that passed one got the first page back on every
-    request, matched the same run each time, and looped forever printing
-    "10 pages, 10 runs; 20 pages, 20 runs; ...". Verified 2026-09-04.
-    The seen-id guard below makes a repeat page a hard stop rather than a loop,
-    in case the parameter name moves again.
-    """
-    filtered = _runs_by_filter(bundle_id, progress)
-    if filtered is not None:
-        return filtered
 
-    out, after, pages, seen = [], None, 0, set()
-    while True:
-        url = f"{agents_base()}/instances?limit=100"
-        if after:
-            url += f"&after={after}"
-        page = request("GET", url)
-        pages += 1
-        rows = page.get("data", [])
-        ids = {r.get("id") for r in rows}
-        if not rows or ids <= seen:
-            if rows:
-                print("  WARNING: the instance listing repeated a page; pagination "
-                      "may have changed. Stopping with what was found.", flush=True)
-            break
-        seen |= ids
-        out += [r for r in rows if r.get("bundle_id") == bundle_id]
-        if progress and pages % 10 == 0:
-            print(f"  ...scanned {pages} pages of instances, "
-                  f"{len(out)} run(s) matched so far", flush=True)
-        if not page.get("has_more"):
-            break
-        after = page.get("next_cursor") or rows[-1].get("id")
-        if not after:
-            break
-    if progress:
-        print(f"  scanned {pages} page(s); {len(out)} run(s) belong to this bundle",
-              flush=True)
-    return out
+def end_deployment(deployment_id: str) -> None:
+    """Stop a deployment that is still up, then delete it."""
+    if request("GET", deployments_url(deployment_id))["status"] not in ("stopped", "failed"):
+        request("POST", f"{deployments_url(deployment_id)}/stop", body={})
+    request("DELETE", deployments_url(deployment_id), raw=True)
 
 
 def request(method: str, url: str, body=None, headers=None, raw: bool = False,
@@ -285,92 +202,29 @@ def upload_file(path: str, rename: str | None = None) -> dict:
         sys.exit(f"upload of {path} failed ({e.code}): {e.read().decode(errors='replace')}")
 
 
-def blueprint_must_exist(key: str) -> None:
-    req = urllib.request.Request(f"{agents_base()}/blueprints/{key}")
-    req.add_header("Authorization", f"Bearer {os.environ['ATAI_API_KEY']}")
-    try:
-        with urllib.request.urlopen(req):
-            return
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            sys.exit(f"blueprint '{key}' is not registered in your org — ask an org admin.")
-        raise
+def poll_session(session_id: str, timeout_s: int, interval_s: int = 20) -> str:
+    """Poll a batch session until it ends, printing its events as they appear.
 
-
-def agent_errors(agent_id: str) -> list:
-    """Error-level entries for an agent.
-
-    They live at /logs, NOT /events. `/events` returns only info-level lifecycle
-    messages ("run started", "dispatched to JOS as ..."), so a poller watching it
-    sees nothing when the pod dies. `/logs` carries the real thing:
-
-        {"level": "ERROR", "event_type": "pod.terminated",
-         "message": "Container agent terminated: Error (exit=1)"}
-
-    This matters because `status` is not reliable either -- we observed agents
-    whose pod had terminated still reporting `status: running` hours later. With
-    both signals missed, a poller waits out its whole timeout on a dead run.
-    """
-    try:
-        data = request("GET", f"{agents_base()}/instances/{agent_id}/logs").get("data", [])
-    except SystemExit:
-        return []
-    return [e for e in data if (e.get("level") or "").upper() == "ERROR"]
-
-
-def poll_agent(agent_id: str, timeout_s: int, interval_s: int = 20) -> str:
-    """Poll until terminal, streaming new audit events as they appear.
-
-    Terminal is decided by THREE signals, because no single one is trustworthy:
-      1. `status` reaching a terminal value  -- often never happens;
-      2. an ERROR entry at /logs             -- the reliable failure signal;
-      3. the timeout                         -- scale it to the expected work.
-    """
-    agents = agents_base()
+    Returns the final status, or `running` when the timeout came first."""
     deadline = time.time() + timeout_s
     seen: set[str] = set()
-    status = "running"
-    while status == "running" and time.time() < deadline:
+    status = "pending"
+    while status not in TERMINAL and time.time() < deadline:
         time.sleep(interval_s)
-        status = request("GET", f"{agents}/instances/{agent_id}").get("status")
-        for ev in request("GET", f"{agents}/instances/{agent_id}/events").get("data", []):
+        ses = request("GET", sessions_url(session_id))
+        status = ses["status"]
+        events = request("GET", f"{sessions_url(session_id)}/events").get("data", [])
+        for ev in reversed(events):                    # newest first
             marker = f"{ev.get('created_at')}{ev.get('message')}"
             if marker not in seen:
                 seen.add(marker)
                 print(f"  [{ev.get('level', 'info')}] {ev.get('created_at', '')}  "
-                      f"{ev.get('message', '')}")
-        errs = agent_errors(agent_id)
-        if errs:
-            for e in errs[:3]:
-                print(f"  [ERROR] {e.get('event_type', '')}: "
-                      f"{(e.get('message') or '')[:160]}")
-            if status == "running":
-                print("  status still says 'running', but /logs reports an error "
-                      "-- treating as failed.")
-            return "failed"
-        print(f"  {time.strftime('%H:%M:%S')} status={status}")
-    if status == "running":
-        print(f"  timed out after {timeout_s/60:.0f} min with status still 'running'")
+                      f"{session_id}: {ev.get('message', '')}")
+        if ses.get("error"):
+            print(f"  {session_id}: {ses['error']}")
+    if status not in TERMINAL:
+        print(f"  {session_id}: timed out after {timeout_s/60:.0f} min, still {status}")
     return status
-
-
-def jos_job_id(agent_id: str) -> str | None:
-    """The JOS job id, needed to build a durable s3:// path for a fitted artifact.
-
-    The instance record carries `job_id` directly, so the event stream is only a
-    fallback -- RED had to scrape the "dispatched to JOS as ..." line because it
-    did not know the field was there.
-    """
-    inst = request("GET", f"{agents_base()}/instances/{agent_id}")
-    if inst.get("job_id"):
-        return inst["job_id"]
-    events = request("GET", f"{agents_base()}/instances/{agent_id}/events")
-    job_id = None
-    for ev in events.get("data", []):
-        m = re.search(r"dispatched to JOS as (job_\w+)", str(ev.get("message", "")))
-        if m:
-            job_id = m.group(1)
-    return job_id
 
 
 def _last_timestamp(csv_path: str) -> float | None:
@@ -417,13 +271,13 @@ def _output_coverage(out_path: str, source_end: float) -> tuple[float, float]:
     return (end / source_end if source_end else 1.0), shortfall
 
 
-def _first_result(agent_id: str) -> tuple[list, dict, str | None]:
+def _first_result(session_id: str) -> tuple[list, dict, str | None]:
     """One /results call: (items, first item's inner data, its download ref).
 
     The `ref` is a presigned URL that expires (~20 min), so every retry has to ask
     /results again rather than reuse the previous one.
     """
-    results = request("GET", f"{agents_base()}/instances/{agent_id}/results")
+    results = request("GET", f"{sessions_url(session_id)}/results")
     items = results.get("data", results if isinstance(results, list) else [])
     if not items:
         return [], {}, None
@@ -433,22 +287,23 @@ def _first_result(agent_id: str) -> tuple[list, dict, str | None]:
 
 
 def _download(ref: str) -> bytes | None:
-    """Follow a result ref. A fitted-artifact ref is an absolute presigned S3 URL;
-    a run-output ref is a relative platform path ("/files/download/<name>") that
-    resolves under the versioned files API with the bearer token. Network errors
-    return None so the caller can poll again instead of dying mid-wait."""
+    """Follow a result ref: an absolute presigned URL, or a platform path fetched
+    with the bearer token. Network errors return None so the caller can poll
+    again instead of dying mid-wait."""
     try:
         if ref.startswith("http"):
             with urllib.request.urlopen(ref, timeout=120) as resp:
                 return resp.read()
-        return request("GET", f"{api_base()}{ref}", raw=True)
+        # A session's ref is a root path, `/api/files/<id>/content`, not one under api_base().
+        base = api_base().removesuffix("/api") if ref.startswith("/api/") else api_base()
+        return request("GET", f"{base}{ref}", raw=True)
     except (urllib.error.URLError, TimeoutError, ConnectionError,
             http.client.HTTPException) as e:          # incl. IncompleteRead mid-download
         print(f"  download failed ({e}); retrying")
         return None
 
 
-def download_results(agent_id: str, out_path: str,
+def download_results(session_id: str, out_path: str,
                      source_csv: str | None = None,
                      settle_s: int = 180, appear_s: int = 60) -> str | None:
     """Fetch /results and save the first output to out_path, or return None.
@@ -481,7 +336,7 @@ def download_results(agent_id: str, out_path: str,
     """
     appear_deadline = time.time() + appear_s
     while True:
-        items, inner, ref = _first_result(agent_id)
+        items, inner, ref = _first_result(session_id)
         if items:
             break
         if time.time() >= appear_deadline:
@@ -536,14 +391,14 @@ def download_results(agent_id: str, out_path: str,
                 print(f"  WARNING: output covers {frac * 100:.1f}% of the input, "
                       f"{short:,.0f}s short, after {settle_s}s. The artifact is "
                       f"incomplete -- scoring it would silently give a wrong lead "
-                      f"time -- so nothing was saved. Re-download for {agent_id} "
+                      f"time -- so nothing was saved. Re-download for {session_id} "
                       f"in a minute.")
             else:
                 print(f"  WARNING: the artifact was still changing after {settle_s}s; "
-                      f"nothing saved. Re-download for {agent_id} in a minute.")
+                      f"nothing saved. Re-download for {session_id} in a minute.")
             return None
         time.sleep(10 if source_end else 5)
-        items, inner, ref = _first_result(agent_id)
+        items, inner, ref = _first_result(session_id)
         if not ref:
             print("  results disappeared mid-download")
             _discard(tmp_path)

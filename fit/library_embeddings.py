@@ -36,9 +36,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from atai import (REPO, ROLES, agents_base, load_dotenv, load_state, log, manifest, request, save_state,
-                  state_path, upload_all)
-from ad_api import create_package, deployment, download_results, poll_agent
+from atai import REPO, ROLES, agents_base, load_dotenv, load_state, log, manifest, save_state, state_path, upload_all
+from ad_api import create_package, deploy, deployment, download_results, open_session, poll_session
 
 OUT = REPO / "fit" / "out" / "library_embeddings"
 VIEW = REPO / "app-serving" / "static"
@@ -47,17 +46,20 @@ lock = threading.Lock()
 
 
 def deliver(m: dict, bp: dict) -> list[Path]:
-    """One batch agent per library file, outputs checked complete; resumable."""
+    """One batch session per library file, outputs checked complete; resumable."""
     STATE = state_path("library")
     state = load_state(STATE)
     save = lambda: save_state(STATE, state)  # noqa: E731
-    if "bundle" in state or state.get("blueprint", bp["key"]) != bp["key"]:
+    if "bundle" in state or "agents" in state or state.get("blueprint", bp["key"]) != bp["key"]:
         sys.exit(f"{STATE} and fit/out/library_embeddings/ are from an earlier run: move them aside")
     if "package" not in state:
         pkg = create_package(bp["id"], "AD TEP library embeddings")
         state.update(blueprint=bp["key"], package=pkg["id"])
         save()
         log(f"package {pkg['id']} on {bp['key']} (step {bp['values']['step_size']}, embeddings on)")
+    if "deployment" not in state:
+        state["deployment"] = deploy(state["package"], "batch")["id"]
+        save()
     paths = [ROLES / f["file"] for f in m["library"]]
     ids = upload_all(paths)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -66,14 +68,13 @@ def deliver(m: dict, bp: dict) -> list[Path]:
         dst = OUT / src.name
         if dst.exists() and dst.stat().st_size:
             return dst
-        runs = state.setdefault("agents", {})
+        runs = state.setdefault("sessions", {})
         if src.stem not in runs:
-            agent = request("POST", f"{agents_base()}/instances", body={
-                "package_id": state["package"], "connectors": {"source": [{"type": "file", "id": ids[src], "format": "csv"}]}})
+            ses = open_session(state["deployment"], [ids[src]])
             with lock:
-                runs[src.stem] = agent["id"]
+                runs[src.stem] = ses["id"]
                 save()
-        poll_agent(runs[src.stem], TIMEOUT_S, interval_s=15)
+        poll_session(runs[src.stem], TIMEOUT_S, interval_s=15)
         if download_results(runs[src.stem], str(dst), source_csv=str(src)):
             log(f"{src.name}: done")
             return dst

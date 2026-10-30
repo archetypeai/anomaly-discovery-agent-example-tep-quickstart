@@ -25,7 +25,7 @@ from __future__ import annotations
 import datetime
 import sys
 
-from atai import (COLUMN, NORMAL, ROLES, aggregate, agents_base, api_base, example, load_dotenv,
+from atai import (COLUMN, NORMAL, ROLES, aggregate, agents_base, api_base, base_blueprint, example, load_dotenv,
                   load_state, log, manifest, request, save_state, state_path, upload_all, wait)
 
 
@@ -48,7 +48,7 @@ def main() -> int:
         ids = upload_all(lib + val)
         pinned = {k: v for k, v in winner["values"].items() if k != "n_neighbors"}
         stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        body = {"name": f"ad-tep app {stamp}", "blueprint_id": request("GET", f"{agents_base()}/blueprints/ad")["id"],
+        body = {"name": f"ad-tep app {stamp}", "blueprint_id": base_blueprint()["id"],
                 "primary": "anomaly.macro_f1",
                 "overrides": {"values": {**pinned, "output_embeddings": True}},
                 # the search space can't be empty: k, with the winner's one value
@@ -73,7 +73,6 @@ def main() -> int:
             f"recall {a['detection_recall']:.4f}, precision {a['detection_precision']:.4f}")
         bp = trial.get("promoted_blueprint") or request(
             "POST", f"{agents_base()}/optimizations/{opt['id']}/trials/{trial['id']}/promote", body={
-                "blueprint_key": f"ad-tep-qs-app-{trial['id']}",
                 "name": f"AD TEP quickstart, app-serving ({winner['key']} with embeddings on)",
                 "description": f"{winner['key']}'s configuration with output_embeddings: true, "
                                f"refitted in {opt['id']}, for app-serving's embedding view."})
