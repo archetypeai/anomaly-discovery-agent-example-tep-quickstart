@@ -13,7 +13,7 @@
  *   .env and is the only thing that talks to the platform.
  * - A QUERY CARRIES THE WHOLE WINDOW. A served agent keeps nothing between
  *   queries (fit/serve.py, Stage 8), so the bridge keeps the buffer and sends the latest
- *   `window_size` samples every `step` samples.
+ *   `window_size` samples every `step_size` samples, the blueprint's own step.
  * - THE SAME MESSAGE AS THE EDGE RUNTIME. `ad/results` gets the record the
  *   agent answered (anomaly_score, predicted_label, invalid, embedding_<tag>),
  *   with the window's timestamps put back: the served agent numbers samples
@@ -22,19 +22,25 @@
  *   GET /status answers once the serving agent is running, POST /reset drops
  *   the buffer and anything queued (a run switch), POST /start is a no-op.
  * - ONE SERVING WORKER, HELD WHILE THIS RUNS. On exit
- *   the agent is cancelled and deleted, and the bundle deleted; the ids sit in
+ *   the agent is cancelled and deleted, and the package deleted; the ids sit in
  *   fit/out/app_serving_state.json until then, so `python3 fit/cleanup.py`
  *   finds them after a hard kill. An agent the platform released (20 minutes
  *   without a query, e.g. a paused replay) is deleted and replaced on the next
- *   window: a bundle that still has an agent can't be deleted (409). Starting
+ *   window: a package that still has an agent can't be deleted. Starting
  *   one retries while all the workers are taken, and windows wait in the queue
  *   until the agent is running.
  * - THE PAGE SEES THE AGENT'S PHASE on `ad/agent` (retained): starting,
  *   waiting, running, replacing, stopped. An MQTT will clears a stale
  *   "running" if this process dies without saying so.
+ * - A PACKAGE, NOT A BUNDLE (Agent Lifecycle 2.0). A package carries no values,
+ *   so the agent runs a blueprint exactly as promoted. Stage 5's blueprint has
+ *   `output_embeddings: false`; fit/app_blueprint.py promotes the same
+ *   configuration with embeddings on, and the bridge serves that one when it
+ *   exists, so the page's embedding view gets its live trail. Without it the
+ *   bridge serves Stage 5's blueprint and the trail stays empty.
  *
  * Env (repo .env): ATAI_API_ENDPOINT, ATAI_API_KEY.
- * Env (app-serving/.env): MQTT_PORT, AGENT_PORT, STEP.
+ * Env (app-serving/.env): MQTT_PORT, AGENT_PORT.
  */
 import mqtt from 'mqtt';
 import fs from 'node:fs';
@@ -81,10 +87,19 @@ if (test.endpoint && deployment(test.endpoint) !== deployment(ENDPOINT)) {
 	);
 	process.exit(1);
 }
-const PROMOTED = test.blueprint.key;
+/** fit/app_blueprint.py's blueprint, if it was made from this promoted blueprint on this deployment. */
+const app = readJson(path.join(REPO, 'fit', 'out', 'app_blueprint_state.json'));
+const served =
+	app?.blueprint && app.source === test.blueprint.key && deployment(app.endpoint) === deployment(ENDPOINT)
+		? app.blueprint
+		: test.blueprint;
+if (served === test.blueprint)
+	console.warn('bridge: no fit/out/app_blueprint_state.json for this blueprint: serving it without embeddings (run python3 fit/app_blueprint.py for the trail)');
+const PROMOTED = served.key;
+const PROMOTED_ID = served.id;
 const CHANNELS = test.blueprint.values.data_columns;
 const WINDOW = test.blueprint.values.window_size;
-let step = Number(process.env.STEP ?? 4);
+const step = Number(test.blueprint.values.step_size ?? 8);
 
 // ------------------------------------------------------------------ the platform
 
@@ -104,10 +119,10 @@ async function api(method, p, body) {
 	return text ? JSON.parse(text) : {};
 }
 
-/** `agents`: every agent of the bundle not yet deleted, the current one last. */
-const live = { bundle: null, agent: null, agents: [], running: false, phase: 'starting' };
+/** `agents`: every agent of the package not yet deleted, the current one last. */
+const live = { package: null, agent: null, agents: [], running: false, phase: 'starting' };
 const save = () => fs.writeFileSync(STATE, JSON.stringify(
-	{ endpoint: ENDPOINT, bundle: live.bundle, agent: live.agent, agents: live.agents }, null, 1));
+	{ endpoint: ENDPOINT, package: live.package, agent: live.agent, agents: live.agents }, null, 1));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const latencies = [];
 
@@ -116,19 +131,25 @@ function announce(phase, detail = '') {
 	live.phase = phase;
 	const ms = [...latencies].sort((a, b) => a - b);
 	client.publish('ad/agent', JSON.stringify({ phase, detail, running: live.running, agent: live.agent,
-		bundle: live.bundle, blueprint: PROMOTED, step, queued: queue.length,
+		package: live.package, blueprint: PROMOTED, step, queued: queue.length,
 		medianLatencyMs: ms[Math.floor(ms.length / 2)] ?? null }), { retain: true });
 }
 
 async function startAgent() {
-	if (!live.bundle) {
-		// The promoted blueprint as it is, at step 1: the platform supplies the serving
-		// connectors when a bundle runs in serving mode, so no served copy is made.
-		live.bundle = (await api('POST', '/bundles', { blueprint: PROMOTED, name: 'TEP app-serving',
-			values: { step_size: 1, output_embeddings: true } })).id;
+	if (!live.package) {
+		// The promoted blueprint as it is: the platform supplies the serving
+		// connectors in serving mode, so no served copy is made.
+		let pkg = await api('POST', '/packages', { blueprint_ids: [PROMOTED_ID], target: { kind: 'platform' },
+			name: 'TEP app-serving' });
+		live.package = pkg.id;
 		save();
+		while (pkg.status === 'building') {
+			await sleep(2000);
+			pkg = await api('GET', `/packages/${live.package}`);
+		}
+		if (pkg.status !== 'ready') throw new Error(`package ${live.package} is ${pkg.status}`);
 	}
-	live.agent = (await api('POST', `/bundles/${live.bundle}/run`, { mode: 'serving' })).id;
+	live.agent = (await api('POST', '/instances', { package_id: live.package, mode: 'serving' })).id;
 	live.agents.push(live.agent);
 	save();
 	announce('starting', `agent ${live.agent}`);
@@ -142,7 +163,7 @@ async function startAgent() {
 	}
 	live.running = true;
 	announce('running');
-	console.log(`bridge: serving agent ${live.agent} running (bundle ${live.bundle}, ${PROMOTED})`);
+	console.log(`bridge: serving agent ${live.agent} running (package ${live.package}, ${PROMOTED})`);
 }
 
 /** Cancel and delete an agent; true once it is gone (404 counts). */
@@ -171,9 +192,9 @@ async function shutdown(sig) {
 	let left = 0;
 	try {
 		for (const id of [...live.agents]) if (!(await dropAgent(id))) left++;
-		if (live.bundle && !left) {
+		if (live.package && !left) {
 			try {
-				await api('DELETE', `/bundles/${live.bundle}`);
+				await api('DELETE', `/packages/${live.package}`);
 			} catch (e) {
 				if (e.status !== 404) {
 					console.error(`bridge: ${e.message}`);
@@ -186,7 +207,7 @@ async function shutdown(sig) {
 			console.error(`bridge: not everything was deleted; run python3 fit/cleanup.py --yes (ids in ${path.relative(REPO, STATE)})`);
 		} else {
 			fs.rmSync(STATE, { force: true });
-			console.log(`bridge: deleted its agent(s) and bundle ${live.bundle ?? '(none)'}`);
+			console.log(`bridge: deleted its agent(s) and package ${live.package ?? '(none)'}`);
 		}
 		announce('stopped');
 		await new Promise((r) => client.end(false, {}, r));
@@ -302,16 +323,6 @@ client.on('connect', () => {
 });
 client.on('message', (topic, payload) => {
 	if (topic === 'sensors/tep') return onSample(payload);
-	// The replayer says which stride the viewer chose (Settings).
-	try {
-		const s = JSON.parse(payload.toString());
-		const want = Number(s.agent?.stepSize);
-		if (Number.isFinite(want) && want > 0 && want !== step) {
-			step = want;
-			console.log(`bridge: step ${step}`);
-			announce(live.phase);
-		}
-	} catch { /* not ours to parse */ }
 });
 client.on('error', (e) => console.error('bridge mqtt error:', e.message));
 
@@ -331,7 +342,7 @@ http.createServer((req, res) => {
 	};
 	if (req.method === 'GET' && req.url === '/status') {
 		const ms = [...latencies].sort((a, b) => a - b);
-		return reply(live.running ? 200 : 503, { running: live.running, agent: live.agent, bundle: live.bundle,
+		return reply(live.running ? 200 : 503, { running: live.running, agent: live.agent, package: live.package,
 			blueprint: PROMOTED, step, queued: queue.length, medianLatencyMs: ms[Math.floor(ms.length / 2)] ?? null });
 	}
 	if (req.method === 'POST' && req.url === '/reset') {

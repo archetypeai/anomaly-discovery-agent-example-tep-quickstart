@@ -1,12 +1,12 @@
 {
- "endpoint": "https://platform.u1.archetypeai.app/api",
- "blueprint": "ad-tep-qs-otr_503mjky34p9tfbd6sxh5crtkf7",
- "bundle": "bnd_5a28w15m1f8rw9g8cfke3v0a99",
+ "endpoint": "https://platform.dev.u1.archetypeai.app/api",
+ "blueprint": "ad-tep-qs-otr_4j7wbyp9058d7sv5s0an4z7g9t",
+ "package": "pkg_78x63snvxm8qbrwhtw193kk65a",
  "agents": {
-  "tep_val_normal": "agt_4f8xt7daxz8d7sh4gha1b1b86r",
-  "tep_full_chunk_002": "agt_2d3kgn5sq38tvst9hagdfdpbcj",
-  "tep_full_chunk_004": "agt_39nkngd67x8vm8kyhbh79nd1t6",
-  "tep_full_chunk_003": "agt_65jvh8569p923t2j8t3ff5yv60",
-  "tep_full_chunk_001": "agt_65mzjffyjk9fb80kc7gk2a8n3a"
+  "tep_val_normal": "agt_669nx0q85k9ph8rnn189yf3x14",
+  "tep_full_chunk_002": "agt_6695xmbd979err2zd64ha8x1v0",
+  "tep_full_chunk_004": "agt_3ms2sbh7sq9fnrgmc6rm54e43k",
+  "tep_full_chunk_003": "agt_2hb9dp6tt98apbjb2qfyr7f16m",
+  "tep_full_chunk_001": "agt_0akytyrf1n9tnrnr30g02x2eyz"
  }
 }

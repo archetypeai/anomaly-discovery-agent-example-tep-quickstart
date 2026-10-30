@@ -1,10 +1,18 @@
 {
  "optimization": {
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+  "id": "opt_724sarwzab8hs9mawq8bxh15j0",
+  "name": "ad-tep 20261026T213432Z",
+  "org_id": "org_4460ne2c1b9bbv8b1e27fhj1m1",
+  "project_id": null,
+  "blueprint_id": "blp_0z4r73zx0j84pb1zk0r4ra61n9",
+========
   "id": "opt_3w1j08skc29zvtzb7p6bgapmvt",
   "name": "ad-tep 20261029T054257Z",
   "org_id": "org_4h32x1d3ep8x1tz1w10216mtr0",
   "project_id": null,
   "blueprint_id": "blp_66zmaafqt987htw5qtstabbgtw",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
   "primary": "anomaly.macro_f1",
   "objective": "macro_f1",
   "resolved_targets": {
@@ -85,6 +93,7 @@
   "budget": {
    "max_trials": 2
   },
+  "constraints": [],
   "training_examples": [
    {
     "name": "tep_ref_normal_sim001",
@@ -92,7 +101,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim001-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim001-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "4kzR2Q=="
      }
@@ -112,7 +125,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim002-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim002-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "6C/+UQ=="
      }
@@ -132,7 +149,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim003-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim003-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "VwdoVw=="
      }
@@ -152,7 +173,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim004-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim004-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "pLiBWA=="
      }
@@ -172,7 +197,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim005-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim005-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "wu17eQ=="
      }
@@ -192,7 +221,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim006-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim006-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "bPBsqA=="
      }
@@ -212,7 +245,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim007-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim007-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "G1yiWA=="
      }
@@ -232,7 +269,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim008-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim008-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "tmTKKw=="
      }
@@ -252,7 +293,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim009-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim009-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "imtx8A=="
      }
@@ -272,7 +317,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim010-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim010-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "zO8u9Q=="
      }
@@ -292,7 +341,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim011-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim011-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "gClVsQ=="
      }
@@ -312,7 +365,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim012-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim012-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "X47xaw=="
      }
@@ -332,7 +389,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim013-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim013-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "eyDF5g=="
      }
@@ -352,7 +413,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim014-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim014-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "T9Fa2Q=="
      }
@@ -372,7 +437,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim015-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim015-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "etQOQA=="
      }
@@ -392,7 +461,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim016-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim016-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "/PTaFA=="
      }
@@ -412,7 +485,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim017-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim017-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "gaNA4g=="
      }
@@ -432,7 +509,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim018-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim018-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "vvQItg=="
      }
@@ -452,7 +533,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim019-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim019-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "1ERu1w=="
      }
@@ -472,7 +557,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim020-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim020-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "5NCf4w=="
      }
@@ -492,7 +581,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim021-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim021-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "vWlGeA=="
      }
@@ -512,7 +605,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim022-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim022-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "2ilGvw=="
      }
@@ -532,7 +629,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim023-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim023-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "kelsWg=="
      }
@@ -552,7 +653,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim024-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim024-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "6wQPfQ=="
      }
@@ -572,7 +677,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim025-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim025-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "9G/cHw=="
      }
@@ -592,7 +701,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim026-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim026-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "VAKbGg=="
      }
@@ -612,7 +725,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim027-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim027-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "kBlQhQ=="
      }
@@ -632,7 +749,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim028-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim028-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "px3Iog=="
      }
@@ -652,7 +773,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim029-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim029-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "gYO5xg=="
      }
@@ -672,7 +797,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim030-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim030-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "QBLVXg=="
      }
@@ -692,7 +821,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim031-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim031-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "qAYwXg=="
      }
@@ -712,7 +845,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim032-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim032-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "g4kQzw=="
      }
@@ -732,7 +869,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim033-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim033-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "WzkE8g=="
      }
@@ -752,7 +893,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim034-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim034-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "FTGldA=="
      }
@@ -772,7 +917,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim035-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim035-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "A8bPpw=="
      }
@@ -792,7 +941,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim036-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim036-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "TquiCQ=="
      }
@@ -812,7 +965,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim037-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim037-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "xhjmgw=="
      }
@@ -832,7 +989,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim038-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim038-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "u0bKQg=="
      }
@@ -852,7 +1013,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim039-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim039-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "zW2sgg=="
      }
@@ -872,7 +1037,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim040-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__library__tep_ref_normal_sim040-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "Mw2X3Q=="
      }
@@ -894,7 +1063,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__validation__tep_eval_slice_01-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__validation__tep_eval_slice_01-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "idiiCQ=="
      }
@@ -914,7 +1087,11 @@
     "inputs": [
      {
       "type": "file",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+      "id": "ad-tep-qs-data__roles__validation__tep_val_normal-20261026T211345Z.csv",
+========
       "id": "ad-tep-qs-data__roles__validation__tep_val_normal-20261029T054252Z.csv",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
       "format": "csv",
       "crc32c": "g6tZdQ=="
      }
@@ -929,11 +1106,19 @@
     }
    }
   ],
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+  "best_trial_id": "otr_4j7wbyp9058d7sv5s0an4z7g9t",
+  "best_trial": {
+   "id": "otr_4j7wbyp9058d7sv5s0an4z7g9t",
+   "optimization_id": "opt_724sarwzab8hs9mawq8bxh15j0",
+   "trial_number": 2,
+========
   "best_trial_id": "otr_503mjky34p9tfbd6sxh5crtkf7",
   "best_trial": {
    "id": "otr_503mjky34p9tfbd6sxh5crtkf7",
    "optimization_id": "opt_3w1j08skc29zvtzb7p6bgapmvt",
    "trial_number": 1,
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
    "trial_values": {
     "models": {},
     "values": {
@@ -1066,8 +1251,13 @@
    "objective_value": 0.854715956717214,
    "feasible": true,
    "status": "completed",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+   "created_at": "2026-10-26T21:34:33.100568Z",
+   "completed_at": "2026-10-26T21:40:04.778761Z"
+========
    "created_at": "2026-10-29T05:42:57.868930Z",
    "completed_at": "2026-10-29T05:46:43.676870Z"
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
   },
   "status": "completed",
   "progress": {
@@ -1076,8 +1266,20 @@
    "completed": 2,
    "failed": 0,
    "cancelled": 0,
-   "infeasible": 0
+   "infeasible": 0,
+   "unjudged": 0
   },
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+  "created_by": "usr_4805ybgs8j9m6av1rg4q2fv3kn",
+  "created_at": "2026-10-26T21:34:33.100568Z",
+  "started_at": "2026-10-26T21:34:33.142855Z",
+  "completed_at": "2026-10-26T21:40:08.287711Z"
+ },
+ "trials": [
+  {
+   "id": "otr_4j7wbyp9058d7sv5s0an4z7g9t",
+   "optimization_id": "opt_724sarwzab8hs9mawq8bxh15j0",
+========
   "created_by": "usr_02zp1mz0af9j3vbw2ene7czd4g",
   "created_at": "2026-10-29T05:42:57.868930Z",
   "started_at": "2026-10-29T05:42:57.930311Z",
@@ -1087,10 +1289,153 @@
   {
    "id": "otr_19q255kkgx9kfs0rpzdexzvm3q",
    "optimization_id": "opt_3w1j08skc29zvtzb7p6bgapmvt",
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
    "trial_number": 2,
    "trial_values": {
     "models": {},
     "values": {
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+     "n_neighbors": 5
+    }
+   },
+   "metrics_report": {
+    "schema_version": "v2",
+    "primary": {
+     "target": "anomaly",
+     "name": "macro_f1",
+     "value": 0.854715956717214,
+     "aggregation": "pooled"
+    },
+    "example_count": 2,
+    "examples_failed": 0,
+    "examples_partial": 0,
+    "ground_truth_records_rejected": 0,
+    "targets": {
+     "anomaly": {
+      "pairing": "by_time",
+      "items": 3710,
+      "items_failed": 0,
+      "aggregate": {
+       "accuracy": 0.8377358490566038,
+       "detection_precision": 0.9886003799873336,
+       "detection_recall": 0.7805,
+       "foreground_macro_f1": 0.872310701313216,
+       "macro_f1": 0.854715956717214
+      },
+      "per_example": {
+       "accuracy": {
+        "mean": 0.8667027125947245,
+        "excluded": 0,
+        "stderr": 0.0814144422169909,
+        "min": 0.7852882703777336,
+        "median": 0.8667027125947245,
+        "max": 0.9481171548117154,
+        "p90": 0.9318342663683172
+       },
+       "detection_precision": {
+        "mean": 0.49967989756722153,
+        "excluded": 0,
+        "stderr": 0.49967989756722153,
+        "min": 0.0,
+        "median": 0.49967989756722153,
+        "max": 0.9993597951344432,
+        "p90": 0.8994238156209988
+       },
+       "detection_recall": {
+        "mean": 0.7805,
+        "excluded": 1,
+        "stderr": null,
+        "min": 0.7805,
+        "median": 0.7805,
+        "max": 0.7805,
+        "p90": 0.7805
+       },
+       "foreground_macro_f1": {
+        "mean": 0.4382369455362156,
+        "excluded": 0,
+        "stderr": 0.4382369455362156,
+        "min": 0.0,
+        "median": 0.4382369455362156,
+        "max": 0.8764738910724312,
+        "p90": 0.7888265019651881
+       },
+       "macro_f1": {
+        "mean": 0.6137761866404174,
+        "excluded": 0,
+        "stderr": 0.12709233784316656,
+        "min": 0.4866838487972509,
+        "median": 0.6137761866404174,
+        "max": 0.740868524483584,
+        "p90": 0.7154500569149507
+       }
+      },
+      "type": "binary",
+      "class_names": [
+       "anomaly",
+       "normal"
+      ],
+      "per_class": {
+       "precision": [
+        0.9886003799873336,
+        0.7789526686807654
+       ],
+       "recall": [
+        0.7805,
+        0.9046783625730994
+       ],
+       "f1": [
+        0.872310701313216,
+        0.8371212121212122
+       ],
+       "support": [
+        2000,
+        1710
+       ]
+      },
+      "confusion_matrix": [
+       [
+        1561,
+        439
+       ],
+       [
+        18,
+        1547
+       ]
+      ],
+      "missed": [
+       0,
+       145
+      ],
+      "false_alarms": [
+       0,
+       0
+      ],
+      "outcomes": {
+       "matched": 3565,
+       "missed": 145,
+       "false_alarms": 0,
+       "unscored": 0,
+       "failed": 0
+      },
+      "positive": "anomaly"
+     }
+    }
+   },
+   "objective_value": 0.854715956717214,
+   "feasible": true,
+   "status": "completed",
+   "created_at": "2026-10-26T21:34:33.100568Z",
+   "completed_at": "2026-10-26T21:40:04.778761Z"
+  },
+  {
+   "id": "otr_11p71csnjs90zs8bmf3cpmwwa7",
+   "optimization_id": "opt_724sarwzab8hs9mawq8bxh15j0",
+   "trial_number": 1,
+   "trial_values": {
+    "models": {},
+    "values": {
+========
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
      "n_neighbors": 10
     }
    },
@@ -1220,6 +1565,10 @@
    "objective_value": 0.8540102708865408,
    "feasible": true,
    "status": "completed",
+<<<<<<<< HEAD:fit/out/optimize_opt_724sarwzab8hs9mawq8bxh15j0.json
+   "created_at": "2026-10-26T21:34:33.100568Z",
+   "completed_at": "2026-10-26T21:38:27.263780Z"
+========
    "created_at": "2026-10-29T05:42:57.868930Z",
    "completed_at": "2026-10-29T05:48:20.429239Z"
   },
@@ -1361,6 +1710,7 @@
    "status": "completed",
    "created_at": "2026-10-29T05:42:57.868930Z",
    "completed_at": "2026-10-29T05:46:43.676870Z"
+>>>>>>>> origin/main:fit/out/optimize_opt_3w1j08skc29zvtzb7p6bgapmvt.json
   }
  ]
 }

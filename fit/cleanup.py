@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
-"""Clean up: delete the agents and bundles this quickstart left on the platform.
+"""Clean up: delete the agents, packages and bundles this quickstart left on the platform.
 
     python3 fit/cleanup.py            # list what would be deleted, and what stays
     python3 fit/cleanup.py --yes      # delete it
 
 What it deletes, from the ids the stages recorded in fit/out/:
 
-  Stage 8   a serving agent and its bundle, if fit/serve.py was killed before
+  Stage 8   a serving agent and its package, if fit/serve.py was killed before
             it could delete them (serve_state.json).
-  Stage 9   the serving bridge's agent and bundle, if app-serving/ was killed
+  Stage 9   the serving bridge's agent and package, if app-serving/ was killed
             before it could delete them (app_serving_state.json): a running
             serving agent holds a serving worker until it is
-            cancelled or idle 20 min. And the bundle of
+            cancelled or idle 20 min. And the package of
             fit/library_embeddings.py (library_state.json; it deletes its own
             agents as it goes, and the embeddings are already on disk).
-  Stage 6   the delivery agents and their bundle (deliver_state.json). Their
+  Stage 6   the delivery agents and their package (deliver_state.json). Their
             outputs are already in eval_out/delivery/.
 
-Agents go first (a bundle that still has an agent answers 409), a running one is
+Agents go first (a bundle or package that still has an agent can't be deleted), a running one is
 cancelled before it is deleted, and an id already gone counts as done. Progress
 goes to fit/out/cleanup_state.json, so a rerun picks up where it stopped.
 
 What stays: the promoted blueprint, and the optimization and eval the README
-cites. A served copy (`<key>-served-records`) is deleted too if an earlier
+cites; fit/app_blueprint.py's blueprint and optimization too. A served copy (`<key>-served-records`) is deleted too if an earlier
 version of fit/serve.py or the bridge made one; they serve the promoted
 blueprint itself now.
 After a cleanup, rerunning fit/deliver.py needs fit/out/deliver_state.json moved
-aside, since its bundle is gone.
+aside, since its package is gone.
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ import argparse
 import sys
 
 from atai import agents_base, load_dotenv, load_state, log, request, save_state, state_path
-from ad_api import list_bundle_runs
+from ad_api import list_package_runs
 
 
 def call(method: str, path: str, body=None):
@@ -58,29 +58,29 @@ def main() -> int:
     library = load_state(state_path("library"))
     deliver = load_state(state_path("deliver"))
     test = load_state(state_path("test"))
-    targets = []                                   # (stage, kind, id), agents before their bundle
-    if serve.get("bundle"):
-        # a /run rejected after the instance was created (400) leaves an agent the
-        # state file never recorded, and it still holds the bundle
+    targets = []                                   # (stage, kind, id), agents before their package or bundle
+    if serve.get("package"):
+        # an instance created but never recorded still holds the package
         agents = {serve["agent"]} if serve.get("agent") else set()
-        agents |= {r["id"] for r in list_bundle_runs(serve["bundle"])}
+        agents |= {r["id"] for r in list_package_runs(serve["package"])}
         targets += [("Stage 8", "instances", a) for a in sorted(agents)]
-        targets += [("Stage 8", "bundles", serve["bundle"])]
-    if bridge.get("bundle"):
+        targets += [("Stage 8", "packages", serve["package"])]
+    if bridge.get("package"):
         # every agent the bridge started, a released one it replaced included
         agents = set(bridge.get("agents") or []) | ({bridge["agent"]} if bridge.get("agent") else set())
-        agents |= {r["id"] for r in list_bundle_runs(bridge["bundle"])}
+        agents |= {r["id"] for r in list_package_runs(bridge["package"])}
         targets += [("Stage 9", "instances", a) for a in sorted(agents)]
-        targets += [("Stage 9", "bundles", bridge["bundle"])]
-    if library.get("bundle"):
+        targets += [("Stage 9", "packages", bridge["package"])]
+    if library.get("package") or library.get("bundle"):     # a bundle from a run before packages
         targets += [("Stage 9", "instances", a) for a in sorted(set(library.get("agents", {}).values()))]
-        targets += [("Stage 9", "bundles", library["bundle"])]
-    if deliver.get("bundle"):
-        # the state holds each file's last attempt; the bundle's listing also finds replaced ones
+        targets += [("Stage 9", "packages", library["package"]) if library.get("package")
+                    else ("Stage 9", "bundles", library["bundle"])]
+    if deliver.get("package"):
+        # the state holds each file's last attempt; the package's listing also finds replaced ones
         agents = set(deliver.get("agents", {}).values())
-        agents |= {r["id"] for r in list_bundle_runs(deliver["bundle"])}
+        agents |= {r["id"] for r in list_package_runs(deliver["package"])}
         targets += [("Stage 6", "instances", a) for a in sorted(agents)]
-        targets += [("Stage 6", "bundles", deliver["bundle"])]
+        targets += [("Stage 6", "packages", deliver["package"])]
 
     done_path = state_path("cleanup")
     done = load_state(done_path)
@@ -89,6 +89,7 @@ def main() -> int:
     for stage in ("Stage 9", "Stage 8", "Stage 6"):
         mine = [t for t in todo if t[0] == stage]
         print(f"{stage}: {sum(t[1] == 'instances' for t in mine)} agent(s), "
+              f"{sum(t[1] == 'packages' for t in mine)} package(s), "
               f"{sum(t[1] == 'bundles' for t in mine)} bundle(s) to delete")
     print(f"already deleted: {len(gone & {t[2] for t in targets})}")
     bp = test.get("blueprint", {}).get("key")
@@ -119,7 +120,7 @@ def main() -> int:
             log(f"deleted {k - len(stuck)}/{len(todo)}")
 
     # a served copy from an earlier version, if any (a 404 counts as done)
-    if bp and not any(kind == "bundles" for kind, _, _ in stuck):
+    if bp and not any(kind in ("bundles", "packages") for kind, _, _ in stuck):
         try:
             call("DELETE", f"/blueprints/{bp}-served-records")
         except SystemExit as e:
@@ -129,10 +130,10 @@ def main() -> int:
         print(f"\n{len(stuck)} object(s) would not delete:")
         for kind, obj, why in stuck:
             print(f"  {kind}/{obj}: {why}")
-        print("an agent holds its bundle, and a bundle holds its blueprint: "
+        print("an agent holds its package or bundle, and those hold their blueprint: "
               "delete what holds them, then rerun")
     for kind, st in (("serve", serve), ("app_serving", bridge)):
-        if st.get("bundle"):
+        if st.get("package"):
             state_path(kind).unlink()
     log("done")
     return 0

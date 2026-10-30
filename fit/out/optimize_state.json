@@ -1,11 +1,11 @@
 {
- "endpoint": "https://platform.u1.archetypeai.app/api",
+ "endpoint": "https://platform.dev.u1.archetypeai.app/api",
  "runs": [
   {
-   "optimization": "opt_3w1j08skc29zvtzb7p6bgapmvt",
+   "optimization": "opt_724sarwzab8hs9mawq8bxh15j0",
    "request": {
-    "name": "ad-tep 20261029T054257Z",
-    "blueprint_id": "blp_66zmaafqt987htw5qtstabbgtw",
+    "name": "ad-tep 20261026T213432Z",
+    "blueprint_id": "blp_0z4r73zx0j84pb1zk0r4ra61n9",
     "primary": "anomaly.macro_f1",
     "overrides": {
      "values": {

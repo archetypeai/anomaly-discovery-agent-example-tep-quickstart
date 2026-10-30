@@ -114,11 +114,38 @@ def bundles_url(bundle_id: str = "") -> str:
     return f"{base}/{bundle_id}" if bundle_id else base
 
 
-def _runs_by_filter(bundle_id: str, progress: bool = True):
-    """The bundle's runs via `bundle_id=`, or None if the filter is not honored."""
+def packages_url(package_id: str = "") -> str:
+    """Package collection endpoint (Agent Lifecycle 2.0, replacing bundles).
+
+    A package pins blueprints and the models they resolve to; it carries no
+    values. Verified 2026-10-26: `values` on POST /packages
+    or POST /instances is accepted and silently dropped, so an agent runs with
+    exactly the values the blueprint was promoted with.
+    """
+    base = f"{agents_base()}/packages"
+    return f"{base}/{package_id}" if package_id else base
+
+
+def create_package(blueprint_id: str, name: str, timeout_s: int = 600) -> dict:
+    """Package one blueprint for the platform and wait until it is ready."""
+    pkg = request("POST", packages_url(), body={
+        "blueprint_ids": [blueprint_id], "target": {"kind": "platform"}, "name": name})
+    t0 = time.time()
+    while pkg["status"] == "building":
+        if time.time() - t0 > timeout_s:
+            raise SystemExit(f"package {pkg['id']} still building after {timeout_s} s")
+        time.sleep(5)
+        pkg = request("GET", packages_url(pkg["id"]))
+    if pkg["status"] != "ready":
+        raise SystemExit(f"package {pkg['id']} is {pkg['status']}: {pkg}")
+    return pkg
+
+
+def _runs_by_filter(bundle_id: str, progress: bool = True, key: str = "bundle_id"):
+    """The bundle's (or package's) runs via `bundle_id=` (`package_id=`), or None if the filter is not honored."""
     out, after = [], None
     while True:
-        url = f"{agents_base()}/instances?bundle_id={bundle_id}&limit=100"
+        url = f"{agents_base()}/instances?{key}={bundle_id}&limit=100"
         if after:
             url += f"&after={after}"
         try:
@@ -126,7 +153,7 @@ def _runs_by_filter(bundle_id: str, progress: bool = True):
         except SystemExit:
             return None                            # unsupported: fall back to the scan
         rows = page.get("data", [])
-        if any(r.get("bundle_id") != bundle_id for r in rows):
+        if any(r.get(key) != bundle_id for r in rows):
             return None                            # ignored: the rows are everyone's
         out += rows
         if not rows or not page.get("has_more"):
@@ -135,8 +162,13 @@ def _runs_by_filter(bundle_id: str, progress: bool = True):
         if not after:
             break
     if progress:
-        print(f"  {len(out)} run(s) belong to this bundle", flush=True)
+        print(f"  {len(out)} run(s) belong to {bundle_id}", flush=True)
     return out
+
+
+def list_package_runs(package_id: str, progress: bool = True) -> list:
+    """Every agent launched from a package; [] if the listing ignores `package_id=`."""
+    return _runs_by_filter(package_id, progress, key="package_id") or []
 
 
 def list_bundle_runs(bundle_id: str, progress: bool = True) -> list:

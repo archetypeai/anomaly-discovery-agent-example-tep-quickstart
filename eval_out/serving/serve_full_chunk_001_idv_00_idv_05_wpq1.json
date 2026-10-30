@@ -1,39 +1,40 @@
 {
- "blueprint": "ad-tep-qs-otr_503mjky34p9tfbd6sxh5crtkf7",
+ "blueprint": "ad-tep-qs-otr_4j7wbyp9058d7sv5s0an4z7g9t",
  "file": "full_chunk_001",
+ "step_size": 8,
  "runs": [
   {
    "fault_id": "idv_00",
    "sim": 96,
-   "windows": 913,
+   "windows": 115,
    "first_alarm_h": {
-    "served": 12.3,
-    "batch": 12.3
+    "served": null,
+    "batch": null
    },
    "onset_h": null
   },
   {
    "fault_id": "idv_05",
    "sim": 26,
-   "windows": 913,
+   "windows": 115,
    "first_alarm_h": {
-    "served": 8.2,
-    "batch": 8.2
+    "served": 9.2,
+    "batch": 9.2
    },
    "onset_h": 8.0
   }
  ],
- "windows": 1826,
+ "windows": 230,
  "windows_per_query": 1,
- "queries": 1826,
- "same_label": 1826,
- "same_score": 1826,
- "max_score_rel_diff": 3.707525884899532e-05,
+ "queries": 230,
+ "same_label": 230,
+ "same_score": 230,
+ "max_score_rel_diff": 1.6555999600487148e-05,
  "invalid": 0,
  "latency_ms": {
-  "median": 928,
-  "p95": 1031,
-  "max": 1908
+  "median": 798,
+  "p95": 903,
+  "max": 1002
  },
- "replay_seconds": 1726.8
+ "replay_seconds": 196.5
 }
