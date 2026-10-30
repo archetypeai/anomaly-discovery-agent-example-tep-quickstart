@@ -24,19 +24,27 @@
 | 2–3 | build the files the platform receives, and check them | ~1 s |
 | 4 | **Optimize:** fit on the normal runs, score 2 settings on validation | 6 min |
 | 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
-| 6 | **deliver:** a package of that blueprint, run over the delivery files | 3–9 min |
+| 6 | **deliver:** package that blueprint, deploy it in batch, run a session over each delivery file | 2–9 min |
 | 7 | **score** the delivery against the held-back labels | seconds |
-| 8 | **serve:** the same blueprint answering one window per query (agent serving), checked against Stage 6 | ~3 min |
-| 9 | optional: **watch it live**, the delivery replayed through a serving agent ([`app-serving/`](app-serving/README.md)) | ~5 min once (the app's blueprint), then ~2 min a run |
+| 8 | **serve:** the same package deployed for serving, answering one window per query in a session, checked against Stage 6 | ~4 min |
+| 9 | optional: **watch it live**, the delivery replayed through a serving session ([`app-serving/`](app-serving/README.md)) | ~5 min once (the app's blueprint), then ~2 min a run |
 
   About **30 minutes** end to end, 21 of them on the platform. Platform times
-  vary with load; Stages 6 and 8 were measured on 2026-10-26.
+  vary with load; Stages 4–9 were measured on 2026-10-30.
 
 - **One configuration throughout.** Stage 4's optimization chooses the
   configuration, and every later stage runs exactly what it chose, step
   included: the eval, the delivery, serving and the app all score a window every
-  8 samples (24 minutes). Agent Lifecycle 2.0 packages run a promoted blueprint as
-  it is, with no per-run overrides; see [PACKAGES.md](PACKAGES.md).
+  8 samples (24 minutes). A package runs a promoted blueprint as it is, with no
+  per-run overrides, so anything a later stage needs, such as scores in the
+  output, is pinned in Stage 4's optimization.
+
+- **The platform lifecycle** (Agent Lifecycle 2.0): everything lives in one
+  **project**. The quickstart copies the canonical `ad` blueprint into it,
+  optimizes the copy, promotes the best trial, tests it, then **packages** it
+  (models resolved once), **deploys** the package as `batch` or `serving`, and
+  runs **sessions** on the deployment: a batch session runs over input files, a
+  serving session answers `/query`. No step needs an org-admin key.
 
 - **Skip the 1.4 GB download:** Stage 1's prepared files and the role files are
   in the repo, in Git LFS. See [Shortcuts](#shortcuts-skip-the-download).
@@ -221,15 +229,20 @@ It checks:
 python3 fit/optimize.py
 ```
 
-1. **Upload** the 40 library files and 2 validation files once. The ids are cached
+1. **Project:** create the project `AD TEP quickstart` (or reuse yours of that
+   name) and copy the canonical `ad` blueprint into it as `ad-tep-qs`
+   (`POST /api/projects`, `POST /api/agents/blueprints/ad/copy`). An
+   optimization lands in its blueprint's project, and so does everything made
+   from it; a deployment needs one. **Writes:** `fit/out/project_state.json`.
+2. **Upload** the 40 library files and 2 validation files once. The ids are cached
    in `fit/out/uploads.json`.
-2. **Optimize:** create an optimization on the `ad` blueprint. Every library row is
+3. **Optimize:** create an optimization on that copy. Every library row is
    a training example labelled `normal`; each validation file is scored on its
    `label` column, each window by its last row. The platform embeds every window
    with Omega 1.5, fits the detector on the library and reports macro-F1 on
    validation.
-3. **Search space:** two settings, window 48, step 8, L2, PCA 16, threshold
-   1.215, features `std,range,slope,median`, with **k = 5** and **k = 10**: the
+4. **Search space:** two settings, window 48, step 8, L2, PCA 16, threshold
+   1.215, features `std,range,slope,median`, `output_score` on, with **k = 5** and **k = 10**: the
    winner of an earlier 24-trial search on this data, where k was 10. A space with
    fewer points than the budget runs every point. The step chosen here is the
    step every later stage uses: window 48 at step 8 means a score every 24
@@ -253,8 +266,9 @@ k = 5 wins by 0.0007, a tie in practice. Try others with `--new` and
 python3 fit/test.py
 ```
 
-1. **Promote** the best trial to a blueprint, `ad-tep-qs-<trial>`: its settings and
-   fitted detector become a reusable model. `--trial otr_…` picks another trial.
+1. **Promote** the best trial to a blueprint in the project, `ad-tep-qs-<trial>`
+   (the platform's default key; choosing one takes the admin role): its settings
+   and fitted detector become a reusable model. `--trial otr_…` picks another trial.
 2. **Evaluate** the 3 test slices **once** with the Evals API, with predictions.
 3. **Check** every prediction's gold label against the sidecar, and the offline
    confusion matrix against the platform's, before reporting.
@@ -288,15 +302,21 @@ ones across a gap between runs.
 python3 fit/deliver.py
 ```
 
-1. **Package:** package Stage 5's blueprint as it is (`POST /api/agents/packages`).
-   It runs at the optimized step 8, a score every 24 minutes, the same windows
-   Stage 5's eval scored; the blueprint already writes scores into the output.
-2. **Run** an instance of it (`POST /api/agents/instances`) over each of
-   `data/roles/delivery/`'s files: the 4 delivery files and `val_normal`, all
-   five at once, each uploaded without labels.
-3. **Download** each output, checking it covers its input in full.
+1. **Package** Stage 5's blueprint as it is (`POST /api/agents/packages`, target
+   `platform`): the encoder and the fitted detector are resolved once, so every
+   run of it is the same. It runs at the optimized step 8, a score every 24
+   minutes, the same windows Stage 5's eval scored, with `output_score` on as
+   Stage 4 pinned it.
+2. **Deploy** it as `batch` (`POST /api/agents/deployments`); a batch deployment
+   is ready at once.
+3. **Run** a session on it (`POST /api/agents/sessions`, the file as a source
+   connector) over each of `data/roles/delivery/`'s files: the 4 delivery files
+   and `val_normal`, all five at once, each uploaded without labels. Each session
+   is a batch job, followed with `/sessions/{id}/events`.
+4. **Download** each output from `/sessions/{id}/results`, checking it covers its
+   input in full.
 
-**Expect:** `package pkg_… (ready) on ad-tep-qs-otr_…`, five `agent agt_…` lines, five
+**Expect:** `package pkg_… (ready) on ad-tep-qs-otr_…`, `batch deployment dpl_… (ready)`, five `session ses_…` lines, five
 `verified: output covers the full input (100.0%)`, then `5 outputs in
 eval_out/delivery`. **Writes:** `eval_out/delivery/ad-output-*.csv` and
 `fit/out/deliver_state.json`.
@@ -340,8 +360,8 @@ ad-output-val_normal.csv: 1,150 windows, 45 invalid; FAR at threshold 1.215 = 1.
 - **False alarms:** 2.11% on the delivery's normal windows (35 of 1,660), against
   the 1% the threshold was set to on `val_normal`. At step 8 there are 8 times
   fewer normal windows to set and check it on, so both numbers are coarser.
-- **Against a step-1 delivery** (one score every 3 minutes, which `main` makes with
-  a bundle override): the same label in every shared window and the same
+- **Against a step-1 delivery** (one score every 3 minutes, which the bundle version
+  of this quickstart made with a per-run override): the same label in every shared window and the same
   detection rate and AUROC within 0.5 points; slow faults' delays read up to a
   few hours longer, because each is timed in 24-minute steps.
 
@@ -363,14 +383,16 @@ Free-trial accounts serve on CPU only, so expect slower answers there than the
 times below.
 
 1. **A package of Stage 5's blueprint, as it is** (`POST /api/agents/packages`):
-   the same detector, encoder and values. Packages are Agent Lifecycle 2.0's
-   replacement for bundles. A package carries no values: the agent is exactly
-   what Stage 5 promoted. In serving mode the platform supplies the serving
-   connectors itself: an `atai-records` endpoint that answers one named record per
-   window.
-2. **An instance of the package in serving mode** (`POST /api/agents/instances`
-   with `package_id` and `mode: "serving"`): an agent that answers over
-   `POST /agents/instances/{id}/query`.
+   the same detector, encoder and values. A package carries no values: the agent
+   is exactly what Stage 5 promoted. For serving, the platform supplies the
+   serving connectors itself: an `atai-records` endpoint that answers one named
+   record per window.
+2. **A serving deployment and a session on it**: `POST /api/agents/deployments`
+   with `kind: "serving"` places the agent on a worker and loads it (ready within
+   seconds); `POST /api/agents/sessions` opens a session on it, which answers over
+   `POST /api/agents/sessions/{id}/query` once it is `running`. The deployment
+   holds the agent; a session is a client's handle on it, and several can share
+   one deployment.
 3. **Each run replayed at the optimized step,** a query every 8 samples, so the
    served windows are exactly Stage 6's. Every query carries the latest 48
    samples of the 33 tags, one list per tag, and gets one record back:
@@ -381,16 +403,16 @@ times below.
 4. **Every answer against Stage 6:** the label, the score (to within 10⁻⁴
    relative), and each run's first sustained alarm (3 consecutive anomaly
    windows).
-5. **Cleanup:** the agent is cancelled and deleted, and the package deleted, however
-   the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
+5. **Cleanup:** the session is cancelled, the deployment stopped, and the session,
+   deployment and package deleted, however the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
 
-**Expect** (ours, 2026-10-26), delivery file 1's fault-free run (sim 96) and its
+**Expect** (ours, 2026-10-30), delivery file 1's fault-free run (sim 96) and its
 IDV 5 run (sim 26), 115 windows each:
 
 ```
-Stage 8: 230 windows of 2 run(s) served in 230 queries, 192 s
-  against Stage 6 (batch): predicted_label identical in 230/230, anomaly_score within 1e-4 in 230/230 (max relative difference 1.6e-05); invalid 0
-  latency per query: median 797 ms, p95 888 ms, max 943 ms
+Stage 8: 230 windows of 2 run(s) served in 230 queries, 220 s
+  against Stage 6 (batch): predicted_label identical in 230/230, anomaly_score within 1e-4 in 230/230 (max relative difference 1.7e-05); invalid 0
+  latency per query: median 889 ms, p95 1018 ms, max 1862 ms
   idv_00 sim 96: first sustained alarm, served none; batch none
   idv_05 sim 26: first sustained alarm, served 1.20 h after onset; batch 1.20 h after onset
 ```
@@ -424,10 +446,10 @@ open http://localhost:5180
 
 [`app-serving/`](app-serving/README.md) replays Stage 6's delivery runs, one at a
 time, as if the plant were running now, and sends every window to a **serving
-agent** of Stage 5's blueprint: an agent that stays loaded on the platform and
+session** on a serving deployment of Stage 5's configuration: an agent that stays loaded on the platform and
 answers a window in one round trip, under a second, every 8 samples, the step
 Stage 4 chose. A flowsheet, the 33 tags, the anomaly score and an embedding space
-show the answers as they come. The app holds a serving agent while it runs and
+show the answers as they come. The app holds a serving deployment while it runs and
 gives it back on `npm run stop`.
 
 - **A small Node bridge** keeps the latest 48 samples, sends each window as one
@@ -441,10 +463,11 @@ gives it back on `npm run stop`.
   the configuration, so it needs rerunning only if Stage 4 picks a different window
   or step.
 - **The app's own blueprint.** Stages 4–8 keep `output_embeddings` off (on, every
-  delivery file would grow to hundreds of MB), and a package can't turn it on. So
-  `fit/app_blueprint.py` promotes the same winning configuration with embeddings on,
-  from a 1-trial optimization, for the app and the library embeddings only. It's a
-  stop-gap until a package can switch an output on; see
+  delivery file would grow to hundreds of MB: one delivery file's output was 327 MB),
+  and a package can't turn it on. So `fit/app_blueprint.py` promotes the same
+  winning configuration with embeddings on, from a 1-trial optimization in the same
+  project, for the app and the library embeddings only. It needs no admin key,
+  unlike registering an edited copy of the blueprint; see
   [app-serving/README.md](app-serving/README.md#the-apps-blueprint-the-winning-configuration-with-embeddings-on).
 - **Pace:** a window every 8 samples, the optimized step that every stage uses,
   so the app's alarms are Stage 6's, window for window; a run takes about 2
@@ -452,7 +475,8 @@ gives it back on `npm run stop`.
 
 The reference library comes out at 2,280 windows scored 0.949–1.108, all under the
 1.215 threshold, as the detector's own normal data should be. Stopping the app
-(`npm run stop`, or Ctrl-C once) cancels and deletes the bridge's agent and package.
+(`npm run stop`, or Ctrl-C once) cancels the bridge's session, stops its deployment,
+and deletes them and the package.
 Without `fit/app_blueprint.py`'s blueprint, the bridge serves Stage 5's, which has
 no embeddings, and the page's live embedding trail stays empty.
 
@@ -463,25 +487,28 @@ python3 fit/cleanup.py           # list what would be deleted, and what stays
 python3 fit/cleanup.py --yes     # delete it
 ```
 
-[`fit/cleanup.py`](fit/cleanup.py) deletes the agents, packages and bundles this quickstart
-left on the platform, from the ids the stages recorded in `fit/out/`: Stage 6's delivery
-agents and package; Stage 8's serving agent and package if `fit/serve.py` was killed
-before its own cleanup; and Stage 9's serving bridge leftovers and the 40 batch
-agents of `fit/library_embeddings.py`. The promoted blueprint stays, and so do
-the optimization and the eval. Don't run it while `fit/serve.py` or `app-serving/` is running. To
-check that no serving agent of yours is still holding a worker:
+[`fit/cleanup.py`](fit/cleanup.py) deletes the sessions, deployments and packages this
+quickstart left on the platform, starting from the packages the stages recorded in
+`fit/out/`: Stage 6's delivery; Stage 8's if `fit/serve.py` was killed before its own
+cleanup; and Stage 9's serving bridge leftovers and `fit/library_embeddings.py`'s.
+For each package it lists the deployments and their sessions, so ones a stage never
+recorded are found too. The project, its copy of `ad`, the promoted blueprints, the
+optimizations and the eval stay. Don't run it while `fit/serve.py` or `app-serving/`
+is running. To check that no serving deployment of yours is still holding a worker:
 
 ```sh
 set -a; source .env; set +a
-curl -s "$ATAI_API_ENDPOINT/agents/instances?status=running&limit=100" -H "Authorization: Bearer $ATAI_API_KEY" \
-  | jq -c '.data[] | select(.mode=="serving") | {id, blueprint, name, created_at}'
+curl -s "${ATAI_API_ENDPOINT%/api}/api/agents/deployments?status=ready&limit=100" -H "Authorization: Bearer $ATAI_API_KEY" \
+  | jq -c '.data[] | select(.kind=="serving") | {id, package_id, project_id, created_at}'
 ```
 
 ## Results, and they reproduce
 
-The numbers above are our runs of this branch, through packages at step 8, on
-2026-10-26 on a pre-release deployment. `fit/out/` and `eval_out/` hold the ids
-and outputs.
+The numbers above are our run of this branch through Agent Lifecycle 2.0
+(project, packages, deployments, sessions) at step 8, on 2026-10-30, with no
+org-admin key. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
+instances. `fit/out/` and `eval_out/` hold the ids and
+outputs.
 
 | stage | measure | result |
 |---|---|---|
@@ -490,14 +517,13 @@ and outputs.
 | 5 | test macro-F1 | 0.7331 |
 | 6 | delivery outputs | 5 files, full coverage, step 8 |
 | 7 | detection / false alarms / AUROC at the 1% threshold | 78.5% / 2.11% / 0.903 |
-| 8 | served against batch, 230 windows | every label and score; median 797 ms a query |
+| 8 | served against batch, 230 windows | every label and score; median 889 ms a query |
 
-Independent package runs, each from its own optimization and blueprint, gave the
-same Stage 4, 5 and 8 numbers and the same Stage 7 headline, but not byte-identical
-outputs: a few scores moved in the last digits, enough to flip IDV 9's one
-borderline "detection" (a false alarm after onset) at the trial's threshold. On
-`main` (bundles, a step-1 delivery), the same prep scores 78.0% / 1.41% / 0.901 on
-production.
+An earlier run, from its own optimization and blueprint, gave the same Stage 4,
+5 and 8 numbers, and Stage 6 outputs and a Stage 7 evaluation byte-identical to
+this run's. Some runs differ in a few scores' last digits, enough to flip IDV 9's
+one borderline "detection" (a false alarm after onset) at the trial's threshold. On
+bundles with a step-1 delivery, the same prep scores 78.0% / 1.41% / 0.901.
 
 So the prep, the platform and the scoring are deterministic here, up to those
 near-tie score differences. If your run gives different numbers, something
@@ -511,14 +537,14 @@ differs in your data or setup, and the expected outputs above show at which stag
 | `prep/run_preflight.py`, `prep/preflight_tep.py`, `prep/preflight_static.py` | Stages 1a and 1c |
 | `prep/prepare_tep.py`, `prep/prepare_full_eval.py` | Stage 1b: library, validation and test files; the delivery files |
 | `prep/build_roles.py`, `prep/preflight_roles.py` | Stages 2 and 3 |
-| `ad_api.py`, `fit/atai.py` | stdlib platform helpers: requests, uploads, polling, resume state |
+| `ad_api.py`, `fit/atai.py` | stdlib platform helpers: the project, packages, deployments and sessions, uploads, polling, resume state |
 | `fit/optimize.py` | Stage 4 |
 | `fit/test.py` | Stage 5 |
 | `fit/deliver.py` | Stage 6 |
 | `fit/score_delivery.py`, `fit/evaluate_detection.py`, `fit/tep_common.py` | Stage 7 |
 | `fit/serve.py` | Stage 8: the promoted blueprint served, delivery runs replayed one window per query, every answer checked against Stage 6 |
 | `fit/app_blueprint.py`, `fit/library_embeddings.py`, `app-serving/` | Stage 9: the app's blueprint (embeddings on); the reference library's embeddings; the live app, served from the platform ([README](app-serving/README.md)) |
-| `fit/cleanup.py` | delete the agents, packages and bundles Stages 6, 8 and 9 left on the platform (`--yes`) |
+| `fit/cleanup.py` | delete the sessions, deployments and packages Stages 6, 8 and 9 left on the platform (`--yes`) |
 | `eval_out/serving/` | Stage 8's replay: a row per window, served against batch, and a summary |
 | `data/prepared/` | Stage 1's output: library, validation, test and delivery files with their label sidecars (Git LFS) |
 | `data/roles/` | Stage 2's output: the role files and label sidecars Stages 3–7 read (Git LFS) |

@@ -5,7 +5,7 @@ replayed as if the plant were running now, and every window goes to a **serving
 agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answers
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
-> **It holds a serving agent while it runs,** and gives it back when you stop it.
+> **It holds a serving deployment while it runs,** and gives it back when you stop it.
 > Free-trial accounts serve on CPU only, so answers can be slower.
 
 It serves this repo's winning configuration (k 5) and replays the **delivery** runs
@@ -37,8 +37,9 @@ batch output.
 
 - **The serving bridge** (`scripts/serving-bridge.js`) is the agent's local end. On
   start it creates a package of the app's blueprint (see
-  [The app's blueprint](#the-apps-blueprint-the-winning-configuration-with-embeddings-on))
-  and starts a serving agent from it: the platform supplies the
+  [The app's blueprint](#the-apps-blueprint-the-winning-configuration-with-embeddings-on)),
+  deploys it as `serving` (the agent placed on a worker and loaded) and opens a
+  session on the deployment, which is what it queries: the platform supplies the
   `atai-records` serving connectors itself. For every window it sends the
   latest 48 samples as one query, and publishes the answer on `ad/results` with the
   window's timestamps put back (a served agent numbers the samples 0–47 within a
@@ -49,16 +50,17 @@ batch output.
   clears the buffer, so no window mixes two runs.
 - **The API key never reaches the browser.** The bridge reads `ATAI_API_ENDPOINT` and
   `ATAI_API_KEY` from the repo's `.env`, the same file the Python stages use.
-- **On exit** (Ctrl-C, `npm run stop`) the bridge cancels and deletes its agent and
-  deletes its package. If it's killed hard, the ids are still in
-  `fit/out/app_serving_state.json`, and `python3 fit/cleanup.py --yes` removes them.
-  An agent the platform released after 20 minutes without a query (a replay paused that
-  long) is deleted and replaced on the next window, retrying while the serving workers
-  are all taken. If anything can't be deleted on exit, the bridge says so and keeps the
+- **On exit** (Ctrl-C, `npm run stop`) the bridge cancels its session, stops its
+  deployment, and deletes both and its package. If it's killed hard, the ids are
+  still in `fit/out/app_serving_state.json`, and `python3 fit/cleanup.py --yes`
+  removes them. A session that stops taking queries (cancelled elsewhere, or its
+  deployment ended) is deleted and replaced on the next window, with a new
+  deployment if the old one is gone, retrying while the serving workers are all
+  taken. If anything can't be deleted on exit, the bridge says so and keeps the
   ids for `fit/cleanup.py`. See [Stop and clean up](#stop-and-clean-up).
-- **It holds the agent for as long as it runs, and says what it is doing.** Starting
-  an agent retries (15 s, doubling to 2 min) while the serving workers are all
-  taken, and windows wait in the bridge's queue until the agent is running; the
+- **It holds the deployment for as long as it runs, and says what it is doing.** Starting
+  retries (15 s, doubling to 2 min) while the serving workers are all
+  taken, and windows wait in the bridge's queue until the session is running; the
   replayer waits too. The phase (starting, waiting, running, replacing, stopped) goes out on
   `ad/agent`, retained, and shows in the menubar badge and in Settings; an MQTT will
   clears a stale "running" if the bridge is killed. Both scripts read the repo's
@@ -71,8 +73,8 @@ The embedding view needs each window's embeddings, and agents return them only
 when their blueprint has `output_embeddings: true`. Stages 4–8 keep it **off**:
 embeddings are 33 × 768 numbers per window, so Stage 6's outputs would grow from
 about 100 KB a file to hundreds of MB, for a view only this app shows. A package
-(Agent Lifecycle 2.0) runs a blueprint exactly as promoted and can't turn an
-output on, so the app gets a blueprint of its own:
+runs a blueprint exactly as promoted and can't turn an output on, so the app gets
+a blueprint of its own, in the same project:
 
 ```sh
 python3 fit/app_blueprint.py          # once, from the repo root: a 1-trial optimization (~5 min) and promote
@@ -87,8 +89,9 @@ python3 fit/app_blueprint.py          # once, from the repo root: a 1-trial opti
 - **A refitted detector.** The trial fits its own detector on the same library;
   its validation scores are printed next to Stage 5's. It serves the app and
   `fit/library_embeddings.py`, nothing else.
-- **A stop-gap.** It lasts until a package or instance can turn on an output such
-  as `output_embeddings` without a new blueprint. Without it, the bridge serves
+- **No admin key needed.** Registering an edited copy of Stage 5's blueprint would
+  reuse its detector, but registering a blueprint takes the org-admin role;
+  promoting a trial doesn't. Without it, the bridge serves
   Stage 5's blueprint, which has no embeddings, and says so: the app works, but
   the embedding view gets no live trail.
 
@@ -146,11 +149,11 @@ delivery. A detection (3 windows over the line) spans 48 minutes of process time
 
 ## Stop and clean up
 
-A running app holds a serving agent, and so a serving worker, until the bridge deletes the agent or the platform releases it after 20 minutes
-without a query. Closing the browser tab does not stop it.
+A running app holds a serving deployment, and so a serving worker, until the bridge
+stops it. Closing the browser tab does not stop it.
 
 1. **Stop the app.** Press Ctrl-C **once** in the `npm run dev` terminal and
-   wait for `bridge: deleted its agent(s) and package …`; a second Ctrl-C can cut
+   wait for `bridge: deleted its session(s), deployment and package …`; a second Ctrl-C can cut
    that short. Or, from `app-serving/` in any terminal (also for an app started
    in the background or from a terminal since closed):
 
@@ -158,8 +161,8 @@ without a query. Closing the browser tab does not stop it.
    npm run stop      # SIGTERM to the bridge, waits up to 60 s for it, stops the rest, checks the ports
    ```
 
-   Either way the bridge cancels and deletes its agent, deletes its package and
-   removes `fit/out/app_serving_state.json`. `npm run stop` ends with
+   Either way the bridge cancels its session, stops its deployment, deletes them
+   and its package, and removes `fit/out/app_serving_state.json`. `npm run stop` ends with
    `all ports free (1890 · 9008 · 9100 · 5180)`; a port still held names its process.
 
 2. **Check nothing is left**, from the repo root:
@@ -167,13 +170,12 @@ without a query. Closing the browser tab does not stop it.
    ```sh
    ls fit/out/app_serving_state.json        # "No such file": the bridge cleaned up
    set -a; source .env; set +a
-   curl -s "$ATAI_API_ENDPOINT/agents/instances?status=running&limit=100" -H "Authorization: Bearer $ATAI_API_KEY" \
-     | jq -c '.data[] | select(.mode=="serving") | {id, blueprint, name, created_at}'
+   curl -s "${ATAI_API_ENDPOINT%/api}/api/agents/deployments?status=ready&limit=100" -H "Authorization: Bearer $ATAI_API_KEY" \
+     | jq -c '.data[] | select(.kind=="serving") | {id, package_id, project_id, created_at}'
    ```
 
-   No line named `TEP app-serving` means no agent of this app is running.
-   `status=running` filters on the server; `mode=serving` is ignored there, so
-   `jq` picks the serving agents (other people's may show up too).
+   No line means no serving deployment of your organization is up (other
+   people's in your organization may show up too; `package_id` tells them apart).
 
 3. **If something is left** (the bridge was killed hard with `kill -9`, the
    machine slept or lost power, or it printed `not everything was deleted`), the
@@ -184,24 +186,24 @@ without a query. Closing the browser tab does not stop it.
    python3 fit/cleanup.py --yes      # deletes it
    ```
 
-   It also finds agents the bridge replaced (from the package's own listing),
-   cancels a running agent before deleting it, and removes the state file when
-   done. Without a state file, an agent of yours from the listing above can be
-   removed by its id:
+   It lists the package's deployments and their sessions, so it also finds ones the
+   bridge replaced; it cancels a session and stops a deployment before deleting
+   them, and removes the state file when done. Without a state file, a deployment
+   of yours from the listing above can be stopped by its id:
 
    ```sh
-   curl -s -X POST "$ATAI_API_ENDPOINT/agents/instances/<agt_id>/cancel" -H "Authorization: Bearer $ATAI_API_KEY" \
+   A="${ATAI_API_ENDPOINT%/api}/api/agents"
+   curl -s -X POST "$A/deployments/<dpl_id>/stop" -H "Authorization: Bearer $ATAI_API_KEY" \
      -H "Content-Type: application/json" -d '{}'
-   curl -s -X DELETE "$ATAI_API_ENDPOINT/agents/instances/<agt_id>" -H "Authorization: Bearer $ATAI_API_KEY"
    ```
 
-   Its package (`pkg_…`, `package_id` in `GET /agents/instances/<agt_id>`) can then be
-   deleted with `DELETE /agents/packages/<pkg_id>`; a package that still has an
-   agent answers 409.
+   Its sessions (`GET $A/sessions?deployment_id=<dpl_id>`), then the deployment,
+   then its package (`package_id`) can then be deleted with `DELETE`, in that
+   order: each holds the next.
 
-`fit/library_embeddings.py`'s 40 batch agents and their package, if you ran it, hold no serving
+`fit/library_embeddings.py`'s 40 batch sessions, their deployment and package, if you ran it, hold no serving
 worker; `fit/cleanup.py --yes` deletes them too, with the rest of the platform
-path's agents (see the [repo README](../README.md)), whenever you're done with them.
+path's (see the [repo README](../README.md)), whenever you're done with them.
 
 ## Ports
 
