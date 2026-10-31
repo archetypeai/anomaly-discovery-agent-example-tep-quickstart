@@ -144,7 +144,10 @@ cancelled` (and `paused`).
    off. `fit/app_blueprint.py` runs a 1-trial optimization pinning the winner's
    values plus `output_embeddings: true` and promotes it, for the app and
    `fit/library_embeddings.py`. Its trial scores the same as the winner (validation
-   macro-F1 0.8547).
+   macro-F1 0.8547). It is tied to the promoted blueprint it copied, so rerun it
+   after every new promotion. Turning one output on now costs an optimization and
+   a second blueprint, where a bundle took one value; if the platform adds
+   output-only overrides on deployments or sessions, this step goes away.
 
 6. **No admin key anywhere.** Two calls that would need one were avoided:
    - `POST /blueprints` (registering an edited copy of a promoted blueprint, which

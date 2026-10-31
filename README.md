@@ -457,7 +457,8 @@ window; a summary).
 ### Stage 9 (optional): watch it live, served from the platform
 
 ```sh
-python3 fit/app_blueprint.py          # once: the winning configuration with embeddings on (~5 min)
+python3 fit/app_blueprint.py          # after each Stage 5: its configuration with embeddings on (~5 min)
+python3 fit/library_embeddings.py     # optional: the embedding view, already committed (~10–20 min)
 cd app-serving && npm install
 npm run dev                           # broker + serving bridge + replayer + web
 open http://localhost:5180
@@ -476,18 +477,32 @@ gives it back on `npm run stop`.
   reaches the browser.
 - **The embedding space** needs the windows the detector was fitted on, but the
   promoted detector can't be downloaded and the APIs return no embeddings. So
-  `fit/library_embeddings.py` recomputes them: the 40 library runs in batch with
-  embeddings on, 2,280 windows, then PCA 1–2. The result,
+  `fit/library_embeddings.py` recomputes them through the app's blueprint: a
+  package, one batch deployment, a session per library run (40), 2,280 windows,
+  then PCA 1–2. The result,
   `app-serving/static/detector-view.{json,bin}`, is committed and depends only on
   the configuration, so it needs rerunning only if Stage 4 picks a different window
   or step.
-- **The app's own blueprint.** Stages 4–8 keep `output_embeddings` off (on, every
-  delivery file would grow to hundreds of MB: one delivery file's output was 327 MB),
-  and a package can't turn it on. So `fit/app_blueprint.py` promotes the same
-  winning configuration with embeddings on, from a 1-trial optimization in the same
-  project, for the app and the library embeddings only. It needs no admin key,
-  unlike registering an edited copy of the blueprint; see
+- **The app's own blueprint, and why it is a second one.** The app and the library
+  view need each window's embeddings, which an agent returns only when its
+  blueprint has `output_embeddings: true`. Stages 4–8 keep it off (on, every
+  delivery file would grow to hundreds of MB: one delivery file's output was 327
+  MB). A bundle could switch it on for one run; a package has no values, so an
+  output is on or off in the blueprint itself, from the moment it is promoted.
+  Registering an edited copy of Stage 5's blueprint takes the admin role, so
+  `fit/app_blueprint.py` gets there without one: a 1-trial optimization in the
+  same project with every winning value pinned plus `output_embeddings: true`,
+  promoted like Stage 5's. The trial refits the detector on the same library; its
+  validation score is printed next to the winner's (0.8547 for both). See
   [app-serving/README.md](app-serving/README.md#the-apps-blueprint-the-winning-configuration-with-embeddings-on).
+- **It belongs to one Stage 5 blueprint.** `fit/app_blueprint.py` records which
+  promoted blueprint it copied (`source` in `fit/out/app_blueprint_state.json`),
+  and `fit/library_embeddings.py` and the bridge use it only while that is still
+  the blueprint in `fit/out/test_state.json`, so the view and the live answers
+  never come from a different configuration than the delivery's. After a new Stage
+  5, run `fit/app_blueprint.py` again: `fit/library_embeddings.py` stops with
+  `no app-serving blueprint for this promoted blueprint` until you do, and the
+  bridge serves Stage 5's blueprint without embeddings.
 - **Pace:** a window every 8 samples, the optimized step that every stage uses,
   so the app's alarms are Stage 6's, window for window; a run takes about 2
   minutes.
