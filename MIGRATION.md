@@ -2,8 +2,9 @@
 
 How this quickstart moved from bundles and instances to **projects, packages,
 deployments and sessions**, and what to watch for if you move your own scripts.
-Everything below was run end to end on 2026-10-30 with an API key that is **not**
-an org admin.
+Everything below was run end to end on 2026-10-30. That run used an org-admin key,
+but the scripts make no admin-only call (see 6 below); a run with a member key is
+still to be confirmed.
 
 `/api/agents/bundles` and `/api/agents/instances` are being retired: move to the
 calls below. To check that your deployment of the platform serves them, `GET
@@ -149,7 +150,7 @@ cancelled` (and `paused`).
    a second blueprint, where a bundle took one value; if the platform adds
    output-only overrides on deployments or sessions, this step goes away.
 
-6. **No admin key anywhere.** Two calls that would need one were avoided:
+6. **No admin-only calls.** Two calls that would need the org-admin role are avoided:
    - `POST /blueprints` (registering an edited copy of a promoted blueprint, which
      would have kept its `aar_…` detector without a refit) takes the admin role;
    - `blueprint_key` on `POST /optimizations/{id}/trials/{id}/promote` takes it too.

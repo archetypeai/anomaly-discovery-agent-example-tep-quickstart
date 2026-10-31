@@ -44,7 +44,7 @@
   optimizes the copy, promotes the best trial, tests it, then **packages** it
   (models resolved once), **deploys** the package as `batch` or `serving`, and
   runs **sessions** on the deployment: a batch session runs over input files, a
-  serving session answers `/query`. No step needs an org-admin key. Moving from
+  serving session answers `/query`. No step makes an admin-only call. Moving from
   bundles and instances: [MIGRATION.md](MIGRATION.md).
 
 ```mermaid
@@ -609,8 +609,10 @@ curl -s "${ATAI_API_ENDPOINT%/api}/api/agents/deployments?status=ready&limit=100
 ## Results, and they reproduce
 
 The numbers above are our run of this branch through Agent Lifecycle 2.0
-(project, packages, deployments, sessions) at step 8, on 2026-10-30, with no
-org-admin key. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
+(project, packages, deployments, sessions) at step 8, on 2026-10-30. The run
+used an org-admin key, but no step makes an admin-only call (registering a
+blueprint, or choosing a promoted blueprint's key); a run with a member key is
+still to be confirmed. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
 instances. `fit/out/` and `eval_out/` hold the ids and
 outputs.
 
