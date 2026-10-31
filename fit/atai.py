@@ -59,11 +59,16 @@ def base_blueprint() -> dict:
         save_state(path, state)
         log(f"project {state['project']} ({PROJECT})")
     if "base" not in state:
-        bp = request("POST", f"{agents_base()}/blueprints/ad/copy",
-                     body={"project_id": state["project"], "blueprint_key": BASE_KEY})
+        found = request("GET", f"{agents_base()}/blueprints?project_id={state['project']}&key={BASE_KEY}")["data"]
+        if found:
+            bp = found[0]
+            log(f"reusing {BASE_KEY} in {state['project']} ({bp['id']})")
+        else:
+            bp = request("POST", f"{agents_base()}/blueprints/ad/copy",
+                         body={"project_id": state["project"], "blueprint_key": BASE_KEY})
+            log(f"copied ad into {state['project']} as {BASE_KEY} ({bp['id']})")
         state["base"] = {"id": bp["id"], "key": bp["blueprint_key"]}
         save_state(path, state)
-        log(f"copied ad into {state['project']} as {BASE_KEY} ({bp['id']})")
     return {"project": state["project"], **state["base"]}
 
 
