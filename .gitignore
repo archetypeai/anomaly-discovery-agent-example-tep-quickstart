@@ -29,3 +29,6 @@ fit/out/library_embeddings/
 fit/out/app_serving_state.json
 fit/out/cleanup_state.json
 fit/out/serve_state.json
+
+# Stage 5 on the free trial: the test slices cut into pieces, rebuilt by fit/test.py
+fit/out/test-pieces/

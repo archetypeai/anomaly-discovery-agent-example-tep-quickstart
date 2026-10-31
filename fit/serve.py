@@ -12,11 +12,11 @@ round trip, as a plant historian would ask it every 3 minutes for the latest
 48 samples. This replays delivery runs that way and checks every answer against
 Stage 6's batch output for the same window:
 
-  1. a bundle of fit/test.py's promoted blueprint, as it is, at step 1 (bundle
-     values override a blueprint's): the platform supplies the serving
-     connectors when it runs a bundle in serving mode;
+  1. a bundle of fit/test.py's promoted blueprint, as it is, at Stage 6's step
+     (1 unless deliver.py had --step; bundle values override a blueprint's): the
+     platform supplies the serving connectors when it runs a bundle in serving mode;
   2. that bundle run in serving mode;
-  3. each run replayed one sample at a time: every query holds the latest
+  3. each run replayed a step at a time: every query holds the latest
      `window_size` samples (`--windows-per-query N` sends N windows at once);
   4. every answer against Stage 6: `predicted_label`, and `anomaly_score` to
      within 1e-4 relative (served and batch differ by ~1e-5, float32 noise);
@@ -78,29 +78,32 @@ def main() -> int:
     load_dotenv()
     bp = load_state(state_path("test")).get("blueprint") or sys.exit("no promoted blueprint: run fit/test.py")
     channels, window = bp["values"]["data_columns"], bp["values"]["window_size"]
+    step = load_state(state_path("deliver")).get("step", 1)      # serve at Stage 6's step
     data = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}.csv")
     labels = pd.read_csv(REPO / "data" / "prepared" / "full" / f"tep_{args.file}_labels.csv")
     batch = pd.read_csv(REPO / "eval_out" / "delivery" / f"ad-output-{args.file}.csv")
-    if len(batch) != len(data) - window + 1:
-        sys.exit(f"{args.file}: Stage 6's output has {len(batch)} windows, expected {len(data) - window + 1}")
+    if len(batch) != (len(data) - window) // step + 1:
+        sys.exit(f"{args.file}: Stage 6's output has {len(batch)} windows, expected {(len(data) - window) // step + 1}"
+                 f" at step {step}")
 
     runs = []                                   # (fault id, sim, first row, windows to replay)
     for (fault, sim), rows in labels.groupby(["fault_id", "simulationrun"], sort=False):
         if args.faults == ["all"] or fault in args.faults:
-            n = len(rows) - window + 1
-            runs.append((fault, int(sim), rows.index[0], min(n, args.max_windows or n)))
+            n = (len(rows) - window) // step + 1
+            runs.append((fault, int(sim), rows.index[0], min(n, args.max_windows or n)))   # runs start on a step
     if not runs:
         sys.exit(f"none of {args.faults} in {args.file}")
     wpq = max(1, min(args.windows_per_query, 16))
     X = data[channels].to_numpy(dtype=float)
-    log(f"{args.file}: {len(runs)} run(s), {sum(r[3] for r in runs):,} windows, {wpq} per query; model {bp['key']}")
+    log(f"{args.file}: {len(runs)} run(s), {sum(r[3] for r in runs):,} windows, {wpq} per query, step {step}; "
+        f"model {bp['key']}")
 
     live = state_path("serve")
     state = load_state(live)
     if state.get("bundle"):
         sys.exit(f"{live} holds an earlier replay's agent and bundle: run fit/cleanup.py first")
     state["bundle"] = request("POST", f"{agents_base()}/bundles", body={
-        "blueprint": bp["key"], "name": "TEP Stage 8", "values": {"step_size": 1}})["id"]
+        "blueprint": bp["key"], "name": "TEP Stage 8", "values": {"step_size": step}})["id"]
     save_state(live, state)
     state["agent"] = request("POST", f"{agents_base()}/bundles/{state['bundle']}/run", body={"mode": "serving"})["id"]
     save_state(live, state)
@@ -117,8 +120,8 @@ def main() -> int:
             got = served[(fault, sim)] = []
             for k in range(0, n, wpq):
                 count = min(wpq, n - k)
-                lo = first + k
-                chunk = X[lo:lo + window + count - 1]
+                lo = first + k * step
+                chunk = X[lo:lo + (count - 1) * step + window]
                 body = {"model": MODEL, "query": "", "events": [{"type": "data.numeric_array",
                         "event_data": {"contents": [chunk[:, c].tolist() for c in range(len(channels))]}}]}
                 t = time.time()
@@ -140,10 +143,10 @@ def main() -> int:
 
     rows, per_run = [], []
     for fault, sim, first, n in runs:
-        ref = batch.iloc[first:first + n]
+        ref = batch.iloc[first // step:first // step + n]
         got = served[(fault, sim)]
         for k, (s, (_, b)) in enumerate(zip(got, ref.iterrows())):
-            rows.append({"fault_id": fault, "sim": sim, "window": k, "end_sample": k + window,
+            rows.append({"fault_id": fault, "sim": sim, "window": k, "end_sample": k * step + window,
                          "batch_label": b.predicted_label, "served_label": s["predicted_label"],
                          "batch_score": b.anomaly_score, "served_score": s["anomaly_score"],
                          "served_invalid": s["invalid"],
@@ -152,8 +155,8 @@ def main() -> int:
         alarms = {}
         for who, labs in (("served", [s["predicted_label"] for s in got]), ("batch", ref.predicted_label.tolist())):
             i = first_alarm(labs)
-            # window i ends on sample i + window: hours into the run
-            alarms[who] = None if i is None else round((i + window) * SAMPLE_H, 2)
+            # window i ends on sample i * step + window: hours into the run
+            alarms[who] = None if i is None else round((i * step + window) * SAMPLE_H, 2)
         per_run.append({"fault_id": fault, "sim": sim, "windows": n, "first_alarm_h": alarms,
                         "onset_h": None if fault == "idv_00" else ONSET * SAMPLE_H})
 

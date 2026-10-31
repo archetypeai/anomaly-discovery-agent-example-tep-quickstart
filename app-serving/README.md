@@ -6,7 +6,9 @@ agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answ
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
 > **It holds a serving agent while it runs,** and gives it back when you stop it.
-> Free-trial accounts serve on CPU only, so answers can be slower.
+> On the free trial (2026-10-31) its agent was running in ~15 s and answered in
+> 0.74 s (median), about as fast as production; a run took ~2 min 45 s at the
+> default Pace. It holds one of the free trial's 3 jobs at once.
 
 It serves this repo's promoted blueprint (k 5) and replays the **delivery** runs
 (Stage 6's 4 files, 84 runs), so every served window can be checked against Stage 6's
@@ -71,7 +73,7 @@ the Optimizations and Evals APIs return values, metrics and predictions, not
 embeddings. So the windows the detector was fitted on are recomputed:
 
 ```sh
-python3 fit/library_embeddings.py     # optional, from the repo root: 40 batch runs, ~8 min
+python3 fit/library_embeddings.py     # optional, from the repo root: 40 batch runs, ~8 min (~36 on the free trial)
 ```
 
 It runs the 40 library files through the promoted blueprint in **batch**, at the

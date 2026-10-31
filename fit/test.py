@@ -3,6 +3,7 @@
 
     python3 fit/test.py                  # best trial across fit/optimize.py's runs, on slices 02-04
     python3 fit/test.py --trial otr_...  # a specific trial of the best run
+    python3 fit/test.py --pieces 2       # 6 evals of half a slice, 3 at a time, pooled (the free trial's default)
 
 The promoted blueprint carries the detector Optimize fitted on the library and
 pins the trial's values. One eval scores it on the test role (eval slices 02-04,
@@ -18,6 +19,15 @@ its rank within its example) and:
   * reports window detection per fault type (IDV) and the false-alarm rate on
     normal windows, the fault-free run and the faulty runs' first 8 h apart.
 
+On the free trial an eval is stopped after 2 hours and runs on CPU, slower than
+the 3 slices allow, so there (ATAI_API_ENDPOINT on try.archetypeai.app) the default
+is `--pieces 2`. `--pieces K` cuts each slice at run boundaries into K pieces
+(fit/out/test-pieces/), runs an eval per piece, `--parallel` at a time, and pools
+them: the confusion matrices add up, and the metrics are recomputed from the
+pooled counts the way the platform computes them (checked against every eval's
+own report). Only the windows that straddle a cut are lost, and those span two
+runs, so the detector abstains on them anyway.
+
 Writes fit/out/test_state.json (resume), fit/out/test.json and
 fit/out/test-predictions.ndjson.
 """
@@ -27,8 +37,10 @@ import argparse
 import csv
 import datetime
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
-from atai import (COLUMN, OUT, REPO, ROLES, agents_base, aggregate, api_base, example, load_dotenv,
+from atai import (COLUMN, OUT, REPO, ROLES, agents_base, aggregate, api_base, example, free_trial, load_dotenv,
                   load_state, log, manifest, request, save_state, state_path, upload_all, wait)
 
 
@@ -85,11 +97,45 @@ def gold(row: dict) -> str:
     return "normal" if row["label"] == "normal" else "anomaly"
 
 
-def score(files: list, ev: dict, preds: list, window: int, step: int) -> dict:
+def split(files: list, pieces: int, step: int) -> list:
+    """Each test file cut at run boundaries into `pieces` parts, written to fit/out/test-pieces/."""
+    out = []
+    (OUT / "test-pieces").mkdir(parents=True, exist_ok=True)
+    for f in files:
+        data, side = ROLES / f["file"], ROLES / f["labels"]
+        lines, sides = data.read_text().splitlines(True), side.read_text().splitlines(True)
+        rows = list(csv.DictReader(sides))
+        starts = [i for i in range(1, len(rows)) if (rows[i]["fault_id"], rows[i]["simulationrun"])
+                  != (rows[i - 1]["fault_id"], rows[i - 1]["simulationrun"])]
+        cuts = [0] + [min(starts, key=lambda b: abs(b - k * len(rows) / pieces)) for k in range(1, pieces)] + [len(rows)]
+        if any(c % step for c in cuts) or sorted(set(cuts)) != cuts:
+            raise SystemExit(f"{data.name}: cannot cut into {pieces} pieces at run boundaries on a multiple of {step}")
+        for j, (a, b) in enumerate(zip(cuts, cuts[1:]), 1):
+            piece = OUT / "test-pieces" / f"{data.stem}_part{j}of{pieces}.csv"
+            labels = piece.with_name(piece.stem + "_labels.csv")
+            if not piece.exists():
+                piece.write_text(lines[0] + "".join(lines[1 + a:1 + b]))
+                labels.write_text(sides[0] + "".join(sides[1 + a:1 + b]))
+            out.append({"file": piece, "labels": labels})
+    return out
+
+
+def metrics(c: dict) -> dict:
+    """The platform's aggregate from counts: an abstention counts against its gold class's recall."""
+    gold_a, gold_n = c["tp"] + c["fn"] + c["abstained_anomaly"], c["fp"] + c["tn"] + c["abstained_normal"]
+    f1 = lambda p, r: 2 * p * r / (p + r) if p + r else 0.0  # noqa: E731
+    pa, ra = c["tp"] / max(c["tp"] + c["fp"], 1), c["tp"] / max(gold_a, 1)
+    pn, rn = c["tn"] / max(c["tn"] + c["fn"], 1), c["tn"] / max(gold_n, 1)
+    return {"accuracy": (c["tp"] + c["tn"]) / max(gold_a + gold_n, 1), "detection_precision": pa,
+            "detection_recall": ra, "foreground_macro_f1": f1(pa, ra), "macro_f1": (f1(pa, ra) + f1(pn, rn)) / 2}
+
+
+def score(files: list, evals: list, preds: list, window: int, step: int) -> dict:
+    """Pair predictions with sidecar rows; check each eval's confusion and metrics; pool them."""
     by_ex = {}
     for p in preds:
         by_ex.setdefault(p["example"], []).append(p)
-    paired, abstained = [], 0
+    paired, abstained, counts = [], 0, {}
     for f in files:
         name = (ROLES / f["file"]).stem
         # The manifest names the labels sidecar directly; deriving it from a
@@ -103,6 +149,7 @@ def score(files: list, ev: dict, preds: list, window: int, step: int) -> dict:
         if len(got) != len(ws):
             raise SystemExit(f"{name}: {len(got)} predictions for {len(ws)} windows at "
                              f"window {window}, step {step}")
+        c = counts[name] = dict.fromkeys(("tp", "fn", "fp", "tn", "abstained_anomaly", "abstained_normal"), 0)
         for i, (row, p) in enumerate(zip(ws, got)):
             if p["expected"] != gold(row):
                 raise SystemExit(f"{name} window {i}: platform gold {p['expected']}, sidecar says "
@@ -111,18 +158,26 @@ def score(files: list, ev: dict, preds: list, window: int, step: int) -> dict:
             # abstained on that window.
             if p["outcome"] == "missed" or p["predicted"] is None:
                 abstained += 1
+                c[f"abstained_{gold(row)}"] += 1
             else:
                 paired.append((row, p["predicted"]))
-    a = aggregate(ev["metrics_report"])
-    idx = {n: i for i, n in enumerate(a["class_names"])}
-    cm, ai, ni = a["confusion_matrix"], idx["anomaly"], idx["normal"]
-    platform = {"tp": cm[ai][ai], "fn": cm[ai][ni], "fp": cm[ni][ai], "tn": cm[ni][ni]}
-    offline = {"tp": 0, "fn": 0, "fp": 0, "tn": 0}
-    for row, p in paired:
-        g = gold(row)
-        offline[("t" if g == p else "f") + ("p" if p == "anomaly" else "n")] += 1
-    if offline != platform:
-        raise SystemExit(f"offline confusion {offline} != platform {platform}")
+                g, pr = gold(row), p["predicted"]
+                c[("t" if g == pr else "f") + ("p" if pr == "anomaly" else "n")] += 1
+    total = dict.fromkeys(next(iter(counts.values())), 0)
+    for ev, names in evals:
+        a = aggregate(ev["metrics_report"])
+        idx = {n: i for i, n in enumerate(a["class_names"])}
+        cm, ai, ni = a["confusion_matrix"], idx["anomaly"], idx["normal"]
+        platform = {"tp": cm[ai][ai], "fn": cm[ai][ni], "fp": cm[ni][ai], "tn": cm[ni][ni]}
+        offline = {k: sum(counts[n][k] for n in names) for k in total}
+        if {k: offline[k] for k in platform} != platform:
+            raise SystemExit(f"{ev['id']}: offline confusion {offline} != platform {platform}")
+        ours = metrics(offline)
+        if any(abs(ours[k] - a[k]) > 1e-9 for k in ours):
+            raise SystemExit(f"{ev['id']}: metrics from its counts {ours} != the platform's {a}")
+        for k in total:
+            total[k] += offline[k]
+    platform = {k: total[k] for k in ("tp", "fn", "fp", "tn")}
     per_idv, normal = {}, {"fault-free run": [0, 0], "faulty runs, first 8 h": [0, 0]}
     for row, p in paired:
         if gold(row) == "anomaly":
@@ -133,15 +188,14 @@ def score(files: list, ev: dict, preds: list, window: int, step: int) -> dict:
             d = normal["fault-free run" if row["fault_id"] == "idv_00" else "faulty runs, first 8 h"]
             d[0] += p == "anomaly"
             d[1] += 1
-    return {"platform": {k: v for k, v in a.items() if k not in ("confusion_matrix", "class_names")},
-            "confusion": platform, "abstained": abstained,
+    return {"platform": metrics(total), "confusion": platform, "abstained": abstained,
             "detection_by_idv": {k: {"flagged": v[0], "windows": v[1]} for k, v in sorted(per_idv.items())},
             "false_alarms": {k: {"flagged": v[0], "windows": v[1]} for k, v in normal.items()}}
 
 
 def report(r: dict) -> None:
     p, v = r["platform"], r["blueprint"]["values"]
-    print(f"\neval {r['eval']}  blueprint {r['blueprint']['key']}  "
+    print(f"\neval {', '.join(r['evals'])}  blueprint {r['blueprint']['key']}  "
           f"(window {v['window_size']}, step {v['step_size']}, threshold {v['threshold']:.3f}; "
           f"{r['abstained']} abstained)")
     print(f"  platform: macro-F1 {p['macro_f1']:.4f}  anomaly F1 {p['foreground_macro_f1']:.4f}  "
@@ -159,8 +213,15 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--optimization", help="default: the best of fit/out/optimize_state.json's runs")
     ap.add_argument("--trial", help="default: the optimization's best trial")
+    ap.add_argument("--pieces", type=int, help="cut each test slice into K evals (default 1; 2 on the free trial)")
+    ap.add_argument("--parallel", type=int, default=3, help="evals at once with --pieces (the free trial runs 3)")
     args = ap.parse_args()
     load_dotenv()
+    if args.pieces is None:
+        args.pieces = 2 if free_trial() else 1
+        if args.pieces > 1:
+            log("free trial (try.archetypeai.app): each job stops after 2 hours, so the test runs as "
+                "6 evals of half a slice, 3 at a time, pooled (--pieces 2; --pieces 1 for one eval)")
     m = manifest()
     STATE = state_path("test")
     state = load_state(STATE)
@@ -171,29 +232,53 @@ def main() -> int:
         state["blueprint"] = promote(opt_id, args.trial)
         save()
 
-    files = m["test"]
-    paths = [ROLES / f["file"] for f in files]
-    ids = upload_all(paths, jobs=3)
-    if "eval" not in state:
-        stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        ev = request("POST", f"{agents_base()}/evals", body={
-            "blueprint_id": state["blueprint"]["id"], "emit_predictions": True,
-            "name": f"ad-tep test slices 02-04 {stamp}",
-            "examples": [example(p.stem, ids[p], COLUMN) for p in paths]})
-        state["eval"] = ev["id"]
-        save()
-        log(f"eval {ev['id']}: {len(paths)} test files")
-    ev = wait("evals", state["eval"], every_s=30)
-    if ev["status"] != "completed" or not ev.get("metrics_report"):
-        raise SystemExit(f"eval {state['eval']} ended {ev['status']}: {ev.get('error')}")
-    pred = next(x["id"] for x in ev["output_artifacts"]
-                if x.get("metadata", {}).get("kind") == "predictions")
-    raw = request("GET", f"{api_base()}/files/download/{pred}", raw=True)
-    (OUT / "test-predictions.ndjson").write_bytes(raw)
     v = state["blueprint"]["values"]
-    r = score(files, ev, [json.loads(x) for x in raw.decode().splitlines()],
-              v["window_size"], v["step_size"])
-    r = {"eval": state["eval"], "blueprint": state["blueprint"],
+    files = [{"file": ROLES / f["file"], "labels": ROLES / f["labels"]} for f in m["test"]]
+    if args.pieces > 1:
+        files = split(files, args.pieces, v["step_size"])
+    paths = [f["file"] for f in files]
+    ids = upload_all(paths, jobs=3)
+    groups = [paths] if args.pieces == 1 else [[p] for p in paths]
+    if args.pieces == 1 and "eval" in state:               # this script's single-eval state, before --pieces
+        state.setdefault("evals", [state["eval"]])
+    state.setdefault("evals", [])
+    if len(state["evals"]) not in (0, len(groups)):
+        raise SystemExit(f"{STATE} holds {len(state['evals'])} eval(s), not {len(groups)}: "
+                         f"rerun with the same --pieces, or move it aside")
+
+    def one(i: int) -> dict:
+        if i >= len(state["evals"]) or not state["evals"][i]:
+            stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            what = "slices 02-04" if args.pieces == 1 else groups[i][0].stem.removeprefix("tep_")
+            ev = request("POST", f"{agents_base()}/evals", body={
+                "blueprint_id": state["blueprint"]["id"], "emit_predictions": True,
+                "name": f"ad-tep test {what} {stamp}",
+                "examples": [example(p.stem, ids[p], COLUMN) for p in groups[i]]})
+            with lock:
+                state["evals"] += [None] * (i + 1 - len(state["evals"]))
+                state["evals"][i] = ev["id"]
+                save()
+            log(f"eval {ev['id']}: {len(groups[i])} test file(s)")
+        ev = wait("evals", state["evals"][i], every_s=30)
+        if ev["status"] != "completed" or not ev.get("metrics_report"):
+            with lock:                                      # a rerun starts a new eval for it
+                state["evals"][i] = None
+                save()
+            raise SystemExit(f"eval {ev['id']} ended {ev['status']}: {ev.get('error')}; rerun to retry it")
+        return ev
+
+    lock = threading.Lock()
+    with ThreadPoolExecutor(args.parallel if args.pieces > 1 else 1) as pool:
+        evs = list(pool.map(one, range(len(groups))))
+    raw = b""
+    for ev in evs:
+        pred = next(x["id"] for x in ev["output_artifacts"]
+                    if x.get("metadata", {}).get("kind") == "predictions")
+        raw += request("GET", f"{api_base()}/files/download/{pred}", raw=True).rstrip(b"\n") + b"\n"
+    (OUT / "test-predictions.ndjson").write_bytes(raw)
+    r = score(files, [(ev, [p.stem for p in g]) for ev, g in zip(evs, groups)],
+              [json.loads(x) for x in raw.decode().splitlines() if x.strip()], v["window_size"], v["step_size"])
+    r = {"evals": state["evals"], "pieces": args.pieces, "blueprint": state["blueprint"],
          "optimization": state["optimization"], **r}
     (OUT / "test.json").write_text(json.dumps(r, indent=1))
     report(r)

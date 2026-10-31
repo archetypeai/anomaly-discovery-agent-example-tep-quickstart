@@ -2,11 +2,15 @@
 """Stage 6 -- deliver: run the promoted blueprint as agents over files with no labels.
 
     python3 fit/deliver.py
+    python3 fit/deliver.py --step 0 --parallel 3   # the trial's step, 3 runs at once (the free trial's default)
 
 One bundle on fit/test.py's promoted blueprint, which already holds the detector
 and every value the trial pinned. The bundle adds only `step_size: 1` (one score
 per sample; bundle values override a promoted blueprint's), `output_score` and
-checkpointing off. It runs over the delivery chunks and val_normal, all five at
+checkpointing off. `--step 0` delivers at the trial's own step (8) instead: an
+eighth of the windows, which a free-trial run (CPU, stopped after 2 hours) can
+finish; Stages 7 and 8 follow the delivery's step. On the free trial
+(ATAI_API_ENDPOINT on try.archetypeai.app) that, and 3 runs at once, are the defaults. It runs over the delivery chunks and val_normal, all five at
 once. The inputs are data/roles/delivery/, which carry no label column: the labels
 stay in data/roles/labels/ until Stage 7 reads them.
 
@@ -25,7 +29,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from atai import REPO, load_dotenv, load_state, log, manifest, request, save_state, state_path
+from atai import REPO, free_trial, load_dotenv, load_state, log, manifest, request, save_state, state_path
 from ad_api import CHECKPOINTING_OFF, bundles_url, download_results, poll_agent, upload_file
 
 OUT = REPO / "eval_out" / "delivery"
@@ -37,9 +41,19 @@ lock = threading.Lock()
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--parallel", type=int, default=5)
+    ap.add_argument("--parallel", type=int, help="runs at once (default 5; 3 on the free trial)")
+    ap.add_argument("--step", type=int, help="step_size: 1 = a score per sample (default); 0 = the trial's "
+                                              "(the free trial's default)")
     args = ap.parse_args()
     load_dotenv()
+    trial = free_trial()
+    if args.step is None:
+        args.step = 0 if trial else 1
+        if trial:
+            log("free trial (try.archetypeai.app): each run stops after 2 hours, so delivering at the "
+                "trial's step, a score every 8 samples (--step 0; --step 1 for every sample)")
+    if args.parallel is None:
+        args.parallel = 3 if trial else 5
     m = manifest()
     test = load_state(state_path("test"))
     if "blueprint" not in test:
@@ -50,6 +64,11 @@ def main() -> int:
     if state.get("blueprint", bp["key"]) != bp["key"]:
         raise SystemExit(f"{STATE} is for {state['blueprint']}: move it aside to deliver {bp['key']}")
     state["blueprint"] = bp["key"]
+    step = args.step or bp["values"]["step_size"]
+    if "bundle" in state and state.get("step", 1) != step:
+        raise SystemExit(f"{STATE} delivered at step {state['step']}: move it and eval_out/delivery/ aside "
+                         f"to deliver at step {step}")
+    state["step"] = step
 
     def save():
         with lock:
@@ -57,11 +76,11 @@ def main() -> int:
 
     if "bundle" not in state:
         b = request("POST", bundles_url(), body={
-            "blueprint": bp["key"], "name": "AD TEP quickstart delivery, stride 1",
-            "values": {"step_size": 1, "output_score": True, "runner_config": CHECKPOINTING_OFF}})
+            "blueprint": bp["key"], "name": f"AD TEP quickstart delivery, stride {step}",
+            "values": {"step_size": step, "output_score": True, "runner_config": CHECKPOINTING_OFF}})
         state["bundle"] = b["id"]
         save()
-        log(f"bundle {b['id']} ({b.get('status')}) on {bp['key']}")
+        log(f"bundle {b['id']} ({b.get('status')}) on {bp['key']}, step {step}")
 
     files = [REPO / "data" / "roles" / f["file"] for f in m["delivery"]]
     if not files:
