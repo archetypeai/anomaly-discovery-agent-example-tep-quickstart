@@ -149,7 +149,15 @@ async function startAgent() {
 			await sleep(2000);
 			pkg = await api('GET', `/packages/${live.package}`);
 		}
-		if (pkg.status !== 'ready') throw new Error(`package ${live.package} is ${pkg.status}`);
+		if (pkg.status !== 'ready') {
+			// A failed package never becomes ready: drop it so the retry builds a new one.
+			const failed = live.package;
+			if (await drop(`/packages/${failed}`)) {
+				live.package = null;
+				save();
+			}
+			throw new Error(`package ${failed} is ${pkg.status}${pkg.error ? `: ${pkg.error}` : ''}`);
+		}
 	}
 	if (!live.deployment) {
 		live.deployment = (await api('POST', '/deployments', { package_id: live.package, kind: 'serving' })).id;

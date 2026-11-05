@@ -37,7 +37,8 @@ import numpy as np
 import pandas as pd
 
 from atai import REPO, ROLES, agents_base, load_dotenv, load_state, log, manifest, save_state, state_path, upload_all
-from ad_api import create_package, deploy, deployment, download_results, open_session, poll_session
+from ad_api import (create_package, deploy, deployment, deployment_ready, download_results, open_session,
+                    package_ready, poll_session)
 
 OUT = REPO / "fit" / "out" / "library_embeddings"
 VIEW = REPO / "app-serving" / "static"
@@ -58,8 +59,10 @@ def deliver(m: dict, bp: dict) -> list[Path]:
         save()
         log(f"package {pkg['id']} on {bp['key']} (step {bp['values']['step_size']}, embeddings on)")
     if "deployment" not in state:
+        package_ready(state["package"])
         state["deployment"] = deploy(state["package"], "batch")["id"]
         save()
+        deployment_ready(state["deployment"])
     paths = [ROLES / f["file"] for f in m["library"]]
     ids = upload_all(paths)
     OUT.mkdir(parents=True, exist_ok=True)

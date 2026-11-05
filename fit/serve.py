@@ -43,7 +43,8 @@ import time
 import pandas as pd
 
 from atai import REPO, load_dotenv, load_state, log, request, save_state, state_path
-from ad_api import create_package, deploy, end_deployment, end_session, open_session, packages_url, sessions_url, wait_running
+from ad_api import (create_package, deploy, deployment_ready, end_deployment, end_session, open_session,
+                    package_ready, packages_url, sessions_url, wait_running)
 
 MODEL = "tep-ad"                 # the name a query gives in `model`
 ONSET = 160                      # TEP's 48-hour runs: the fault starts after sample 160 (8 h)
@@ -112,8 +113,10 @@ def main() -> int:
     try:
         state["package"] = create_package(bp["id"], "TEP Stage 8")["id"]
         save_state(live, state)
+        package_ready(state["package"])
         state["deployment"] = deploy(state["package"], "serving")["id"]
         save_state(live, state)
+        deployment_ready(state["deployment"])
         state["session"] = open_session(state["deployment"])["id"]
         save_state(live, state)
         log(f"package {state['package']} · serving deployment {state['deployment']} · session {state['session']}")

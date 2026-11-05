@@ -98,22 +98,30 @@ def _wait_for(url: str, status: str, waiting: str, timeout_s: int, every_s: int 
     return obj
 
 
-def create_package(blueprint_id: str, name: str, timeout_s: int = 600) -> dict:
-    """Package one blueprint for the platform and wait until it is ready.
+def create_package(blueprint_id: str, name: str) -> dict:
+    """Package one blueprint for the platform; it starts `building`.
 
-    The package lands in its blueprint's project; deploying needs one."""
-    pkg = request("POST", packages_url(), body={
+    The package lands in its blueprint's project; deploying needs one. Record its
+    id before `package_ready`, so a build that fails or is interrupted can still
+    be deleted."""
+    return request("POST", packages_url(), body={
         "blueprint_ids": [blueprint_id], "target": {"kind": "platform"}, "name": name})
-    return _wait_for(packages_url(pkg["id"]), "ready", "building", timeout_s, every_s=5)
 
 
-def deploy(package_id: str, kind: str, timeout_s: int = 600) -> dict:
-    """Deploy a package as `batch` or `serving` and wait until it is ready.
+def package_ready(package_id: str, timeout_s: int = 600) -> dict:
+    return _wait_for(packages_url(package_id), "ready", "building", timeout_s, every_s=5)
+
+
+def deploy(package_id: str, kind: str) -> dict:
+    """Deploy a ready package as `batch` or `serving`; it starts `deploying`.
 
     A batch deployment is ready at once; a serving one is placed on a worker
-    first, usually within seconds."""
-    dpl = request("POST", deployments_url(), body={"package_id": package_id, "kind": kind})
-    return _wait_for(deployments_url(dpl["id"]), "ready", "deploying", timeout_s)
+    first, usually within seconds. Record its id before `deployment_ready`."""
+    return request("POST", deployments_url(), body={"package_id": package_id, "kind": kind})
+
+
+def deployment_ready(deployment_id: str, timeout_s: int = 600) -> dict:
+    return _wait_for(deployments_url(deployment_id), "ready", "deploying", timeout_s)
 
 
 def open_session(deployment_id: str, file_ids: list[str] | None = None) -> dict:

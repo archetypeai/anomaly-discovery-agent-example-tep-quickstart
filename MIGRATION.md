@@ -177,7 +177,7 @@ Statuses: package `building → ready | failed`; deployment `deploying → ready
 
 | File | Change |
 |---|---|
-| `ad_api.py` | `create_package`, `deploy`, `open_session`, `wait_running`, `poll_session`, `end_session`, `end_deployment`; results from sessions; the bundle and instance helpers removed |
+| `ad_api.py` | `create_package` and `package_ready`, `deploy` and `deployment_ready`, `open_session`, `wait_running`, `poll_session`, `end_session`, `end_deployment`; results from sessions; the bundle and instance helpers removed |
 | `fit/atai.py` | `base_blueprint()`: the project `AD TEP quickstart` and its copy of `ad` (`fit/out/project_state.json`) |
 | `fit/optimize.py`, `fit/app_blueprint.py` | optimize the project's copy; `output_score` pinned |
 | `fit/test.py`, `fit/app_blueprint.py` | promote without `blueprint_key` |

@@ -27,7 +27,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from atai import REPO, load_dotenv, load_state, log, manifest, save_state, state_path
-from ad_api import create_package, deploy, download_results, open_session, poll_session, upload_file
+from ad_api import (create_package, deploy, deployment_ready, download_results, open_session, package_ready,
+                    poll_session, upload_file)
 
 OUT = REPO / "eval_out" / "delivery"
 TIMEOUT_S = 3 * 3600
@@ -62,12 +63,14 @@ def main() -> int:
         pkg = create_package(bp["id"], "AD TEP quickstart delivery")
         state["package"] = pkg["id"]
         save()
-        log(f"package {pkg['id']} ({pkg['status']}) on {bp['key']}")
+        log(f"package {pkg['id']} on {bp['key']}")
     if "deployment" not in state:
+        package_ready(state["package"])
         dpl = deploy(state["package"], "batch")
         state["deployment"] = dpl["id"]
         save()
-        log(f"batch deployment {dpl['id']} ({dpl['status']})")
+        log(f"batch deployment {dpl['id']}")
+        deployment_ready(dpl["id"])
 
     files = [REPO / "data" / "roles" / f["file"] for f in m["delivery"]]
     if not files:
