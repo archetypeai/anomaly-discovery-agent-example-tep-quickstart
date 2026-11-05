@@ -139,8 +139,39 @@ def load_state(path: Path) -> dict:
     was = state.get("endpoint")
     if was and deployment(was) != deployment(api_base()):
         sys.exit(f"{path} is from {was}, not {api_base()}: move it aside")
+    check_run_is_yours()
     state["endpoint"] = api_base()
     return state
+
+
+_RUN_CHECKED = False
+
+
+def check_run_is_yours() -> None:
+    """Exit when fit/out/ records a run in a project this key can't see.
+
+    A clone carries this repo's own run in fit/out/: its project, uploads,
+    optimizations and blueprints belong to the account that made them, and
+    answer 404 to anyone else's key. Every stage would then resume or reuse
+    those ids, so stop before the first one does."""
+    global _RUN_CHECKED
+    if _RUN_CHECKED:
+        return
+    _RUN_CHECKED = True
+    recorded = state_path("project")
+    if not recorded.exists():
+        return
+    saved = json.loads(recorded.read_text())
+    if not saved.get("project") or deployment(saved.get("endpoint", "")) != deployment(api_base()):
+        return
+    try:
+        request("GET", f"{api_base()}/projects/{saved['project']}")
+    except SystemExit as e:
+        if "(404)" not in str(e):
+            raise
+        sys.exit(f"fit/out/ records a run in project {saved['project']}, which this API key can't see "
+                 "(it is this repo's run, or another account's). Move fit/out/ and eval_out/ aside, "
+                 "then rerun: Stage 4 finds or creates your own project.")
 
 
 def save_state(path: Path, state: dict) -> None:

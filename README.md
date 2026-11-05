@@ -130,7 +130,9 @@ cp .env.example .env               # then set ATAI_API_KEY (needed from Stage 4 
   $ATAI_API_KEY"` should print `200`.
 - **The project** is created by Stage 4 the first time, named `AD TEP quickstart`
   (`PROJECT` in `fit/atai.py`), or reused if you already have one of that name.
-  Its id and its copy of `ad` are kept in `fit/out/project_state.json`.
+  Its id and its copy of `ad` are kept in `fit/out/project_state.json`. The one
+  committed here is this repo's run: move `fit/out/` and `eval_out/` aside before
+  your own (see [The stages](#the-stages)).
 
 ### Shortcuts: skip the download
 
@@ -158,12 +160,13 @@ Then go to [Stage 4](#stage-4-optimize).
 
 ## The stages
 
-**To run again from scratch,** move `fit/out/` and `eval_out/` aside first: they
-hold this repo's run (state files with its ids), and with them `test.py` and
-`deliver.py` resume that run instead of starting a new one. Without
-`fit/out/project_state.json`, Stage 4 finds your `AD TEP quickstart` project by
-name and reuses its copy of `ad`. Every script runs
-from the repo root and is safe to rerun.
+**Before your first run, and to run again from scratch,** move `fit/out/` and
+`eval_out/` aside: they hold this repo's run (state files with its ids), and with
+them every stage resumes that run instead of starting yours. Its project and
+blueprints belong to the account that made them, so a stage stops at once when
+your key can't see the recorded project. Without `fit/out/project_state.json`,
+Stage 4 finds your `AD TEP quickstart` project by name, or creates it, and reuses
+its copy of `ad`. Every script runs from the repo root and is safe to rerun.
 
 ### Stage 0: download
 
@@ -611,8 +614,8 @@ curl -s "${ATAI_API_ENDPOINT%/api}/api/agents/deployments?status=ready&limit=100
 The numbers above are our run of this branch through Agent Lifecycle 2.0
 (project, packages, deployments, sessions) at step 8, on 2026-10-30. The run
 used an org-admin key, but no step makes an admin-only call (registering a
-blueprint, or choosing a promoted blueprint's key); a run with a member key is
-still to be confirmed. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
+blueprint, or choosing a promoted blueprint's key): a rerun with a member key, in
+its own project, gave the same scores in every stage. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
 instances. `fit/out/` and `eval_out/` hold the ids and
 outputs.
 
