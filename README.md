@@ -130,8 +130,8 @@ Then go to [Stage 4](#stage-4-optimize).
 ### On the free trial
 
 The free trial (`ATAI_API_ENDPOINT=https://try.archetypeai.app/api`, in
-`.env.example`) runs optimizations, evals and agent runs on GPU (since
-2026-11-06; CPU before) and agent serving on CPU, at most 3 jobs per org at once,
+`.env.example`) runs optimizations on GPU (always), evals and agent runs on GPU
+since 2026-11-06 (CPU before), and agent serving on CPU, at most 3 jobs per org at once,
 and stops every job after 2 hours (`DeadlineExceeded`, with no output). On CPU,
 production's settings ran past that: Stage 5's one eval (60,480 rows) and Stage 6's
 step-1 delivery (over 20,000 windows a file) each needed more than 2 hours. The
@@ -150,8 +150,8 @@ Then two defaults change, and each script says so when it starts:
 
 A flag you give wins, on either deployment (`--pieces 1`, `--step 1`).
 
-**What it gives** (ours, 2026-11-06, on GPU; the same numbers took about 5 hours on
-CPU, 2026-10-30 → 31):
+**What it gives** (ours, 2026-11-06, evals and agent runs on GPU; the same numbers
+took about 5 hours with them on CPU, 2026-10-30 → 31):
 
 | stage | free trial | production |
 |---|---|---|
