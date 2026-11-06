@@ -305,8 +305,9 @@ k = 5 wins by 0.0007, a tie in practice. Try others with `--new` and
 python3 fit/test.py
 ```
 
-1. **Promote** the best trial to a blueprint, `ad-tep-qs-<trial>`: its settings and
-   fitted detector become a reusable model. `--trial otr_…` picks another trial.
+1. **Promote** the best trial to a blueprint under the platform's key, `ad-otr_<trial>`: its
+   settings and fitted detector become a reusable model. `--trial otr_…` picks another trial;
+   `--blueprint-key` chooses the key, which needs the admin role.
 2. **Evaluate** the 3 test slices **once** with the Evals API, with predictions.
 3. **Check** every prediction's gold label against the sidecar, and the offline
    confusion matrix against the platform's, before reporting.
@@ -314,7 +315,7 @@ python3 fit/test.py
 **Expect** (ours):
 
 ```
-eval evl_…  blueprint ad-tep-qs-otr_…  (window 48, step 8, threshold 1.215; 300 abstained)
+eval evl_…  blueprint ad-otr_…  (window 48, step 8, threshold 1.215; 300 abstained)
   platform: macro-F1 0.7331  anomaly F1 0.8733  recall 0.7800  precision 0.9919
   false alarms, fault-free run            18 /    345  0.0522
   false alarms, faulty runs, first 8 h    20 /    900  0.0222
@@ -350,7 +351,7 @@ python3 fit/deliver.py
    all five at once, each uploaded without labels.
 3. **Download** each output, checking it covers its input in full.
 
-**Expect:** `bundle bnd_… on ad-tep-qs-otr_…`, five `agent agt_…` lines, five
+**Expect:** `bundle bnd_… on ad-otr_…`, five `agent agt_…` lines, five
 `verified: output covers the full input (100.0%)`, then `5 outputs in
 eval_out/delivery`. **Writes:** `eval_out/delivery/ad-output-*.csv` and
 `fit/out/deliver_state.json`.
