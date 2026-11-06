@@ -103,6 +103,37 @@ pip install -r requirements.txt    # numpy, pandas, pyreadr
 cp .env.example .env               # then set ATAI_API_KEY (needed from Stage 4 on)
 ```
 
+Or, after cloning, run `./setup.sh`: it does the same steps (and `git lfs pull` if the data
+arrived as LFS pointers), filling `.env` with `ATAI_API_KEY` from your environment or a
+hidden prompt. It sets `ATAI_API_ENDPOINT` by asking production and the free trial which
+one accepts the key, so the same command works for both. Safe to rerun.
+
+### Walk through it with Claude Code
+
+The repo carries a Claude Code skill, [`tep-walkthrough`](.claude/skills/tep-walkthrough/SKILL.md),
+that sets the repo up and walks a newcomer through it in three steps with charts: the
+data, the optimization (Stage 4), then the promoted detector run as batch agents with
+Omega embeddings on, charted as an anomaly score and a 2-D embedding map. It skips the
+evaluation and delivery stages, and takes about 15-20 minutes on the free trial, less on
+production. In the repo, ask Claude Code:
+
+```text
+/tep-walkthrough
+```
+
+From anywhere else, in Claude Code or another coding agent (it clones the repo first):
+
+```text
+Clone https://github.com/archetypeai/anomaly-discovery-agent-example-tep-quickstart.git into a new folder and follow .claude/skills/tep-walkthrough/SKILL.md.
+```
+
+Other agents find the walkthrough through [`AGENTS.md`](AGENTS.md). Charts appear inline
+where the agent can show them, and as SVG files in `walkthrough_out/` otherwise.
+
+A production or a free-trial key both work: set `ATAI_API_KEY` in your shell before
+starting, or run `./setup.sh` in a terminal when the walkthrough asks. The key is never
+typed into the chat, and the endpoint is found from the key.
+
 ### Shortcuts: skip the download
 
 Both Stage 1's output (`data/prepared/`, 66 MB) and Stage 2's (`data/roles/`,
@@ -532,6 +563,9 @@ show at which stage.
 
 | path | what it is |
 |---|---|
+| `setup.sh` | Setup in one step: LFS data, `.venv`, requirements, `.env` |
+| `.claude/skills/tep-walkthrough/` | the Claude Code walkthrough skill and its scripts; it writes to `walkthrough_out/` (gitignored) |
+| `AGENTS.md` | notes for other coding agents (Cursor, Codex, Copilot, …): where the walkthrough is and how to run it |
 | `prep/download.py` | Stage 0: the Dataverse download, MD5-checked, and RData → CSV |
 | `prep/run_preflight.py`, `prep/preflight_tep.py`, `prep/preflight_static.py` | Stages 1a and 1c |
 | `prep/prepare_tep.py`, `prep/prepare_full_eval.py` | Stage 1b: library, validation and test files; the delivery files |
