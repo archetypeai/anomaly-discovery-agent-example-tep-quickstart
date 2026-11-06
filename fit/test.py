@@ -19,9 +19,9 @@ its rank within its example) and:
   * reports window detection per fault type (IDV) and the false-alarm rate on
     normal windows, the fault-free run and the faulty runs' first 8 h apart.
 
-On the free trial an eval is stopped after 2 hours and runs on CPU, slower than
-the 3 slices allow, so there (ATAI_API_ENDPOINT on try.archetypeai.app) the default
-is `--pieces 2`. `--pieces K` cuts each slice at run boundaries into K pieces
+On the free trial an eval is stopped after 2 hours, and on CPU the 3 slices took
+longer than that, so there (ATAI_API_ENDPOINT on try.archetypeai.app) the default
+is `--pieces 2` (on GPU, one eval of all 3 takes ~3 min). `--pieces K` cuts each slice at run boundaries into K pieces
 (fit/out/test-pieces/), runs an eval per piece, `--parallel` at a time, and pools
 them: the confusion matrices add up, and the metrics are recomputed from the
 pooled counts the way the platform computes them (checked against every eval's

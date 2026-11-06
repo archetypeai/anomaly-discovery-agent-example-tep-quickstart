@@ -48,7 +48,7 @@ FREE_TRIAL_HOST = "try.archetypeai.app"
 
 
 def free_trial() -> bool:
-    """True on the free trial: CPU only, 3 jobs at once, each stopped after 2 hours.
+    """True on the free trial: batch jobs on GPU, serving on CPU, 3 jobs at once, each stopped after 2 hours.
 
     The free trial is its own deployment, so its endpoint's host says so; a free-trial
     key works nowhere else. Its defaults keep every job under the 2 hours."""
