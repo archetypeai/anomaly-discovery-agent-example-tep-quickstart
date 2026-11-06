@@ -163,9 +163,15 @@ CPU, 2026-10-30 → 31):
 | 9 | `fit/library_embeddings.py` 10 min (40 runs), the view identical to the repo's; the app's agent answering in 0.75 s (median) | ~8 min; 0.9 s an answer |
 
 **With production's settings on the free trial** (`fit/test.py --pieces 1`, `fit/deliver.py
---step 1`, 2026-11-06, on GPU): Stage 5's one eval took 3 min (macro-F1 0.7331, 300
-abstained), Stage 6 took 14 min (3 files at a time, ~3.5 min each), and Stage 7 printed
-production's numbers exactly (78.0%, 71/80, 0.901, 1.41%).
+--step 1`: one eval, delivery at stride 1; ours, 2026-11-06, on GPU), every number is
+production's:
+
+| stage | free trial, production's settings | production |
+|---|---|---|
+| 5 | one eval in 3 min; macro-F1 0.7331, 300 abstained | the same numbers |
+| 6 | 14 min at step 1 (3 files at a time, ~3.5 min each) | 15 min |
+| 7 | at the 1% threshold (1.223): detection 78.0%, runs detected 71/80, AUROC 0.901, false alarms 1.41% (179 / 12,692) | the same numbers |
+| 8 | 1,826 windows in 24 min, every label and score matching Stage 6, median 772 ms a query | 1,826 windows, 928 ms |
 
 - **Stage 5 loses only the windows across a cut** (5 per cut, 15 in all). They span
   two runs, so they are abstained either way; the platform's macro-F1 counts an
