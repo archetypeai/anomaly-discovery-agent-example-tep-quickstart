@@ -73,7 +73,7 @@ the Optimizations and Evals APIs return values, metrics and predictions, not
 embeddings. So the windows the detector was fitted on are recomputed:
 
 ```sh
-python3 fit/library_embeddings.py     # optional, from the repo root: 40 batch runs, ~8 min (~36 on the free trial)
+python3 fit/library_embeddings.py     # optional, from the repo root: 40 batch runs, ~8 min (~10 on the free trial)
 ```
 
 It runs the 40 library files through the promoted blueprint in **batch**, at the

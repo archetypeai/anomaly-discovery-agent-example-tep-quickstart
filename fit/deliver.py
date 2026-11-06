@@ -8,8 +8,8 @@ One bundle on fit/test.py's promoted blueprint, which already holds the detector
 and every value the trial pinned. The bundle adds only `step_size: 1` (one score
 per sample; bundle values override a promoted blueprint's), `output_score` and
 checkpointing off. `--step 0` delivers at the trial's own step (8) instead: an
-eighth of the windows, which a free-trial run (CPU, stopped after 2 hours) can
-finish; Stages 7 and 8 follow the delivery's step. On the free trial
+eighth of the windows, which kept a free-trial run inside its 2 hours on CPU (on
+GPU, step 1 takes ~14 min); Stages 7 and 8 follow the delivery's step. On the free trial
 (ATAI_API_ENDPOINT on try.archetypeai.app) that, and 3 runs at once, are the defaults. It runs over the delivery chunks and val_normal, all five at
 once. The inputs are data/roles/delivery/, which carry no label column: the labels
 stay in data/roles/labels/ until Stage 7 reads them.

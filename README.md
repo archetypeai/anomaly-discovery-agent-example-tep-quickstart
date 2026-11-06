@@ -34,7 +34,7 @@
 - **Skip the 1.4 GB download:** Stage 1's prepared files and the role files are
   in the repo, in Git LFS. See [Shortcuts](#shortcuts-skip-the-download).
 - **On the free trial** (`try.archetypeai.app`) the same commands work, with no
-  extra flags; Stages 4–8 take about **5 hours** there. See
+  extra flags; Stages 4–8 take about **16 minutes** there. See
   [On the free trial](#on-the-free-trial).
 
 ## The scenario
@@ -130,10 +130,12 @@ Then go to [Stage 4](#stage-4-optimize).
 ### On the free trial
 
 The free trial (`ATAI_API_ENDPOINT=https://try.archetypeai.app/api`, in
-`.env.example`) runs on CPU, at most 3 jobs per org at once, and stops every job
-after 2 hours (`DeadlineExceeded`, with no output). Production's settings break
-two of those limits here: Stage 5's one eval (60,480 rows) and Stage 6's step-1
-delivery (over 20,000 windows a file) each need more than 2 hours.
+`.env.example`) runs optimizations, evals and agent runs on GPU (since
+2026-11-06; CPU before) and agent serving on CPU, at most 3 jobs per org at once,
+and stops every job after 2 hours (`DeadlineExceeded`, with no output). On CPU,
+production's settings ran past that: Stage 5's one eval (60,480 rows) and Stage 6's
+step-1 delivery (over 20,000 windows a file) each needed more than 2 hours. The
+defaults below stay, and keep every job to a few minutes.
 
 **How the scripts know:** `fit/atai.py`'s `free_trial()` is true when the
 endpoint's host is `try.archetypeai.app` (a free-trial key works nowhere else).
@@ -141,23 +143,29 @@ Then two defaults change, and each script says so when it starts:
 
 | stage | production default | free-trial default | why |
 |---|---|---|---|
-| 5 `fit/test.py` | one eval of the 3 test slices | `--pieces 2`: each slice cut in two at run boundaries, 6 evals, 3 at a time, pooled | an eval of a whole slice runs past 2 hours |
-| 6 `fit/deliver.py` | `--step 1 --parallel 5`: a score per sample | `--step 0 --parallel 3`: the trial's step, a score every 8 samples | 1/8 of the windows; 3 jobs at once |
+| 5 `fit/test.py` | one eval of the 3 test slices | `--pieces 2`: each slice cut in two at run boundaries, 6 evals, 3 at a time, pooled | an eval of a whole slice ran past 2 hours on CPU |
+| 6 `fit/deliver.py` | `--step 1 --parallel 5`: a score per sample | `--step 0 --parallel 3`: the trial's step, a score every 8 samples | 1/8 of the windows (step 1 ran past 2 hours on CPU); 3 jobs at once |
 | 8 `fit/serve.py` | follows Stage 6's step | the same | |
 | 9 `fit/library_embeddings.py` | 4 runs at a time | 3 | 3 jobs at once |
 
 A flag you give wins, on either deployment (`--pieces 1`, `--step 1`).
 
-**What it gives** (ours, 2026-10-30 → 31):
+**What it gives** (ours, 2026-11-06, on GPU; the same numbers took about 5 hours on
+CPU, 2026-10-30 → 31):
 
 | stage | free trial | production |
 |---|---|---|
-| 4 | 7.5 min; validation macro-F1 0.8547 / 0.8540 | the same numbers |
-| 5 | 6 evals in 1 h 30 min (41–49 min each); confusion, anomaly F1 0.8733, recall, precision and every IDV's detection **identical**; macro-F1 0.7342, 285 abstained | macro-F1 0.7331, 300 abstained |
-| 6 | 2 h 51 min: `val_normal` 40 min, each chunk ~1 h 24 min | 15 min at step 1 |
+| 4 | 6 min; validation macro-F1 0.8547 / 0.8540 | the same numbers |
+| 5 | 6 evals in 3 min (about 1 min each); confusion, anomaly F1 0.8733, recall, precision and every IDV's detection **identical**; macro-F1 0.7342, 285 abstained | macro-F1 0.7331, 300 abstained |
+| 6 | 3 min | 15 min at step 1 |
 | 7 | at the 1% threshold (1.219): detection 78.5%, runs detected 70/80, AUROC 0.903, false alarms 2.11% (35 / 1,660) | 78.0%, 71/80, 0.901, 1.41% |
-| 8 | 230 windows, every label and score matching Stage 6, median 773 ms a query | 1,826 windows, 928 ms |
-| 9 | `fit/library_embeddings.py` 36 min (40 runs, ~3 min each), the view identical to the repo's; the app's agent running in ~15 s, 0.74 s an answer, a run in ~2 min 45 s | ~8 min; 0.9 s an answer |
+| 8 | 230 windows in 3 min, every label and score matching Stage 6, median 789 ms a query (serving is on CPU) | 1,826 windows, 928 ms |
+| 9 | `fit/library_embeddings.py` 10 min (40 runs), the view identical to the repo's; the app's agent answering in 0.75 s (median) | ~8 min; 0.9 s an answer |
+
+**With production's settings on the free trial** (`fit/test.py --pieces 1`, `fit/deliver.py
+--step 1`, 2026-11-06, on GPU): Stage 5's one eval took 3 min (macro-F1 0.7331, 300
+abstained), Stage 6 took 14 min (3 files at a time, ~3.5 min each), and Stage 7 printed
+production's numbers exactly (78.0%, 71/80, 0.901, 1.41%).
 
 - **Stage 5 loses only the windows across a cut** (5 per cut, 15 in all). They span
   two runs, so they are abstained either way; the platform's macro-F1 counts an
@@ -318,7 +326,7 @@ ones across a gap between runs.
   frozen: tuning it further would make the test number optimistic.
 
 **On the free trial** it runs 6 evals of half a slice each and pools them
-(`--pieces 2`, [above](#on-the-free-trial)): about 1.5 hours.
+(`--pieces 2`, [above](#on-the-free-trial)): about 3 minutes.
 
 **Writes:** `fit/out/test.json`, `fit/out/test-predictions.ndjson` and
 `fit/out/test_state.json` (the ids, so a rerun resumes instead of testing again).
@@ -342,7 +350,7 @@ eval_out/delivery`. **Writes:** `eval_out/delivery/ad-output-*.csv` and
 `fit/out/deliver_state.json`.
 
 **On the free trial** it delivers at step 8, 3 files at a time (`--step 0
---parallel 3`, [above](#on-the-free-trial)): about 3 hours.
+--parallel 3`, [above](#on-the-free-trial)): about 3 minutes.
 
 ### Stage 7: score the delivery
 
