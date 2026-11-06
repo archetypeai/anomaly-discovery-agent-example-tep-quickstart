@@ -104,8 +104,9 @@ cp .env.example .env               # then set ATAI_API_KEY (needed from Stage 4 
 ```
 
 Or, after cloning, run `./setup.sh`: it does the same steps (and `git lfs pull` if the data
-arrived as LFS pointers), filling `.env` from `ATAI_API_KEY` and `ATAI_API_ENDPOINT` in
-your environment, or from a hidden prompt when run in a terminal. Safe to rerun.
+arrived as LFS pointers), filling `.env` with `ATAI_API_KEY` from your environment or a
+hidden prompt. It sets `ATAI_API_ENDPOINT` by asking production and the free trial which
+one accepts the key, so the same command works for both. Safe to rerun.
 
 ### Walk through it with Claude Code
 
@@ -113,8 +114,8 @@ The repo carries a Claude Code skill, [`tep-walkthrough`](.claude/skills/tep-wal
 that sets the repo up and walks a newcomer through it in three steps with charts: the
 data, the optimization (Stage 4), then the promoted detector run as batch agents with
 Omega embeddings on, charted as an anomaly score and a 2-D embedding map. It skips the
-evaluation and delivery stages, and takes about 15-20 minutes on the free trial. In the
-repo, ask Claude Code:
+evaluation and delivery stages, and takes about 15-20 minutes on the free trial, less on
+production. In the repo, ask Claude Code:
 
 ```text
 /tep-walkthrough
@@ -126,9 +127,9 @@ From anywhere else (it clones the repo first):
 Clone https://github.com/archetypeai/anomaly-discovery-agent-example-tep-quickstart.git into a new folder and follow its tep-walkthrough skill.
 ```
 
-Set `ATAI_API_KEY` (and, on the free trial, `ATAI_API_ENDPOINT=https://try.archetypeai.app/api`)
-in your shell before starting, or run `./setup.sh` in a terminal when asked: the key is
-never typed into the chat.
+A production or a free-trial key both work: set `ATAI_API_KEY` in your shell before
+starting, or run `./setup.sh` in a terminal when the walkthrough asks. The key is never
+typed into the chat, and the endpoint is found from the key.
 
 ### Shortcuts: skip the download
 
