@@ -43,12 +43,19 @@ they write goes to `walkthrough_out/` (gitignored).
    `git clone https://github.com/archetypeai/anomaly-discovery-agent-example-tep-quickstart.git`
    (Git LFS must be installed, or the data files arrive as empty pointers).
 2. Run `./setup.sh`. It fetches the LFS data, creates `.venv`, installs requirements and
-   writes `.env` from `ATAI_API_KEY` / `ATAI_API_ENDPOINT` in the environment.
-3. If it exits with status 2, the key is missing. Ask the user to set it **in their own
-   terminal** (`export ATAI_API_KEY=...` and, on the free trial,
-   `export ATAI_API_ENDPOINT=https://try.archetypeai.app/api`, then rerun `./setup.sh`;
-   or run `./setup.sh` there and type the key at the hidden prompt). Step 1 needs no key,
-   so you can start it while they do this, but stop before Step 2 until setup passes.
+   writes `.env` from `ATAI_API_KEY` in the environment. It works for production and
+   free-trial users alike: it asks both deployments which one accepts the key and sets
+   `ATAI_API_ENDPOINT` to match, so nobody needs to know their endpoint. Tell the user
+   which deployment it found (the script says).
+3. If it exits with status 2, the key is missing. Ask the user to run, in their own
+   terminal (not this chat), the `cd "<repo path>" && ./setup.sh` line the script
+   printed, and type the key at the hidden prompt. It writes `.env`, which every script
+   reads, so this session needn't restart. When they say it's done, rerun `./setup.sh`
+   here to confirm, then continue. (An `export ATAI_API_KEY=...` in a terminal only
+   reaches this session if it was done before the session started, so don't suggest it
+   now.) Step 1 needs no key, so you can start it meanwhile, but stop before Step 2.
+4. Status 3 means both deployments rejected the key: ask the user to check it (a typo,
+   an expired free-trial key) and run `./setup.sh` in their terminal again.
 
 ## Step 1: Data (local, under a minute)
 
@@ -77,7 +84,7 @@ From `walkthrough_out/step2.json`, explain the winning setting (window, step, fe
 PCA, neighbours, threshold) and its scores (macro-F1, recall, precision) in plain words,
 and give the optimization's console link. Then wait for "next".
 
-## Step 3: Run (Newton, ~12-15 minutes on the free trial)
+## Step 3: Run (Newton, ~5-15 minutes; faster on production)
 
 1. Run `scripts/step3_run.py` (default `--library 10`). On Newton it promotes the winning
    trial to a blueprint (reusing it if already promoted; no evaluation), creates one

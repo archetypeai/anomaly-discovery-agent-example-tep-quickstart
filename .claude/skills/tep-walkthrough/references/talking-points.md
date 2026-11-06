@@ -2,19 +2,22 @@
 
 Plain-language material for each step. Use what helps the user; don't read it out.
 
-## Timings (free trial, measured 2026-11)
+## Timings (measured 2026-11)
 
-| Step | Where it runs | Time |
-|---|---|---|
-| 0 · Setup | Claude Code (clone, LFS ~140 MB, venv) | 1-3 min |
-| 1 · Data | Claude Code, locally | under a minute |
-| 2 · Build | Newton: Optimizations API | seconds if the saved run is reachable; ~6-8 min fresh |
-| 3 · Promote + bundle | Newton | seconds |
-| 3 · 12 agent runs | Newton: batch agents, 3 at a time on the free trial (4 on production) | ~12-15 min (~2.5 min per run) |
-| 3 · Charts | Claude Code: PCA and drawing | under a minute |
+`setup.sh` reports which deployment the key belongs to; quote the matching column.
+
+| Step | Where it runs | Free trial | Production |
+|---|---|---|---|
+| 0 · Setup | Claude Code (clone, LFS ~140 MB, venv) | 1-3 min | 1-3 min |
+| 1 · Data | Claude Code, locally | under a minute | under a minute |
+| 2 · Build | Newton: Optimizations API | ~6-8 min fresh; seconds if the saved run is reachable | about 6 min fresh (README); seconds if reachable |
+| 3 · Promote + bundle | Newton | seconds | seconds |
+| 3 · 12 agent runs | Newton: batch agents | 3 at a time, ~1-2.5 min each: ~5-12 min | 4 at a time: usually faster |
+| 3 · Charts | Claude Code: PCA and drawing | under a minute | under a minute |
 
 Platform times vary with load. The free trial runs on CPU, allows 3 jobs per org at
-once and stops any job after 2 hours.
+once and stops any job after 2 hours. On production, the repo's saved optimization is
+only reachable for keys in the repo authors' org; everyone else gets a fresh one.
 
 ## Newton vs Claude Code
 
