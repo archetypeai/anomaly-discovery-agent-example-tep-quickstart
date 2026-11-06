@@ -103,6 +103,33 @@ pip install -r requirements.txt    # numpy, pandas, pyreadr
 cp .env.example .env               # then set ATAI_API_KEY (needed from Stage 4 on)
 ```
 
+Or, after cloning, run `./setup.sh`: it does the same steps (and `git lfs pull` if the data
+arrived as LFS pointers), filling `.env` from `ATAI_API_KEY` and `ATAI_API_ENDPOINT` in
+your environment, or from a hidden prompt when run in a terminal. Safe to rerun.
+
+### Walk through it with Claude Code
+
+The repo carries a Claude Code skill, [`tep-walkthrough`](.claude/skills/tep-walkthrough/SKILL.md),
+that sets the repo up and walks a newcomer through it in three steps with charts: the
+data, the optimization (Stage 4), then the promoted detector run as batch agents with
+Omega embeddings on, charted as an anomaly score and a 2-D embedding map. It skips the
+evaluation and delivery stages, and takes about 15-20 minutes on the free trial. In the
+repo, ask Claude Code:
+
+```text
+/tep-walkthrough
+```
+
+From anywhere else (it clones the repo first):
+
+```text
+Clone https://github.com/archetypeai/anomaly-discovery-agent-example-tep-quickstart.git into a new folder and follow its tep-walkthrough skill.
+```
+
+Set `ATAI_API_KEY` (and, on the free trial, `ATAI_API_ENDPOINT=https://try.archetypeai.app/api`)
+in your shell before starting, or run `./setup.sh` in a terminal when asked: the key is
+never typed into the chat.
+
 ### Shortcuts: skip the download
 
 Both Stage 1's output (`data/prepared/`, 66 MB) and Stage 2's (`data/roles/`,
@@ -518,6 +545,8 @@ show at which stage.
 
 | path | what it is |
 |---|---|
+| `setup.sh` | Setup in one step: LFS data, `.venv`, requirements, `.env` |
+| `.claude/skills/tep-walkthrough/` | the Claude Code walkthrough skill and its scripts; it writes to `walkthrough_out/` (gitignored) |
 | `prep/download.py` | Stage 0: the Dataverse download, MD5-checked, and RData → CSV |
 | `prep/run_preflight.py`, `prep/preflight_tep.py`, `prep/preflight_static.py` | Stages 1a and 1c |
 | `prep/prepare_tep.py`, `prep/prepare_full_eval.py` | Stage 1b: library, validation and test files; the delivery files |
