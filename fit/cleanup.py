@@ -107,9 +107,6 @@ def main() -> int:
             print(f"  {kind}/{obj}: {why}")
         print("a session holds its deployment, and a deployment its package: "
               "delete what holds them, then rerun")
-    else:
-        for name in ("serve", "app_serving"):
-            state_path(name).unlink(missing_ok=True)
     log("done")
     return 0
 
