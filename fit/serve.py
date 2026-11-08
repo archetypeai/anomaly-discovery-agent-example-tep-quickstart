@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Stage 8 -- serve: the promoted detector answering over /query, checked against Stage 6.
+"""Stage 8 -- serve: the promoted Anomaly Detection Agent answering over /query, checked against Stage 6.
 
     python3 fit/serve.py                          # delivery file 1's fault-free run and IDV 5 (~25 min)
     python3 fit/serve.py --faults idv_01 idv_19   # other runs of the file
     python3 fit/serve.py --file full_chunk_002    # another delivery file
     python3 fit/serve.py --faults all             # all 21 runs of the file (~4 h)
 
-Stage 6 delivered the detector in batch: an agent run per file, the output read
+Stage 6 delivered the Anomaly Detection Agent in batch: an agent run per file, the output read
 when the run is done. Serving keeps an agent loaded and answers a window in one
 round trip, as a plant historian would ask it every 3 minutes for the latest
 48 samples. This replays delivery runs that way and checks every answer against

@@ -93,7 +93,7 @@ def main() -> int:
 
     ok = True
     for run in state["runs"]:
-        opt = wait("optimizations", run["optimization"], every_s=30)
+        opt = wait("optimizations", run["optimization"], every_s=10)
         trials = request("GET", f"{agents_base()}/optimizations/{opt['id']}/trials?limit=1000")["data"]
         (OUT / f"optimize_{opt['id']}.json").write_text(
             json.dumps({"optimization": opt, "trials": trials}, indent=1))

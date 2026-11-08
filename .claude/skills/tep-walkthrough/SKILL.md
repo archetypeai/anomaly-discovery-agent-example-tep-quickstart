@@ -1,43 +1,47 @@
 ---
 name: tep-walkthrough
 description: >-
-  Guided, beginner-friendly walkthrough of Archetype AI's chemical plant (Tennessee Eastman, TEP) anomaly discovery quickstart in this repo, in 3 steps with charts: the data, building the detector with Newton's Optimizations API, then promoting it, running it as batch agents with Omega embeddings on, and charting the anomaly score and a 2-D embedding map. Also sets the repo up first (Git LFS, virtual environment, .env) when it isn't. Use whenever someone asks to set up, try, demo, walk through, explain or "show me" this quickstart, the TEP / chemical plant anomaly example, or anomaly discovery on Newton for a beginner, even if they don't name the skill.
+  Guided, beginner-friendly walkthrough of Archetype AI's chemical plant (Tennessee Eastman, TEP) anomaly discovery quickstart in this repo: an overview, then 3 steps with charts: the data, building the Anomaly Detection Agent with Newton's Optimizations API, then promoting it, running it as batch agents with Omega embeddings on, and charting the anomaly score and a 2-D embedding map. Also sets the repo up first (Git LFS, virtual environment, .env) when it isn't. Use whenever someone asks to set up, try, demo, walk through, explain or "show me" this quickstart, the TEP / chemical plant anomaly example, or anomaly discovery on Newton for a beginner, even if they don't name the skill.
 ---
 
 # TEP quickstart walkthrough
 
-Walk a beginner through the quickstart in **three steps**, pausing for the user to say
-"next" between steps. The audience is new to anomaly detection and to Archetype's
-platform, so use plain language, define terms the first time, and keep each step to
-what it shows. Talking points for every step are in
-[references/talking-points.md](references/talking-points.md); read it before Step 1.
+Walk a beginner through the quickstart: **Step 0**, an overview, then **three steps**,
+pausing for the user to say "next" after each. The audience is new to anomaly detection
+and to Archetype's platform, so use plain language, define terms the first time, and
+keep each step to what it shows. Talking points for every step are in
+[references/talking-points.md](references/talking-points.md); read it before Step 0.
+
+Order: Setup (silently, only if needed), Step 0, Step 1, Step 2, Step 3.
 
 All scripts are in `scripts/` and run from the repo root with the repo's environment,
-e.g. `.venv/bin/python .claude/skills/tep-walkthrough/scripts/step1_chart.py`. They do
+e.g. `.venv/bin/python .claude/skills/tep-walkthrough/scripts/step2_optimize.py`. They do
 the deterministic work (data, API calls, charts) so every run of the walkthrough looks
 the same; your job is to run them, show what they produce and explain it. Everything
 they write goes to `walkthrough_out/` (gitignored).
 
 ## Throughout
 
-- **Time first.** Before each step, say roughly how long it will take and whether that
-  depends on the free trial or platform load (timings are in the talking points).
-- **Newton vs Claude Code.** Say which work runs on Newton, Archetype's platform
-  (uploads, Omega embeddings, fitting and scoring the detector, promoting, bundles,
-  agent runs), and which runs locally in Claude Code (reading files, preparing inputs,
-  computing PCA, drawing charts). This is what shows what the platform and its APIs add.
+- **Fixed text.** Every message of Steps 0-3 is written in the talking points: Steps 0
+  and 1, and the start, link, progress and end messages of Steps 2 and 3 (their end text
+  as the scripts fill it in). Show each exactly as written, adding nothing before or
+  after. They already say how long each step takes, what runs on Newton and what runs on
+  this machine, and give the console links. Answer questions from the "Only if asked"
+  notes.
 - **Charts inline.** Show every chart in the chat. If an inline visual tool is available
   (for example `show_widget`), pass it the SVG file's contents unchanged; the files are
-  sized for that. Otherwise send or open the file. Either way, give its path.
-- **Console links.** After every platform step, give the console link the script prints,
-  and list them all again at the end.
+  sized for that. Only if you can't show it inline, send or open the file and give its
+  path.
 - **Stay in scope.** Don't modify `app-serving/static/`, and don't run `fit/test.py`,
   `fit/deliver.py` or later stages: this walkthrough skips evaluation and delivery on
   purpose (Step 3 imports `fit/test.py`'s promote function only).
 - **Secrets.** Never print, paste or ask for the API key in chat. Read whether it is set,
   not its value.
 
-## Step 0: setup (only if needed, no pause)
+## Setup (only if needed, before Step 0, no pause)
+
+Needed when `.venv/bin/python` is missing or `.env` has no `ATAI_API_KEY` (check that
+it is set, never print it). Otherwise skip straight to Step 0.
 
 1. If the current folder isn't this repo, clone it into a new folder and work there:
    `git clone https://github.com/archetypeai/anomaly-discovery-agent-example-tep-quickstart.git`
@@ -53,59 +57,80 @@ they write goes to `walkthrough_out/` (gitignored).
    reads, so this session needn't restart. When they say it's done, rerun `./setup.sh`
    here to confirm, then continue. (An `export ATAI_API_KEY=...` in a terminal only
    reaches this session if it was done before the session started, so don't suggest it
-   now.) Step 1 needs no key, so you can start it meanwhile, but stop before Step 2.
+   now.) Steps 0 and 1 need no key, so you can start them meanwhile, but stop before Step 2.
 4. Status 3 means both deployments rejected the key: ask the user to check it (a typo,
    an expired free-trial key) and run `./setup.sh` in their terminal again.
 
-## Step 1: Data (local, under a minute)
+## Step 0: Overview (no script, no key)
 
-Run `scripts/step1_chart.py`. Show a table of the four data roles (library, validation,
-test, delivery: what each holds, whether it has answers, and what it's used for; see
-the talking points), then the chart `walkthrough_out/step1_runs.svg`: the stripper
-temperature over 48 h, one run per row on a shared scale, 3 normal runs in blue and 2
-fault runs (IDV 1, IDV 10) in yellow, with the fault start marked. Explain what "normal"
-looks like, that both fault runs match normal until hour 8, and why IDV 1 is easy and
-IDV 10 is hard. Then wait for "next".
+Nothing runs. Show the talking points' Step 0 text exactly as written, from the line
+**Step 0: what this quickstart does** to the line ending "to start Step 1.", and add
+nothing before or after it (if Setup just ran, one line saying it's ready may come
+first). Then wait for "next".
 
-## Step 2: Build (Newton, seconds to ~8 minutes)
+## Step 1: Data (no script, no key)
 
-Run `scripts/step2_optimize.py`. It runs `fit/optimize.py`, which uploads the library and
-validation files and creates an optimization on the `ad` blueprint. Newton embeds every
-window with Omega, fits a nearest-neighbour detector on normal runs and scores each
-setting on validation.
+Nothing runs. Show the talking points' Step 1 text exactly as written, from the line
+**Step 1 of 3: the data** to the line ending "building the Anomaly Detection Agent on Newton." (not
+the "Only if asked" notes below it), and add nothing before or after it: no time estimate and no Newton vs
+Claude Code note (the text already says nothing runs), no chart. Then wait for "next".
 
-The repo ships its authors' saved optimization. If this key can reach it, the script
-just reports it (seconds). If not (another org or deployment, the usual case for a new
-user), it moves that file to `walkthrough_out/` and starts a fresh optimization: say it
-will take about 6-8 minutes on the free trial, and run it in the background if your
-environment allows, so the user isn't left waiting on a silent command.
+## Step 2: Build (Newton, about a minute)
 
-From `walkthrough_out/step2.json`, explain the winning setting (window, step, features,
-PCA, neighbours, threshold) and its scores (macro-F1, recall, precision) in plain words,
-and give the optimization's console link. Then wait for "next".
+Three messages, each shown exactly as written in the talking points' Step 2 section, with
+nothing added before or after:
 
-## Step 3: Run (Newton, ~5-15 minutes; faster on production)
+1. **Start.** Show the text from **Step 2 of 3: building the Anomaly Detection Agent** to
+   the line ending "reads back the results.", and in the same turn run
+   `scripts/step2_optimize.py` (in the background if your environment allows).
+2. **Link.** As soon as the script prints a `console:` line, show the one line
+   "Running on Newton. Follow it live: <that link>", plain, as written. Skip it if the
+   script has already finished by then (it reused a saved run, in seconds): the end
+   text carries the link.
+3. **End.** When the script finishes, show `walkthrough_out/step2.md` exactly: the
+   script fills the talking points' end text in from this run (both settings' scores, the
+   console link). Then wait for "next".
 
-1. Run `scripts/step3_run.py` (default `--library 10`). On Newton it promotes the winning
-   trial to a blueprint (reusing it if already promoted; no evaluation), creates one
-   bundle with `output_score` and `output_embeddings` on, and runs 12 batch agents: one
-   normal and one faulty run from test slice 02 with labels removed, plus the first 10
-   library files. It blocks until all outputs are downloaded and logs
-   `k/12 runs done, ~M min left`.
-2. It takes longer than one command can wait, so run it in the background. Tell the user
-   how many runs there are and the expected time, give the bundle's console link, and
-   relay progress from its log as runs finish. The walkthrough isn't done until the
-   charts are shown: when the run finishes, continue straight to the charts.
-3. Run `scripts/step3_charts.py` and show both charts:
-   - `walkthrough_out/step3_score.svg`: the anomaly score over time for both runs, with
-     the fault start and the alarm threshold.
-   - `walkthrough_out/step3_pca.svg`: the embedding map, a 2-D PCA fitted on the library
-     windows of each window's Omega embedding plus its per-sensor features at equal
-     weight. Library grey, normal blue, faulty red, darkening after the fault.
-4. Explain them from `walkthrough_out/step3.json`: when the faulty run's first sustained
-   alarm came, how the normal run behaved (be honest about any windows over the
-   threshold: that is a false alarm), and what the map shows. Give the console links from
-   `walkthrough_out/step3/links.json`, then a short recap with every link.
+What the script does: it runs `fit/optimize.py`, which uploads the library and validation
+files and creates an optimization on the `ad` blueprint. Newton embeds every window with
+Omega, fits the Anomaly Detection Agent (a nearest-neighbour model) on normal runs and
+scores each setting on validation. The repo ships no saved optimization for the mini
+dataset, so a first run starts a fresh one: 52 s on the free trial (2026-11-07: 10 s
+uploading, 40 s on Newton), plus any queue. If `fit/out/optimize_state.json` exists and
+this key can reach it, the script just reports it (seconds); if not, it moves that file
+to `walkthrough_out/` and starts fresh. Answer questions from the talking points' "Only
+if asked" notes.
+
+## Step 3: Run (Newton, about a minute)
+
+Four kinds of message, each shown exactly as written in the talking points' Step 3
+section, with nothing added before or after:
+
+1. **Start.** Show the text from **Step 3 of 3: running the Anomaly Detection Agent** to
+   the line ending "then draws two charts.", and in the same turn run
+   `scripts/step3_run.py` in the background (it blocks until every run is downloaded).
+2. **Link.** As soon as the script prints a `console:` line, show the one line
+   "Running on Newton. Follow it live: <that link>", plain, as written.
+3. **Progress.** When its log shows `1/2 runs done`, show the one line "1 of 2 runs
+   done." Not at `2/2`: the end follows. Skip it if you only see it once the script has
+   exited.
+4. **End.** When it finishes, run `scripts/step3_charts.py`, then show the map
+   `walkthrough_out/step3_pca.svg`, then the score chart `walkthrough_out/step3_score.svg`
+   (see Charts inline), then `walkthrough_out/step3.md` exactly: the script fills the talking
+   points' end text in from this run. That ends the walkthrough.
+
+If you can't run the script in the background, run it in the foreground and skip the
+link and progress messages: the end text carries the link.
+
+What the scripts do: `step3_run.py` promotes Step 2's winning trial to a blueprint
+(reusing it if already promoted; no evaluation), creates one bundle with `output_score`
+and `output_embeddings` on, and runs 2 batch agents at once: the first normal run and
+the IDV 1 run from `tep_test.csv` with labels removed. 0.8 min on the free trial, 2026-11-07. If Step 2 has a new
+optimization since the last Step 3, it moves the old Step 3 outputs aside and starts
+over. `step3_charts.py` draws a 2-D map of the two test
+runs' windows (PCA fitted on those windows' Omega embeddings plus their per-sensor
+features), coloured by the agent's own verdict (blue normal, red anomaly), and the anomaly score over
+time.
 
 If a run fails or is interrupted, rerun the same script: it resumes from
 `walkthrough_out/step3/state.json` and skips finished outputs.

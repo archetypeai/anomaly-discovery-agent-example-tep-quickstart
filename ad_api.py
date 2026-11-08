@@ -359,7 +359,7 @@ def _output_coverage(out_path: str, source_end: float) -> tuple[float, float]:
 
     Compares the last window's finish timestamp against the input's last sample.
     Deliberately derived from the output itself rather than from window/step:
-    those come from the detector artifact, so a client that did not pass them
+    those come from the Anomaly Detection Agent artifact, so a client that did not pass them
     does not know them, and this check has to work in the default path.
     """
     import csv as _csv
@@ -436,7 +436,7 @@ def download_results(agent_id: str, out_path: str,
 
       * `source_csv` given: re-fetch until the last scored window reaches the end
         of that input. Needs no knowledge of window/step -- which come from the
-        detector artifact, so the default path does not have them.
+        Anomaly Detection Agent artifact, so the default path does not have them.
       * otherwise: poll until num_bytes stops changing, which is weaker (a stall
         mid-write looks like a finish) but is all that is available.
 

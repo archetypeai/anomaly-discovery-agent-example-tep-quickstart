@@ -6,7 +6,7 @@
 On the free trial (ATAI_API_ENDPOINT on try.archetypeai.app) it runs 3 at a time
 instead of 4, the free trial's limit of jobs at once.
 
-The promoted detector was fitted on the library's 40 fault-free runs at the
+The promoted Anomaly Detection Agent was fitted on the library's 40 fault-free runs at the
 trial's window 48 and step 8, but it is a registry artifact (`aar_…`) with no
 download route, so its reference windows can't be read back. They can be
 recomputed: a bundle on the
@@ -17,7 +17,7 @@ window's 33 x 768 Omega embedding with its score (2,280 windows in all).
 The view is PCA 1-2 of those embeddings, whitened, in the layout the app
 reads: `app-serving/static/detector-view.{json,bin}` holds the 2,280 reference
 points, the mean and the two projection rows, so a live window's embedding lands
-in the same coordinates. The detector's own PCA is fitted on these embeddings
+in the same coordinates. The Anomaly Detection Agent's own PCA is fitted on these embeddings
 too, so the axes should be its leading components up to sign; the artifact
 can't be read to confirm it.
 
@@ -136,7 +136,7 @@ def main() -> int:
             offset += a.nbytes
     v = bp["values"]
     (VIEW / "detector-view.json").write_text(json.dumps({
-        "note": ("PCA 1-2 of the promoted detector's reference library, recomputed: the 40 library runs "
+        "note": ("PCA 1-2 of the promoted Anomaly Detection Agent's reference library, recomputed: the 40 library runs "
                  "through the promoted blueprint in batch with output_embeddings on (fit/library_embeddings.py). "
                  "For drawing only: the app never recomputes a score."),
         "channels": channels, "embeddingDim": dim // len(channels), "totalDim": dim, "nReference": n,

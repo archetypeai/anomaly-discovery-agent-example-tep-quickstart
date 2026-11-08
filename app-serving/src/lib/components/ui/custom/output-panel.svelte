@@ -56,7 +56,7 @@
 
 	// The agent's call on the newest window, in words — OSM's `PREDICTION STATE`
 	// pair and RED's `Detection State`, applied to a continuous output. Three
-	// bands, not the detector's two: `normal` and `anomaly` are its own call
+	// bands, not the Anomaly Detection Agent's two: `normal` and `anomaly` are its own call
 	// either side of the threshold, while `elevated` is this app's approach band.
 	// Naming it is the point of the badge; a bare number cannot say "on its way".
 	const verdict = $derived(latest ? scoreTone(latest.score, s.threshold) : null);
@@ -76,8 +76,8 @@
 		view === 'log'
 			? 'Detection episodes, newest first. An episode opens when three consecutive windows cross the threshold (the rule Stage 7 scores with), takes in every crossing after it, and closes when a window falls back under. A developed fault is one row; a borderline run that flaps is several.'
 			: view === 'plant'
-				? "Six units connected in a loop, each tinted by the largest deviation among its own tags, in reference sigmas. That is INPUT deviation, not the agent's attribution: the detector scores a 48-sample window across all 33 channels jointly and says nothing about which one moved it, so a unit can glow while the score stays flat, and the score can rise with nothing glowing. It is drawn on this side because a fault in the reactor coolant shows up in the separator — the recycle carries it there — and that is a property of the plant the score alone cannot show."
-				: "The cloud is the 2,280 reference windows the promoted detector was fitted on (the 40 fault-free library runs at window 48, step 8), recomputed by running them through the promoted blueprint in batch with embeddings on, and drawn in PCA 1 and 2 of their Omega embeddings, whitened. The trail is this run through the same two axes, from the embeddings the served agent returns. The detector's own PCA is fitted on these embeddings too, but it is a registry artifact that can't be read, so this is a recomputed view, not the detector's. And the detector scores in more dimensions than two (PCA 16 plus the per-channel features): the trail leaving the cloud is evidence; the trail staying in it is not evidence of nothing."
+				? "Six units connected in a loop, each tinted by the largest deviation among its own tags, in reference sigmas. That is INPUT deviation, not the agent's attribution: the Anomaly Detection Agent scores a 48-sample window across all 33 channels jointly and says nothing about which one moved it, so a unit can glow while the score stays flat, and the score can rise with nothing glowing. It is drawn on this side because a fault in the reactor coolant shows up in the separator — the recycle carries it there — and that is a property of the plant the score alone cannot show."
+				: "The cloud is the 2,280 reference windows the promoted Anomaly Detection Agent was fitted on (the 40 fault-free library runs at window 48, step 8), recomputed by running them through the promoted blueprint in batch with embeddings on, and drawn in PCA 1 and 2 of their Omega embeddings, whitened. The trail is this run through the same two axes, from the embeddings the served agent returns. The Anomaly Detection Agent's own PCA is fitted on these embeddings too, but it is a registry artifact that can't be read, so this is a recomputed view, not the Anomaly Detection Agent's. And the Anomaly Detection Agent scores in more dimensions than two (PCA 16 plus the per-channel features): the trail leaving the cloud is evidence; the trail staying in it is not evidence of nothing."
 	);
 
 	const totals = $derived([
@@ -150,7 +150,7 @@
 								just above 1.0 while a developed fault reaches 60. The trace is coloured by band and
 								the strip under the axis is the same run measured in time. The dashed marker is
 								where the simulator introduced the disturbance: a property of the data, not of the
-								detector's opinion.
+								Anomaly Detection Agent's opinion.
 							</p>
 							<p class="mt-2">
 								<span class="text-foreground">Crossings</span> counts windows over the threshold,

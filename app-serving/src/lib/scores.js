@@ -24,12 +24,12 @@ export const SCORE_META = {
 };
 
 /**
- * Where a score sits relative to the detector's own threshold.
+ * Where a score sits relative to the Anomaly Detection Agent's own threshold.
  *
  * `elevated` is the band below the line but visibly off the floor. It is a
  * fraction of the threshold rather than a fixed number because the threshold is
  * chosen at fit time and lives INSIDE the artifact — a constant here would be
- * right for one detector and wrong for the next. 0.85 puts the band across the
+ * right for one Anomaly Detection Agent and wrong for the next. 0.85 puts the band across the
  * last ~15% of approach, which on TEP is where the trajectory starts climbing
  * before it crosses.
  *

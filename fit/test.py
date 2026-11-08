@@ -5,7 +5,7 @@
     python3 fit/test.py --trial otr_...  # a specific trial of the best run
     python3 fit/test.py --pieces 2       # 6 evals of half a slice, 3 at a time, pooled (the free trial's default)
 
-The promoted blueprint carries the detector Optimize fitted on the library and
+The promoted blueprint carries the Anomaly Detection Agent that Optimize fitted on the library and
 pins the trial's values. One eval scores it on the test role (eval slices 02-04,
 never used for a choice) against the `label` column, at the trial's own
 threshold and stride, with predictions.
@@ -26,7 +26,7 @@ is `--pieces 2`. `--pieces K` cuts each slice at run boundaries into K pieces
 them: the confusion matrices add up, and the metrics are recomputed from the
 pooled counts the way the platform computes them (checked against every eval's
 own report). Only the windows that straddle a cut are lost, and those span two
-runs, so the detector abstains on them anyway.
+runs, so the Anomaly Detection Agent abstains on them anyway.
 
 Writes fit/out/test_state.json (resume), fit/out/test.json and
 fit/out/test-predictions.ndjson.
@@ -74,7 +74,7 @@ def promote(opt_id: str, trial_id: str | None) -> dict:
     body = {
         "name": f"AD TEP quickstart (w {vals['window_size']}, step {vals['step_size']}, k {vals['n_neighbors']}, "
                 f"{vals['metric']}, PCA {vals['pca_components']}, threshold {vals['threshold']:.3f})",
-        "description": f"Promoted from {opt_id}; detector fitted on the 40 fault-free reference sims."}
+        "description": f"Promoted from {opt_id}; Anomaly Detection Agent fitted on the 40 fault-free reference sims."}
     try:
         bp = request("POST", url, body={"blueprint_key": f"ad-tep-qs-{tid}", **body})
     except SystemExit as e:
@@ -154,7 +154,7 @@ def score(files: list, evals: list, preds: list, window: int, step: int) -> dict
             if p["expected"] != gold(row):
                 raise SystemExit(f"{name} window {i}: platform gold {p['expected']}, sidecar says "
                                  f"{gold(row)} -- predictions are misaligned")
-            # `outcome: missed` carries a null `predicted`: the detector
+            # `outcome: missed` carries a null `predicted`: the Anomaly Detection Agent
             # abstained on that window.
             if p["outcome"] == "missed" or p["predicted"] is None:
                 abstained += 1

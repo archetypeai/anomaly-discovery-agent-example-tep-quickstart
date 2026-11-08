@@ -11,7 +11,7 @@
  *
  * Everything the agent claims comes from `ad/results` and nothing else. The
  * replayer's ground truth arrives on a separate topic, is withheld until the
- * run ends or the viewer asks, and never colours a score — the detector and the
+ * run ends or the viewer asks, and never colours a score — the Anomaly Detection Agent and the
  * label are allowed to disagree on screen, because that is what a false alarm
  * looks like.
  */
@@ -45,7 +45,7 @@ const TOPICS = ['sensors/tep', 'tep/raw', 'tep/status', 'tep/control', 'ad/resul
 const RATE_WINDOW_MS = 5000;
 
 /** Points kept on the embedding trail. One run at step 4 is ~225 windows, and
- *  the trail is the run's path through the detector's space — not a history. */
+ *  the trail is the run's path through the Anomaly Detection Agent's space — not a history. */
 const MAX_TRAIL = 400;
 
 /** A detection is N consecutive windows over threshold: the same `--sustain`
@@ -155,7 +155,7 @@ function emptyState() {
 		 *  @type {{sample:number, hours:number, peak:number, windows:number,
 		 *          closed:boolean, untilHours?:number}[]} */
 		detections: [],
-		/** The run's path through PCA 1-2 of the detector's own space.
+		/** The run's path through PCA 1-2 of the Anomaly Detection Agent's own space.
 		 *  @type {{x:number, y:number, score:number, over:boolean}[]} */
 		trail: [],
 		rate: 0,
@@ -238,7 +238,7 @@ class TepStore {
 	/** @type {ReturnType<typeof setInterval> | null} */
 	#rateTimer = null;
 
-	/** The detector's projection, fetched once. `null` until it lands, which is
+	/** The Anomaly Detection Agent's projection, fetched once. `null` until it lands, which is
 	 *  why every reader checks — the first windows can arrive before it does.
 	 *  @type {{manifest: any, ref: Float32Array, mean: Float32Array,
 	 *          pc0: Float32Array, pc1: Float32Array} | null} */
@@ -248,7 +248,7 @@ class TepStore {
 	}
 
 	/**
-	 * Load PCA 1-2 of the fitted detector, exported by prep/export_detector_view.py.
+	 * Load PCA 1-2 of the fitted Anomaly Detection Agent, exported by prep/export_detector_view.py.
 	 *
 	 * 306 KB of float32 in one fetch: the reference cloud, the mean subtracted
 	 * before projecting, and the first two rows of the transform. Two rows, not
@@ -282,11 +282,11 @@ class TepStore {
 	}
 
 	/**
-	 * Project one window's per-channel embeddings onto the detector's first two
+	 * Project one window's per-channel embeddings onto the Anomaly Detection Agent's first two
 	 * principal components.
 	 *
 	 * The agent publishes `embedding_<channel>` per channel, 768 numbers each. The
-	 * detector's transform expects them concatenated in ITS OWN `data_columns`
+	 * Anomaly Detection Agent's transform expects them concatenated in ITS OWN `data_columns`
 	 * order, which the manifest carries — a JSON object's key order is not
 	 * something to trust with a 25,344-long dot product.
 	 *
@@ -379,7 +379,7 @@ class TepStore {
 		const over = score > this.state.threshold;
 		this.state.scores.push({ sample, score, hours, invalid: false, over });
 
-		// The same window's place in the detector's own space, when the agent is
+		// The same window's place in the Anomaly Detection Agent's own space, when the agent is
 		// publishing embeddings and the projection has loaded.
 		const p = this.#project(msg);
 		if (p) {
@@ -465,7 +465,7 @@ export const tep = new TepStore();
 
 /** Deviation of a channel from the reference mean, in reference sigmas. The
  *  app computes it from the RAW value and the z-score stats the replayer
- *  publishes, so it is the same quantity the detector's input carries.
+ *  publishes, so it is the same quantity the Anomaly Detection Agent's input carries.
  *
  *  This is INPUT deviation, not model attribution: the AD agent scores a window
  *  as a whole and says nothing about which channel moved it. Labelled as such

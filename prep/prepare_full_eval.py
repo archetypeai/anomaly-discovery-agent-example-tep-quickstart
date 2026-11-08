@@ -12,7 +12,7 @@ prep_report.json, never hard-coded:
     TEP_Faulty_Testing      500 runs per IDV minus the eval slices' runs 1–4     -> 496 per IDV
 
 Nothing from the reference file (`FaultFree_Training`) or the 25-hour faulty set
-is touched: the former is what the detector was fitted on, the latter has a
+is touched: the former is what the Anomaly Detection Agent was fitted on, the latter has a
 1-hour normal prefix that would mix onset conventions.
 
 CHUNKS have the same shape as the eval slices so every downstream script runs

@@ -2,7 +2,7 @@
 
 A live monitoring workbench for the quickstart's agent. Stage 6's delivery runs are
 replayed as if the plant were running now, and every window goes to a **serving
-agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answers
+agent** of the Anomaly Detection Agent that Stage 5 promoted, on the Archetype AI platform. The answers
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
 > **It holds a serving agent while it runs,** and gives it back when you stop it.
@@ -23,8 +23,8 @@ batch output.
 ┌───────────────────────────┐  GET /status    ┌──────────────────────────────┐          │
 │ replayer (node)           │  POST /reset    │ serving bridge (node)        │◀─────────┘
 │ one delivery run at a     │  POST /start    │ the API key stays here;      │   POST /query   ┌──────────────────────────┐
-│ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ serving agent            │
-│ waits for each block's    │  admin :9100    │ one query per window         │  the latest 48  │ promoted detector,       │
+│ time, from data/prepared/ │────────────────▶│ keeps the last 48 samples,   │────────────────▶│ promoted serving agent   │
+│ waits for each block's    │  admin :9100    │ one query per window         │  the latest 48  │ Anomaly Detection Agent, │
 │ windows before the next   │                 │                              │  samples        │ atai-records,            │
 └───────────────────────────┘                 └──────────────────────────────┘◀────────────────│ embeddings on            │
   pub │ sensors/tep (z-scored)                   sub ▲ sensors/tep   │ pub        one record   └──────────────────────────┘
@@ -68,9 +68,9 @@ batch output.
 
 ## The embedding space: the reference library, recomputed
 
-The promoted detector is a registry artifact (`aar_…`) with no download route, and
+The promoted Anomaly Detection Agent is a registry artifact (`aar_…`) with no download route, and
 the Optimizations and Evals APIs return values, metrics and predictions, not
-embeddings. So the windows the detector was fitted on are recomputed:
+embeddings. So the windows the Anomaly Detection Agent was fitted on are recomputed:
 
 ```sh
 python3 fit/library_embeddings.py     # optional, from the repo root: 40 batch runs, ~8 min (~36 on the free trial)
@@ -80,7 +80,7 @@ It runs the 40 library files through the promoted blueprint in **batch**, at the
 trial's step 8 with `output_embeddings: true`: the same windows and encoder as the
 fit, 2,280 of them. PCA 1–2 of their embeddings, whitened, gives the cloud and the
 projection, in `static/detector-view.{json,bin}`. Each live window's embedding from
-the served agent goes through the same projection. The detector's own PCA is fitted
+the served agent goes through the same projection. The Anomaly Detection Agent's own PCA is fitted
 on these embeddings too, but it can't be read to confirm the axes, so the view is a
 recomputed one. The repo has its output, so rerun it only for a different window or
 step.

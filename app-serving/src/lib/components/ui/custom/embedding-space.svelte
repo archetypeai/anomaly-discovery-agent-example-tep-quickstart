@@ -1,13 +1,13 @@
 <script>
 	/**
-	 * Where this run sits inside the detector's own space.
+	 * Where this run sits inside the Anomaly Detection Agent's own space.
 	 *
-	 * app-serving/: the field is the 2,280 reference windows the PROMOTED detector
+	 * app-serving/: the field is the 2,280 reference windows the PROMOTED Anomaly Detection Agent
 	 * was fitted on (40 fault-free simulations, window 48, step 8), recomputed by
 	 * fit/library_embeddings.py: the library run through the promoted blueprint in
 	 * batch with output_embeddings on, then PCA 1-2 of those embeddings, whitened.
-	 * The detector itself is a registry artifact with no download route, so this
-	 * is a recomputed view of the same windows, not read from the detector. The
+	 * The Anomaly Detection Agent itself is a registry artifact with no download route, so this
+	 * is a recomputed view of the same windows, not read from the Anomaly Detection Agent. The
 	 * trail is the current run's path through the same two axes, from the
 	 * embeddings the served agent returns, newest point filled.
 	 *
@@ -20,13 +20,13 @@
 	 * The bearings demo made the same move for the same reason.
 	 *
 	 * WHAT THIS PICTURE CANNOT TELL YOU, and it matters more here than in the
-	 * bearings demo. The detector scores in 140 dimensions — 8 PCA components plus
+	 * bearings demo. The Anomaly Detection Agent scores in 140 dimensions — 8 PCA components plus
 	 * 132 z-scored channel features — and this plot draws two of them. A window
 	 * can sit inside the field and still score high on an axis that is not drawn.
 	 * Measured on this very run: a window scoring 13.66 had a nearest reference
 	 * neighbour 0.44 away in these coordinates, well inside the cloud's spread.
 	 * So the trail leaving the field is evidence, and the trail staying in it is
-	 * NOT evidence of nothing. The score is the detector's answer; this is a
+	 * NOT evidence of nothing. The score is the Anomaly Detection Agent's answer; this is a
 	 * cross-section.
 	 */
 	// @ts-expect-error - d3-contour ships no types and @types/d3-contour does not exist
@@ -170,7 +170,7 @@
 				class="h-full w-full"
 				fill="none"
 				role="img"
-				aria-label="The run's path through PCA 1-2 of the detector's space"
+				aria-label="The run's path through PCA 1-2 of the Anomaly Detection Agent's space"
 			>
 				<defs>
 					<!-- The ground the field is drawn on. A grid of points rather than

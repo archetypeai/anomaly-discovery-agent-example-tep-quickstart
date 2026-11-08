@@ -32,7 +32,7 @@
 
 	/** IDV 3, 9 and 15 are the ones the literature, and this repo's own evaluation
 	 *  at 0.9–1.2% detection, reports as undetectable: naming them in the reveal is
-	 *  the difference between "the detector failed" and "this fault is not visible
+	 *  the difference between "the Anomaly Detection Agent failed" and "this fault is not visible
 	 *  in these measurements". */
 	const HARD = ['idv_03', 'idv_09', 'idv_15'];
 	const PROSE = 'max-w-prose text-xs text-muted-foreground';
@@ -44,7 +44,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Settings</Dialog.Title>
 			<Dialog.Description>
-				The replay's pace and what the serving agent is doing. Nothing here changes the detector.
+				The replay's pace and what the serving agent is doing. Nothing here changes the Anomaly Detection Agent.
 			</Dialog.Description>
 		</Dialog.Header>
 		<Dialog.Body class="space-y-5">
@@ -143,7 +143,7 @@
 				</dl>
 				<p class={PROSE}>
 					An invalid window is one the agent rejected, or a query the platform didn't answer (the
-					serving bridge's log says which). It is not a sign that the detector is wrong.
+					serving bridge's log says which). It is not a sign that the Anomaly Detection Agent is wrong.
 				</p>
 			</section>
 

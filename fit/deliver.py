@@ -4,7 +4,7 @@
     python3 fit/deliver.py
     python3 fit/deliver.py --step 0 --parallel 3   # the trial's step, 3 runs at once (the free trial's default)
 
-One bundle on fit/test.py's promoted blueprint, which already holds the detector
+One bundle on fit/test.py's promoted blueprint, which already holds the Anomaly Detection Agent
 and every value the trial pinned. The bundle adds only `step_size: 1` (one score
 per sample; bundle values override a promoted blueprint's), `output_score` and
 checkpointing off. `--step 0` delivers at the trial's own step (8) instead: an

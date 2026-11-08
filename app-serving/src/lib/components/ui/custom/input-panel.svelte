@@ -45,10 +45,10 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger variant="info" aria-label="About these tags" />
 					<Tooltip.Content class="max-w-xs">
-						All 33 channels the detector sees — 22 measurements and 11 manipulated variables,
+						All 33 channels the Anomaly Detection Agent sees — 22 measurements and 11 manipulated variables,
 						sampled every three minutes. Values are the plant's own engineering units; the figure on
 						the right is the same reading as a distance from the reference mean, in reference
-						sigmas. The agent is given the z-scored form, because that is what its detector was
+						sigmas. The agent is given the z-scored form, because that is what it was
 						fitted on; the inverse is exact, so these are the same numbers.
 					</Tooltip.Content>
 				</Tooltip.Root>

@@ -1,6 +1,6 @@
 /**
  * The agent, on the Archetype AI platform: a bridge between the local broker
- * and a serving agent of the promoted TEP detector.
+ * and a serving agent of the promoted TEP Anomaly Detection Agent.
  *
  * The agent runs on the platform (agent serving), and this process connects it
  * to the local broker:

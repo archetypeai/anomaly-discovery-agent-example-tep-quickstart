@@ -7,13 +7,13 @@
  * so every served window can be checked against Stage 6's batch output.
  *
  * The agent is scripts/serving-bridge.js, which answers an admin API
- * (/status, /reset, /start) on :9100. The detector's facts are read from
+ * (/status, /reset, /start) on :9100. The Anomaly Detection Agent's facts are read from
  * fit/test.py's promoted blueprint; the viewer can switch the `step` between 4
  * and 1, and pacing counts the windows a block really completes.
  *
  * Topics
  *   sensors/tep    replayer -> agent   key=value, `timestamp=<ms>,xmeas_1=<f>,...`
- *                                      Z-SCORED — the detector's contract.
+ *                                      Z-SCORED — the Anomaly Detection Agent's contract.
  *   tep/raw        replayer -> app     JSON per block, RAW engineering units
  *   tep/status     replayer -> app     JSON, retained
  *   tep/control    app -> replayer     {action: play|pause|select|restart|reveal}
@@ -46,7 +46,7 @@
  * dropped records leave gaps the sampling-rate validation rejects.
  *
  * TWO REPRESENTATIONS OF THE SAME SIGNAL, as the OSM, RED and bearing demos
- * all publish their rigs: the agent gets the z-scored columns its detector was
+ * all publish their rigs: the agent gets the z-scored columns it was
  * fitted on, and the app gets raw engineering units, because a dashboard
  * reporting "-0.42" for a reactor at 2705 kPa is showing the model's
  * coordinates rather than the plant's. Stage 2's z-scoring is one pooled
@@ -138,7 +138,7 @@ function buildRegistry() {
 		if (cur) runs.push(cur);
 	}
 	// Anonymised, stable ids. A seeded shuffle so "Run 05" carries no hint of
-	// IDV 5 — the selector must not leak what the detector is supposed to find.
+	// IDV 5 — the selector must not leak what the Anomaly Detection Agent is supposed to find.
 	// Deterministic, so a demo can be rehearsed and repeated.
 	let seed = 20260917;
 	const rand = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
@@ -160,12 +160,12 @@ if (!REGISTRY.length) {
 }
 
 /**
- * The detector's own fitted configuration, and the stride the runtime is
+ * The Anomaly Detection Agent's own fitted configuration, and the stride the runtime is
  * actually using.
  *
  * Read rather than hardcoded. The panel that shows these is proof-of-life for a
  * room that wants to know the agent is real, and a hand-typed "LOF k=20" beside
- * a detector fitted at k=5 is worse than showing nothing. The fitted values come
+ * an Anomaly Detection Agent fitted at k=5 is worse than showing nothing. The fitted values come
  * from Stage 5's record; `step_size` is the one thing the blueprint overrides at
  * inference time, so it is read from the blueprint instead.
  */

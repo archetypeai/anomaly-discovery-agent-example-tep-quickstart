@@ -19,11 +19,11 @@ and reports — per IDV, pooled over slices —
 
 plus the false-alarm rate on normal windows (fault-free sims + pre-onset rows).
 
-Two thresholds are reported when `--val-output` is given: the detector's own
+Two thresholds are reported when `--val-output` is given: the Anomaly Detection Agent's own
 (`--threshold`, the value baked into the artifact) and one CALIBRATED on the
 held-out normal run to a target false-alarm rate (`--far`). The second is the
 literature's convention and is what makes the PCA side-by-side fair — both
-detectors are then read at the same FAR.
+models are then read at the same FAR.
 """
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ def main() -> int:
     ap.add_argument("--val-output", type=Path, default=None,
                     help="AD output for tep_val_normal.csv — calibrates the FAR threshold")
     ap.add_argument("--threshold", type=float, default=None,
-                    help="the detector's own threshold (from the artifact / fit record)")
+                    help="the Anomaly Detection Agent's own threshold (from the artifact / fit record)")
     ap.add_argument("--far", type=float, default=0.01)
     ap.add_argument("--sustain", type=int, default=3)
     ap.add_argument("--baseline", type=Path, default=None,
@@ -108,7 +108,7 @@ def main() -> int:
             print(f"{args.val_output.name}: {len(vscore):,} windows, {vinv} invalid; FAR at "
                   f"threshold {args.threshold} = {val_far*100:.2f}%; threshold for "
                   f"{args.far:.0%} FAR = {cal:.3f}")
-        # A detector whose baked-in threshold IS the calibrated one (Stage 5) would print
+        # An Anomaly Detection Agent whose baked-in threshold IS the calibrated one (Stage 5) would print
         # the same table twice; report the second only when it differs.
         if abs(cal - args.threshold) > 1e-3:
             runs["calibrated"] = cal
