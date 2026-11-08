@@ -58,7 +58,7 @@ def free_trial() -> bool:
 def manifest() -> dict:
     p = ROLES / "manifest.json"
     if not p.exists():
-        sys.exit(f"{p} not found -- run prep/build_roles.py and prep/preflight_roles.py")
+        sys.exit(f"{p} not found -- run ./setup.sh to fetch the data (Git LFS)")
     return json.loads(p.read_text())
 
 

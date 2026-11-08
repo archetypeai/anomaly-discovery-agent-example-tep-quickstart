@@ -9,13 +9,11 @@ and every value the trial pinned. The bundle adds only `step_size: 1` (one score
 per sample; bundle values override a promoted blueprint's), `output_score` and
 checkpointing off. `--step 0` delivers at the trial's own step (8) instead: an
 eighth of the windows, which a free-trial run (CPU, stopped after 2 hours) can
-finish; Stages 7 and 8 follow the delivery's step. On the free trial
-(ATAI_API_ENDPOINT on try.archetypeai.app) that, and 3 runs at once, are the defaults. It runs over the delivery chunks and val_normal, all five at
-once. The inputs are data/roles/delivery/, which carry no label column: the labels
-stay in data/roles/labels/ until Stage 7 reads them.
-
-val_normal (ten fault-free runs from the validation role) is delivered too:
-Stage 7 sets the 1%-false-alarm threshold from its scores.
+finish; Stage 7 follows the delivery's step. On the free trial
+(ATAI_API_ENDPOINT on try.archetypeai.app) that is the default. The input is
+data/roles/delivery/tep_delivery.csv (4 runs: 2 normal, IDV 1, IDV 10), which
+carries no label column: the labels stay in data/roles/labels/ until Stage 7
+reads them.
 
 Writes eval_out/delivery/ad-output-*.csv and fit/out/deliver_state.json (resume:
 finished outputs are skipped, started agents are polled, not started again).
@@ -84,7 +82,7 @@ def main() -> int:
 
     files = [REPO / "data" / "roles" / f["file"] for f in m["delivery"]]
     if not files:
-        raise SystemExit("no delivery files in the manifest: run prep/build_roles.py")
+        raise SystemExit("no delivery files in data/roles/manifest.json")
     OUT.mkdir(parents=True, exist_ok=True)
 
     def one(src: Path) -> Path | None:

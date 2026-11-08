@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Stage 5 -- promote the best trial and test it once with the Evals API.
 
-    python3 fit/test.py                  # best trial across fit/optimize.py's runs, on slices 02-04
+    python3 fit/test.py                  # best trial across fit/optimize.py's runs, on the test file
     python3 fit/test.py --trial otr_...  # a specific trial of the best run
-    python3 fit/test.py --pieces 2       # 6 evals of half a slice, 3 at a time, pooled (the free trial's default)
+    python3 fit/test.py --pieces 2       # 2 evals of half the test file, run at once, pooled
 
 The promoted blueprint carries the Anomaly Detection Agent that Optimize fitted on the library and
-pins the trial's values. One eval scores it on the test role (eval slices 02-04,
-never used for a choice) against the `label` column, at the trial's own
+pins the trial's values. One eval scores it on the test role (tep_test.csv: 2
+normal runs, IDV 1 and IDV 10, never used for a choice) against the `label` column, at the trial's own
 threshold and stride, with predictions.
 
 With the predictions downloaded, this script pairs each one with its window's
@@ -19,9 +19,8 @@ its rank within its example) and:
   * reports window detection per fault type (IDV) and the false-alarm rate on
     normal windows, the fault-free run and the faulty runs' first 8 h apart.
 
-On the free trial an eval is stopped after 2 hours and runs on CPU, slower than
-the 3 slices allow, so there (ATAI_API_ENDPOINT on try.archetypeai.app) the default
-is `--pieces 2`. `--pieces K` cuts each slice at run boundaries into K pieces
+The free trial stops any job after 2 hours; the test file fits easily in one eval.
+For a bigger test file, `--pieces K` cuts each file at run boundaries into K pieces
 (fit/out/test-pieces/), runs an eval per piece, `--parallel` at a time, and pools
 them: the confusion matrices add up, and the metrics are recomputed from the
 pooled counts the way the platform computes them (checked against every eval's
@@ -40,7 +39,7 @@ import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-from atai import (COLUMN, OUT, REPO, ROLES, agents_base, aggregate, api_base, example, free_trial, load_dotenv,
+from atai import (COLUMN, OUT, REPO, ROLES, agents_base, aggregate, api_base, example, load_dotenv,
                   load_state, log, manifest, request, save_state, state_path, upload_all, wait)
 
 
@@ -213,15 +212,10 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--optimization", help="default: the best of fit/out/optimize_state.json's runs")
     ap.add_argument("--trial", help="default: the optimization's best trial")
-    ap.add_argument("--pieces", type=int, help="cut each test slice into K evals (default 1; 2 on the free trial)")
+    ap.add_argument("--pieces", type=int, default=1, help="cut each test file into K evals (default 1)")
     ap.add_argument("--parallel", type=int, default=3, help="evals at once with --pieces (the free trial runs 3)")
     args = ap.parse_args()
     load_dotenv()
-    if args.pieces is None:
-        args.pieces = 2 if free_trial() else 1
-        if args.pieces > 1:
-            log("free trial (try.archetypeai.app): each job stops after 2 hours, so the test runs as "
-                "6 evals of half a slice, 3 at a time, pooled (--pieces 2; --pieces 1 for one eval)")
     m = manifest()
     STATE = state_path("test")
     state = load_state(STATE)

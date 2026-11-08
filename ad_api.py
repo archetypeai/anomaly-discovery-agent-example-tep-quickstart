@@ -221,7 +221,7 @@ def request(method: str, url: str, body=None, headers=None, raw: bool = False,
         except (urllib.error.URLError, TimeoutError, ConnectionError,
                 http.client.HTTPException) as e:
             # http.client.IncompleteRead / RemoteDisconnected: the body was cut off
-            # mid-transfer. Seen once in ~120 Stage 8 downloads; it killed the worker
+            # mid-transfer. Seen once in ~120 downloads; it killed the worker
             # because it is not a URLError. Retry like any other network fault.
             if attempt == retries:
                 sys.exit(f"{method} {url} failed after {retries + 1} attempts: {e}")

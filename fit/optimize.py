@@ -5,9 +5,9 @@
     python3 fit/optimize.py --new --window 32,48,64 --k 5,10,20 --trials 6
                                                      # add another optimization
 
-Training is the library (the 40 fault-free reference sims, labelled by a
-constant); validation is eval slice 01 and val_normal with the `label` column.
-Both come from data/roles/ (prep/build_roles.py).
+Training is the library (tep_library.csv: 5 fault-free runs, labelled by a
+constant); validation is tep_validation.csv, scored on its `label` column.
+Both come from data/roles/.
 
 Each option takes one value (pinned in `overrides.values` for every trial) or
 several (searched). `feature_names` is a list, so it can only be pinned: search

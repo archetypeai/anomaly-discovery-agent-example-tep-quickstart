@@ -3,16 +3,6 @@
 .env.*
 !.env.example
 
-# Model weights
-*.safetensors
-
-# Raw data: prep/download.py fetches it from Harvard Dataverse (5.7 GB of CSV)
-data/raw/
-
-
-# Logs
-fit/out/*.log
-
 # Python
 __pycache__/
 *.py[cod]
@@ -20,18 +10,9 @@ __pycache__/
 
 .DS_Store
 
-# Working notes, not part of the example
-plan.md
-
-# Stage 8: the library batch outputs with embeddings (~0.6 GB), rebuilt by fit/library_embeddings.py;
-# the serving bridge's ids in flight; cleanup progress
-fit/out/library_embeddings/
-fit/out/app_serving_state.json
-fit/out/cleanup_state.json
-fit/out/serve_state.json
-
-# Stage 5 on the free trial: the test slices cut into pieces, rebuilt by fit/test.py
-fit/out/test-pieces/
+# Run outputs: the ids and results of your own runs
+fit/out/
+eval_out/
 
 # The Claude Code walkthrough skill (.claude/skills/tep-walkthrough): its charts and run outputs
 walkthrough_out/

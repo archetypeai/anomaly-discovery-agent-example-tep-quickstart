@@ -6,34 +6,25 @@
 
 What it deletes, from the ids the stages recorded in fit/out/:
 
-  Stage 8   a serving agent and its bundle, if fit/serve.py was killed before
-            it could delete them (serve_state.json).
-  Stage 9   the serving bridge's agent and bundle, if app-serving/ was killed
-            before it could delete them (app_serving_state.json): a running
-            serving agent holds a serving worker until it is
-            cancelled or idle 20 min. And the bundle of
-            fit/library_embeddings.py (library_state.json; it deletes its own
-            agents as it goes, and the embeddings are already on disk).
-  Stage 6   the delivery agents and their bundle (deliver_state.json). Their
-            outputs are already in eval_out/delivery/.
+  Stage 6       the delivery agents and their bundle (deliver_state.json). Their
+                outputs are already in eval_out/delivery/.
+  Walkthrough   Step 3's 2 agents and their bundle (walkthrough_out/step3/state.json).
 
 Agents go first (a bundle that still has an agent answers 409), a running one is
 cancelled before it is deleted, and an id already gone counts as done. Progress
 goes to fit/out/cleanup_state.json, so a rerun picks up where it stopped.
 
-What stays: the promoted blueprint, and the optimization and eval the README
-cites. A served copy (`<key>-served-records`) is deleted too if an earlier
-version of fit/serve.py or the bridge made one; they serve the promoted
-blueprint itself now.
+What stays: the promoted blueprint, the optimization and the eval.
 After a cleanup, rerunning fit/deliver.py needs fit/out/deliver_state.json moved
 aside, since its bundle is gone.
 """
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
-from atai import agents_base, load_dotenv, load_state, log, request, save_state, state_path
+from atai import REPO, agents_base, load_dotenv, load_state, log, request, save_state, state_path
 from ad_api import list_bundle_runs
 
 
@@ -53,49 +44,36 @@ def main() -> int:
     args = ap.parse_args()
     load_dotenv()
 
-    serve = load_state(state_path("serve"))
-    bridge = load_state(state_path("app_serving"))
-    library = load_state(state_path("library"))
     deliver = load_state(state_path("deliver"))
     test = load_state(state_path("test"))
     targets = []                                   # (stage, kind, id), agents before their bundle
-    if serve.get("bundle"):
-        # a /run rejected after the instance was created (400) leaves an agent the
-        # state file never recorded, and it still holds the bundle
-        agents = {serve["agent"]} if serve.get("agent") else set()
-        agents |= {r["id"] for r in list_bundle_runs(serve["bundle"])}
-        targets += [("Stage 8", "instances", a) for a in sorted(agents)]
-        targets += [("Stage 8", "bundles", serve["bundle"])]
-    if bridge.get("bundle"):
-        # every agent the bridge started, a released one it replaced included
-        agents = set(bridge.get("agents") or []) | ({bridge["agent"]} if bridge.get("agent") else set())
-        agents |= {r["id"] for r in list_bundle_runs(bridge["bundle"])}
-        targets += [("Stage 9", "instances", a) for a in sorted(agents)]
-        targets += [("Stage 9", "bundles", bridge["bundle"])]
-    if library.get("bundle"):
-        targets += [("Stage 9", "instances", a) for a in sorted(set(library.get("agents", {}).values()))]
-        targets += [("Stage 9", "bundles", library["bundle"])]
     if deliver.get("bundle"):
         # the state holds each file's last attempt; the bundle's listing also finds replaced ones
         agents = set(deliver.get("agents", {}).values())
         agents |= {r["id"] for r in list_bundle_runs(deliver["bundle"])}
         targets += [("Stage 6", "instances", a) for a in sorted(agents)]
         targets += [("Stage 6", "bundles", deliver["bundle"])]
+    walk_path = REPO / "walkthrough_out" / "step3" / "state.json"
+    walk = json.loads(walk_path.read_text()) if walk_path.exists() else {}
+    if walk.get("bundle"):
+        agents = set(walk.get("agents", {}).values())
+        agents |= {r["id"] for r in list_bundle_runs(walk["bundle"])}
+        targets += [("Walkthrough", "instances", a) for a in sorted(agents)]
+        targets += [("Walkthrough", "bundles", walk["bundle"])]
 
     done_path = state_path("cleanup")
     done = load_state(done_path)
     gone = set(done.get("deleted", []))
     todo = [t for t in targets if t[2] not in gone]
-    for stage in ("Stage 9", "Stage 8", "Stage 6"):
+    for stage in ("Stage 6", "Walkthrough"):
         mine = [t for t in todo if t[0] == stage]
         print(f"{stage}: {sum(t[1] == 'instances' for t in mine)} agent(s), "
               f"{sum(t[1] == 'bundles' for t in mine)} bundle(s) to delete")
     print(f"already deleted: {len(gone & {t[2] for t in targets})}")
     bp = test.get("blueprint", {}).get("key")
     if bp:
-        print(f"also deletes: blueprint {bp}-served-records, if an earlier version made one")
         print(f"stays: blueprint {bp}, optimization {test.get('optimization')} "
-              f"and eval {test.get('eval')}")
+              f"and eval(s) {', '.join(test.get('evals') or []) or 'none'}")
     if not args.yes:
         print("\nnothing deleted: rerun with --yes")
         return 0
@@ -117,13 +95,6 @@ def main() -> int:
             done["deleted"] = sorted(gone)
             save_state(done_path, done)
             log(f"deleted {k - len(stuck)}/{len(todo)}")
-
-    # a served copy from an earlier version, if any (a 404 counts as done)
-    if bp and not any(kind == "bundles" for kind, _, _ in stuck):
-        try:
-            call("DELETE", f"/blueprints/{bp}-served-records")
-        except SystemExit as e:
-            stuck.append(("blueprints", f"{bp}-served-records", str(e).splitlines()[0][:200]))
 
     if stuck:
         print(f"\n{len(stuck)} object(s) would not delete:")
