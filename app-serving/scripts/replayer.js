@@ -7,14 +7,13 @@
  * so every served window can be checked against Stage 6's batch output.
  *
  * The agent is scripts/serving-bridge.js, which answers an admin API
- * (/status, /reset, /start) on :9100. The detector's facts are read from
- * fit/test.py's promoted blueprint; the replay runs at the blueprint's own step
- * (8, the step Optimize chose, used throughout), and pacing counts the windows a
- * block really completes.
+ * (/status, /reset, /start) on :9100. The Anomaly Detection Agent's facts are read from
+ * fit/test.py's promoted blueprint; the viewer can switch the `step` between 4
+ * and 1, and pacing counts the windows a block really completes.
  *
  * Topics
  *   sensors/tep    replayer -> agent   key=value, `timestamp=<ms>,xmeas_1=<f>,...`
- *                                      Z-SCORED — the detector's contract.
+ *                                      Z-SCORED — the Anomaly Detection Agent's contract.
  *   tep/raw        replayer -> app     JSON per block, RAW engineering units
  *   tep/status     replayer -> app     JSON, retained
  *   tep/control    app -> replayer     {action: play|pause|select|restart|reveal}
@@ -38,7 +37,7 @@
  *
  * WHY IT WAITS FOR THE AGENT. At 33 channels the encoder scores ~2.6
  * windows/s on the CPU backend (app/README.md has the measurements), so about
- * 20 samples/s at step 8. Publishing faster just grows a queue inside the
+ * 10 samples/s at step 4. Publishing faster just grows a queue inside the
  * broker: the run would look fast while the scores arrived a minute behind the
  * trace. The replayer publishes a block and waits for its windows to come back
  * (or `--block-timeout` elapses), which self-paces to whatever the host can do.
@@ -47,7 +46,7 @@
  * dropped records leave gaps the sampling-rate validation rejects.
  *
  * TWO REPRESENTATIONS OF THE SAME SIGNAL, as the OSM, RED and bearing demos
- * all publish their rigs: the agent gets the z-scored columns its detector was
+ * all publish their rigs: the agent gets the z-scored columns it was
  * fitted on, and the app gets raw engineering units, because a dashboard
  * reporting "-0.42" for a reactor at 2705 kPa is showing the model's
  * coordinates rather than the plant's. Stage 2's z-scoring is one pooled
@@ -139,7 +138,7 @@ function buildRegistry() {
 		if (cur) runs.push(cur);
 	}
 	// Anonymised, stable ids. A seeded shuffle so "Run 05" carries no hint of
-	// IDV 5 — the selector must not leak what the detector is supposed to find.
+	// IDV 5 — the selector must not leak what the Anomaly Detection Agent is supposed to find.
 	// Deterministic, so a demo can be rehearsed and repeated.
 	let seed = 20260917;
 	const rand = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
@@ -161,14 +160,14 @@ if (!REGISTRY.length) {
 }
 
 /**
- * The detector's own fitted configuration, and the stride the runtime is
+ * The Anomaly Detection Agent's own fitted configuration, and the stride the runtime is
  * actually using.
  *
  * Read rather than hardcoded. The panel that shows these is proof-of-life for a
  * room that wants to know the agent is real, and a hand-typed "LOF k=20" beside
- * a detector fitted at k=5 is worse than showing nothing. The fitted values come
- * from Stage 5's record, and the stride is the blueprint's own `step_size`:
- * the example uses the optimized step throughout.
+ * an Anomaly Detection Agent fitted at k=5 is worse than showing nothing. The fitted values come
+ * from Stage 5's record; `step_size` is the one thing the blueprint overrides at
+ * inference time, so it is read from the blueprint instead.
  */
 function agentConfig() {
 	const out = { encoder: 'Omega 1.5', serving: true };
@@ -181,7 +180,7 @@ function agentConfig() {
 		out.fittedStep = v.step_size;
 		out.detector = `kNN k=${v.n_neighbors} ${v.metric} · PCA ${v.pca_components}`;
 	} catch { /* the demo runs without it; the panel just shows fewer facts */ }
-	out.stepSize = Number(out.fittedStep ?? 8);
+	out.stepSize = Number(process.env.STEP ?? args.step ?? 4);
 	return out;
 }
 const AGENT_CONFIG = agentConfig();
@@ -524,6 +523,15 @@ client.on('message', async (topic, payload) => {
 		case 'reveal':
 			state.revealed = true;
 			break;
+		// Settings: 4 (watchable, the default) or 1 (every window the platform scores).
+		case 'step': {
+			const v = Number(msg.value);
+			if (v === 1 || v === 4) {
+				AGENT_CONFIG.stepSize = v;
+				console.log(`replayer: step ${v}`);
+			}
+			break;
+		}
 		default:
 			return;
 	}

@@ -10,7 +10,7 @@ data/raw/ and writes data/prepared/:
 
     tep_ref_normal_simNNN.csv     reference library, ONE FILE PER SIMULATION —
                                   fault-free training sims, the only thing the
-                                  detector is fitted on. The filename carries
+                                  Anomaly Detection Agent is fitted on. The filename carries
                                   `normal`: the fitting runner labels files by
                                   name, so the token has to be there.
     tep_val_normal.csv            held-out fault-free TESTING sims, for the

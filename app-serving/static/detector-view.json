@@ -1,5 +1,5 @@
 {
-  "note": "PCA 1-2 of the promoted detector's reference library, recomputed: the 40 library runs through the promoted blueprint in batch with output_embeddings on (fit/library_embeddings.py). For drawing only: the app never recomputes a score.",
+  "note": "PCA 1-2 of the promoted Anomaly Detection Agent's reference library, recomputed: the 40 library runs through the promoted blueprint in batch with output_embeddings on (fit/library_embeddings.py). For drawing only: the app never recomputes a score.",
   "channels": [
     "xmeas_1",
     "xmeas_2",

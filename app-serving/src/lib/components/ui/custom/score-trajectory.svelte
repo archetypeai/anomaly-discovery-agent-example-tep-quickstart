@@ -14,7 +14,7 @@
 	 * demo is about: the score moves long before it is obvious.
 	 *
 	 * ONSET IS DRAWN, NOT THE LABEL. The marker at hour 8 is where the simulator
-	 * introduced the disturbance — a property of the data, not of the detector's
+	 * introduced the disturbance — a property of the data, not of the Anomaly Detection Agent's
 	 * opinion. Everything else on the plot is the agent's.
 	 */
 	import { scoreTone } from '$lib/scores.js';
@@ -67,7 +67,7 @@
 	 * The trace, split into runs of the same band.
 	 *
 	 * One path in one colour says "here is the score"; this says "here is the
-	 * score AND what the detector made of it at every point", which is the same
+	 * score AND what the Anomaly Detection Agent made of it at every point", which is the same
 	 * information the badge gives for the newest window, extended over the run.
 	 * The approach is the part worth seeing — amber appearing among the teal
 	 * before anything crosses is the demo's whole argument, and a single-colour
@@ -135,7 +135,7 @@
 		aria-label="Anomaly score over the run"
 	>
 		<!-- reference band: at or below 1.0 the window is as ordinary as the
-		     reference data the detector was fitted on -->
+		     reference data the Anomaly Detection Agent was fitted on -->
 		<rect
 			x={PAD.l}
 			y={y(1.0)}
@@ -178,7 +178,7 @@
 			threshold {s.threshold.toFixed(3)}
 		</text>
 
-		<!-- fault onset: the simulator's, not the detector's -->
+		<!-- fault onset: the simulator's, not the Anomaly Detection Agent's -->
 		<line
 			x1={x(onsetHours)}
 			y1={PAD.t}

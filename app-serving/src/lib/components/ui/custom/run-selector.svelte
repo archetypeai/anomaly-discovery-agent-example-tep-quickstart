@@ -10,7 +10,7 @@
 	 * undetectable by any published method, and picking one of those and watching
 	 * nothing happen is the honest half of the story. If the selector named the
 	 * fault, a false alarm and a true detection would look different before the
-	 * detector said anything.
+	 * Anomaly Detection Agent said anything.
 	 *
 	 * The run ids are a seeded shuffle of the 84 simulations in the eval slices,
 	 * so "Run 05" carries no hint of IDV 5, and the shuffle is deterministic so a

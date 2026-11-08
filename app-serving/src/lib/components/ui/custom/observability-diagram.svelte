@@ -142,7 +142,7 @@
 	     is ~50 characters; at font-size 10 mono that is ~300px from x=626, which
 	     runs past the box's right edge at 890 and printed outside it. The note at
 	     the top of this file says exactly this would happen — a string lengthened
-	     without widening its box — and the detector string got longer when it
+	     without widening its box — and the `cfg.detector` string got longer when it
 	     started being read from the fit record instead of typed. -->
 	<text x="626" y="216" font-size="10" fill={MUTED}>fuse → {cfg.detector ?? 'kNN'}</text>
 	<text x="626" y="232" font-size="10" fill={MUTED}>

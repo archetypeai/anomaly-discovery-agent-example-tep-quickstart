@@ -15,11 +15,11 @@
 	 *
 	 * WHAT THE TINT IS, AND IS NOT. It is the input's distance from the reference
 	 * mean in reference sigmas — computed by this app from the raw value and the
-	 * z-score statistics, the same quantity the detector's input carries. It is
+	 * z-score statistics, the same quantity the Anomaly Detection Agent's input carries. It is
 	 * NOT the agent's attribution: the AD agent scores a 64-sample window as a
 	 * whole and says nothing about which channel moved it. A unit can glow while
 	 * the score stays flat, and the score can rise with nothing glowing — the
-	 * detector works on the joint shape of all 33 channels, which is exactly the
+	 * Anomaly Detection Agent works on the joint shape of all 33 channels, which is exactly the
 	 * thing no single-channel view can show. That disagreement is worth watching
 	 * rather than hiding.
 	 *

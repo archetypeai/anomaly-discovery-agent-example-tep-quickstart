@@ -24,7 +24,7 @@ CACHE = OUT / "uploads.json"
 TERMINAL = {"completed", "failed", "canceled", "cancelled"}
 
 # Since the 2026-10-12 re-seed the `ad` blueprint no longer takes window, step or
-# features from a detector, so every request pins them. The 180 s cadence needs
+# features from an Anomaly Detection Agent, so every request pins them. The 180 s cadence needs
 # no timestamp overrides: the default 5% sampling-rate tolerance invalidates
 # exactly the windows that straddle a seam. zscore_std_floor is not exposed by
 # `ad`; the platform fit uses its default.

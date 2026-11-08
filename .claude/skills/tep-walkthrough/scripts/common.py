@@ -1,7 +1,7 @@
 """Shared paths, design tokens and small SVG helpers for the walkthrough scripts.
 
 Run the scripts with the repo's virtual environment from the repo root, e.g.
-    .venv/bin/python .claude/skills/tep-walkthrough/scripts/step1_chart.py
+    .venv/bin/python .claude/skills/tep-walkthrough/scripts/step2_optimize.py
 """
 from __future__ import annotations
 
@@ -18,14 +18,14 @@ sys.path[:0] = [str(REPO / "fit"), str(REPO)]
 # Archetype AI design system (@archetypeai/ds-lib-tokens v0.20.0), resolved to hex.
 # Mid-tone stops are used so each colour reads on both light and dark backgrounds.
 BLUE = "#2b7fff"      # --atai-neutral (blue-500): normal operation
-YELLOW = "#d08700"    # --chart-1 (yellow-600): anomaly runs in Step 1
 RED = "#ff6467"       # --atai-critical (red-400): fault / alarm
-GREY = "#71717b"      # --muted-foreground (zinc-500): grid, reference cloud, threshold
+GREY = "#71717b"      # --muted-foreground (zinc-500): grid, legend shapes, threshold
 RED_RAMP = ["#ffc9c9", "#ff6467", "#c10007", "#82181a"]   # red-200 → red-400 → red-700 → red-900
 FONT = "font-family:'PP Neue Montreal',ui-sans-serif,system-ui,-apple-system,sans-serif"
 
 ONSET_H = 8.0          # every faulty run is normal for 8 h, then the fault starts
 SAMPLE_H = 0.05        # one sample every 3 minutes
+RUN_H = 24.0           # every validation, test and delivery run is 24 h long
 
 
 def svg(width: int, height: int, title: str, desc: str, body: str) -> str:

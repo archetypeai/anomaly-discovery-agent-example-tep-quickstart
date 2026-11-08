@@ -8,7 +8,7 @@ questions that decide whether a normal-only build on simulation data will hold:
 
   * REFERENCE PURITY    is every reference row actually fault-free, and do the
                         reference simulations agree with each other? A one-class
-                        detector fits whatever it is handed.
+                        Anomaly Detection Agent fits whatever it is handed.
   * REFERENCE COVERAGE  enough reference windows for the LOF neighbourhood and
                         the PCA block — both clamp silently.
   * ROLE SEPARATION     no simulation run in more than one of reference /

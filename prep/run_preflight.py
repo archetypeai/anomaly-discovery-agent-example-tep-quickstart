@@ -11,7 +11,7 @@ simulation is materialised as a CSV view with the 3-minute cadence made
 explicit, and the checks run on that.
 
 Stage 1c reads the FILES Stage 1b wrote (never its in-memory state) and refuses
-to let Stage 4 spend API budget on data that would fit a detector on nothing:
+to let Stage 4 spend API budget on data that would fit an Anomaly Detection Agent on nothing:
 seam accounting, role separation, per-slice coverage, normalisation, the
 filename→label contract, and reference coverage for the LOF/PCA head.
 

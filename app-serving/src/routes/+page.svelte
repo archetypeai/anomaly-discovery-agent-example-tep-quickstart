@@ -5,7 +5,7 @@
 	 *
 	 * The agent runs on the Archetype AI platform: mosquitto carries the data, the
 	 * serving bridge (scripts/serving-bridge.js) sends each window to a serving
-	 * agent of the detector fit/test.py promoted, and this page subscribes to the
+	 * agent of the Anomaly Detection Agent that fit/test.py promoted, and this page subscribes to the
 	 * broker. The API key stays with the bridge.
 	 */
 	import { onMount, onDestroy } from 'svelte';
