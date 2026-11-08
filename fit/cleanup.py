@@ -102,9 +102,6 @@ def main() -> int:
             print(f"  {kind}/{obj}: {why}")
         print("an agent holds its bundle, and a bundle holds its blueprint: "
               "delete what holds them, then rerun")
-    for kind, st in (("serve", serve), ("app_serving", bridge)):
-        if st.get("bundle"):
-            state_path(kind).unlink()
     log("done")
     return 0
 
