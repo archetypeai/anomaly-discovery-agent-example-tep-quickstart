@@ -15,13 +15,13 @@ cd "$(dirname "$0")"
 
 say() { printf '%s\n' "$*"; }
 
-# 1. Git LFS: the prepared data and role files are LFS objects.
+# 1. Git LFS: the role files in data/roles/ are LFS objects.
 if ! command -v git-lfs >/dev/null 2>&1; then
     say "Git LFS is not installed. Install it (macOS: brew install git-lfs), then rerun ./setup.sh."
     exit 1
 fi
 if head -c 40 data/roles/library/tep_library.csv | grep -q "git-lfs.github.com"; then
-    say "fetching the LFS data files (~75 MB)"
+    say "fetching the LFS data files (~3 MB)"
     git lfs install --local >/dev/null
     git lfs pull
 fi
