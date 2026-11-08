@@ -27,9 +27,9 @@ an overview (Step 0), then three steps (data, build, run) with charts, pausing f
   status 2, ask the user to run `./setup.sh` in their own terminal and type the key at its
   hidden prompt. It finds the right endpoint (production or free trial) from the key.
 - **Data:** `data/roles/` is a mini dataset, one file per role (5 training runs; IDV 1
-  and IDV 10 in 24 h runs), built by `prep/build_roles.py` from the full `data/prepared/`.
-- **Saved runs:** scripts write state to `fit/out/` and `eval_out/` and resume from the ids
-  in them. The repo's full-dataset run is in `archive/full_dataset/`; leave it as is, and
-  don't commit `fit/out/` or `eval_out/` from your own runs.
-- **Platform cost:** stages 4-9 create jobs on Newton under the user's key. Run them when
-  asked, and say how long they'll take first.
+  and IDV 10 in 24 h runs), cut from the Tennessee Eastman Process data (see the README).
+- **Saved runs:** scripts write state to `fit/out/` and `eval_out/` (both gitignored) and
+  resume from the ids in them.
+- **Platform cost:** the stages create jobs on Newton under the user's key. Run them when
+  asked, and say how long they'll take first. `fit/cleanup.py --yes` deletes the agents
+  and bundles they leave.

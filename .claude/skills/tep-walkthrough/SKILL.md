@@ -32,9 +32,9 @@ they write goes to `walkthrough_out/` (gitignored).
   (for example `show_widget`), pass it the SVG file's contents unchanged; the files are
   sized for that. Only if you can't show it inline, send or open the file and give its
   path.
-- **Stay in scope.** Don't modify `app-serving/static/`, and don't run `fit/test.py`,
-  `fit/deliver.py` or later stages: this walkthrough skips evaluation and delivery on
-  purpose (Step 3 imports `fit/test.py`'s promote function only).
+- **Stay in scope.** Don't run `fit/test.py`, `fit/deliver.py` or later stages: this
+  walkthrough skips evaluation and delivery on purpose (Step 3 imports `fit/test.py`'s
+  promote function only). The README covers them for anyone who wants to go on.
 - **Secrets.** Never print, paste or ask for the API key in chat. Read whether it is set,
   not its value.
 

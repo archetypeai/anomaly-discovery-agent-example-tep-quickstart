@@ -28,7 +28,7 @@ fi
 say "data: LFS files present"
 
 # 2. Python virtual environment and requirements. Prefer the newest Python 3.10+ on PATH:
-#    macOS's stock python3 (3.9, with an old pip) can't install pyreadr's prebuilt wheel.
+#    macOS's stock python3 (3.9, with an old pip) is too old.
 if [ ! -x .venv/bin/python ]; then
     py=""
     for c in python3.13 python3.12 python3.11 python3.10 python3; do

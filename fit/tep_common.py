@@ -26,7 +26,6 @@ import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parent.parent
-PREPARED = REPO / "data" / "prepared"
 NORMAL = "idv_00"
 
 IDV_TYPE = {
@@ -46,14 +45,10 @@ HARD = {"idv_03", "idv_09", "idv_15"}
 
 
 def load_labels(name: str) -> pd.DataFrame:
-    """`name` like 'eval_slice_01' or 'val_normal'."""
-    path = REPO / "data" / "roles" / "labels" / f"tep_{name}_labels.csv"   # what the repo ships
+    """`name` like 'test' or 'delivery': the sidecar data/roles/labels/tep_<name>_labels.csv."""
+    path = REPO / "data" / "roles" / "labels" / f"tep_{name}_labels.csv"
     if not path.exists():
-        path = PREPARED / f"tep_{name}_labels.csv"
-    if not path.exists():
-        path = PREPARED / "full" / f"tep_{name}_labels.csv"      # Stage 8 chunks
-    if not path.exists():
-        raise SystemExit(f"{path} not found — run prep/prepare_tep.py")
+        raise SystemExit(f"{path} not found -- run ./setup.sh to fetch the data (Git LFS)")
     df = pd.read_csv(path)
     df["timestamp"] = df["timestamp"].astype(np.int64)
     return df
