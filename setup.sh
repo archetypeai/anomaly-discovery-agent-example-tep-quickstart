@@ -20,8 +20,8 @@ if ! command -v git-lfs >/dev/null 2>&1; then
     say "Git LFS is not installed. Install it (macOS: brew install git-lfs), then rerun ./setup.sh."
     exit 1
 fi
-if head -c 40 data/roles/library/tep_ref_normal_sim001.csv | grep -q "git-lfs.github.com"; then
-    say "fetching the LFS data files (~140 MB)"
+if head -c 40 data/roles/library/tep_library.csv | grep -q "git-lfs.github.com"; then
+    say "fetching the LFS data files (~75 MB)"
     git lfs install --local >/dev/null
     git lfs pull
 fi
