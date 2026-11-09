@@ -55,7 +55,7 @@ def base_blueprint() -> dict:
         found = [p for p in request("GET", f"{api_base()}/projects?limit=1000")["data"] if p["name"] == PROJECT]
         state["project"] = found[0]["id"] if found else request(
             "POST", f"{api_base()}/projects", body={
-                "name": PROJECT, "description": "Anomaly Discovery on the Tennessee Eastman process"})["id"]
+                "name": PROJECT, "description": "Anomaly Discovery agent on the Tennessee Eastman process"})["id"]
         save_state(path, state)
         log(f"project {state['project']} ({PROJECT})")
     if "base" not in state:
