@@ -492,7 +492,9 @@ gives it back on `npm run stop`.
   delivery file would grow to hundreds of MB: one delivery file's output was 327
   MB). A bundle could switch it on for one run; a package has no values, so an
   output is on or off in the blueprint itself, from the moment it is promoted.
-  Registering an edited copy of Stage 5's blueprint takes the admin role, so
+  Registering an edited copy of Stage 5's blueprint takes the admin role, and
+  copying it with `output_embeddings: true` as an override is refused (a blueprint
+  with a fitted detector takes no value override), so
   `fit/app_blueprint.py` gets there without one: a 1-trial optimization in the
   same project with every winning value pinned plus `output_embeddings: true`,
   promoted like Stage 5's. The trial refits the detector on the same library; its

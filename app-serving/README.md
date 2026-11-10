@@ -91,7 +91,9 @@ python3 fit/app_blueprint.py          # once, from the repo root: a 1-trial opti
   `fit/library_embeddings.py`, nothing else.
 - **No admin-only call.** Registering an edited copy of Stage 5's blueprint would
   reuse its detector, but registering a blueprint takes the org-admin role;
-  promoting a trial doesn't. Without it, the bridge serves
+  promoting a trial doesn't. Copying it with `output_embeddings: true` as an
+  override is refused: a blueprint with a fitted detector takes no value
+  override unless the detector is dropped. Without it, the bridge serves
   Stage 5's blueprint, which has no embeddings, and says so: the app works, but
   the embedding view gets no live trail.
 
