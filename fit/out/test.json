@@ -1,9 +1,9 @@
 {
- "eval": "evl_5zpwsn93db9knt25vn21fbc7dm",
+ "eval": "evl_5qtkzpgzxj8zp9vcaf3297wmax",
  "blueprint": {
-  "id": "blp_29nrx5mekf8yv8kkmjsbf5ce9f",
-  "key": "ad-tep-qs-otr_5qv9n83m2w8bwadt336q5skb6d",
-  "trial": "otr_5qv9n83m2w8bwadt336q5skb6d",
+  "id": "blp_112tj5yf4y8mntg4e6az4jnncq",
+  "key": "ad-tep-qs-otr_1t13xhenak9ccvt5gj6ftk017e",
+  "trial": "otr_1t13xhenak9ccvt5gj6ftk017e",
   "values": {
    "data_columns": [
     "xmeas_1",
@@ -56,10 +56,10 @@
    "n_neighbors": 5
   }
  },
- "optimization": "opt_7vrjkvnyh48q28y3m5mcjv0ewv",
+ "optimization": "opt_44hn6s96b68ryr10bxzwrr46xd",
  "platform": {
   "accuracy": 0.7802518223989396,
-  "detection_precision": 0.9919457397202204,
+  "detection_precision": 0.9919457397202205,
   "detection_recall": 0.78,
   "foreground_macro_f1": 0.8732972569509236,
   "macro_f1": 0.7330631667858745

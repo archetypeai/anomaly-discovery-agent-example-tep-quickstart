@@ -616,8 +616,15 @@ The numbers above are our run of this branch through Agent Lifecycle 2.0
 used an org-admin key, but no step makes an admin-only call (registering a
 blueprint, or choosing a promoted blueprint's key): a rerun with a member key, in
 its own project, gave the same scores in every stage. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
-instances. `fit/out/` and `eval_out/` hold the ids and
-outputs.
+instances.
+
+A rerun on the staging platform, which now serves Agent Lifecycle 2.0 too
+(2026-11-09), gave the same numbers at every stage, Stage 9's app included: the same validation and
+test macro-F1, test predictions, Stage 6 outputs, Stage 7 evaluation and Stage 8
+served CSV byte for byte, and a median of 877 ms a query. `fit/out/` and
+`eval_out/` hold that rerun's ids and outputs; the library view in
+`app-serving/static/` is the earlier run's, as it depends only on the
+configuration.
 
 | stage | measure | result |
 |---|---|---|

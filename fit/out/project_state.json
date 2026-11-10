@@ -1,8 +1,8 @@
 {
- "endpoint": "https://platform.dev.u1.archetypeai.app/api",
- "project": "prj_3kxd8pknma8hytad80zzt1d53y",
+ "endpoint": "https://platform.stage.u1.archetypeai.app/api",
+ "project": "prj_1tqpm50nb88rvrf9gdhnayf6ac",
  "base": {
-  "id": "blp_0hqkp1vp7s921sys7qw8as2pr5",
+  "id": "blp_4e8spza5k19kja0mmgc4s65xc0",
   "key": "ad-tep-qs"
  }
 }
