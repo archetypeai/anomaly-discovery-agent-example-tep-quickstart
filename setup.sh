@@ -9,7 +9,8 @@
 # (ATAI_API_ENDPOINT, when set, is tried first).
 #
 # Exit status: 0 ready, 2 set up but the API key is missing (Stages 0-3 still work),
-# 3 the key was rejected by every deployment.
+# 3 the key was rejected by every deployment (it is removed from .env, so the next run
+# in a terminal asks for one again).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -60,8 +61,8 @@ fi
 # Write the key and endpoint, then find the deployment the key belongs to: a key is
 # accepted (200) only by its own deployment and gets 401 from the others, so a
 # free-trial key works without anyone setting the free trial's endpoint by hand.
-set +e
-ATAI_SETUP_KEY="$key" ATAI_SETUP_ENDPOINT="$endpoint" .venv/bin/python - <<'EOF'
+check_key() {
+ATAI_SETUP_KEY="$1" ATAI_SETUP_ENDPOINT="$endpoint" .venv/bin/python - <<'EOF'
 import os, re, sys, urllib.error, urllib.request
 
 DEPLOYMENTS = {"production": "https://platform.u1.archetypeai.app",
@@ -112,7 +113,11 @@ if good is None:
     if any(r is None for r in results.values()):
         print(f"env: could not reach the API to check the key; keeping ATAI_API_ENDPOINT={endpoint}")
         sys.exit(0)
-    print("The API key was rejected by production and by the free trial: check it and rerun ./setup.sh.")
+    # Drop the rejected key, so the next run in a terminal asks for one instead of reusing it.
+    put("ATAI_API_KEY", "")
+    open(".env", "w").write(env)
+    print("The API key was rejected by production and by the free trial (removed from .env): "
+          "check it and run ./setup.sh again in your terminal.")
     sys.exit(3)
 if good != endpoint:
     put("ATAI_API_ENDPOINT", good)
@@ -120,8 +125,17 @@ if good != endpoint:
 name = next((n for n, u in DEPLOYMENTS.items() if u == good), good)
 print(f"env: the key works on {name}; .env has ATAI_API_KEY (hidden) and ATAI_API_ENDPOINT={good}")
 EOF
-status=$?
-set -e
+}
+
+# In a terminal, a rejected key asks for another; Enter skips (no key yet).
+while :; do
+    set +e
+    check_key "$key"
+    status=$?
+    set -e
+    { [ "$status" = 3 ] && [ -t 0 ]; } || break
+    read -r -s -p "ATAI_API_KEY, try again (input hidden, Enter to skip): " key; echo
+done
 
 if [ "$status" = 2 ]; then
     say ""
