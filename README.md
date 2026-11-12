@@ -30,7 +30,7 @@
 | 9 | optional: **watch it live**, the delivery replayed through a serving session ([`app-serving/`](app-serving/README.md)) | ~5 min once (the app's blueprint), then ~2 min a run |
 
   About **30 minutes** end to end, 21 of them on the platform. Platform times
-  vary with load; Stages 4–9 were measured on 2026-10-30.
+  vary with load; Stages 4–9 were measured on production on 2026-11-12.
 
 - **One configuration throughout.** Stage 4's optimization chooses the
   configuration, and every later stage runs exactly what it chose, step
@@ -57,6 +57,9 @@ flowchart LR
 
 - **Skip the 1.4 GB download:** Stage 1's prepared files and the role files are
   in the repo, in Git LFS. See [Shortcuts](#shortcuts-skip-the-download).
+- **On the free trial** (`try.archetypeai.app`) the same commands work, with no
+  extra flags; Stages 4–8 take about **16 minutes** there. See
+  [On the free trial](#on-the-free-trial).
 
 ## The scenario
 
@@ -128,6 +131,10 @@ cp .env.example .env               # then set ATAI_API_KEY (needed from Stage 4 
   deployment must serve the lifecycle APIs; `curl -s -o /dev/null -w '%{http_code}\n'
   "${ATAI_API_ENDPOINT%/api}/api/agents/sessions?limit=1" -H "Authorization: Bearer
   $ATAI_API_KEY"` should print `200`.
+- **A variable already set in your shell wins over `.env`,** in the Python stages
+  and in `app-serving/`. If your shell profile exports `ATAI_API_KEY` or
+  `ATAI_API_ENDPOINT` for another deployment, unset them for this repo
+  (`env -u ATAI_API_KEY -u ATAI_API_ENDPOINT python3 …`).
 - **The project** is created by Stage 4 the first time, named `AD TEP quickstart`
   (`PROJECT` in `fit/atai.py`), or reused if you already have one of that name.
   Its id and its copy of `ad` are kept in `fit/out/project_state.json`. The one
@@ -157,6 +164,28 @@ them (`git lfs pull` if it did not).
   ```
 
 Then go to [Stage 4](#stage-4-optimize).
+
+### On the free trial
+
+The free trial (`ATAI_API_ENDPOINT=https://try.archetypeai.app/api`, in
+`.env.example`) runs at most 3 jobs per org at once and stops every job after 2
+hours (`DeadlineExceeded`, with no output). `fit/atai.py`'s `free_trial()` is true
+when the endpoint's host is `try.archetypeai.app` (a free-trial key works nowhere
+else), and then these defaults change, each script saying so when it starts:
+
+| stage | default | free-trial default | why |
+|---|---|---|---|
+| 5 `fit/test.py` | one eval of the 3 test slices | `--pieces 2`: each slice cut in two at run boundaries, 6 evals, 3 at a time, pooled | keeps each eval well inside 2 hours |
+| 6 `fit/deliver.py` | `--parallel 5` | `--parallel 3` | 3 jobs at once |
+| 9 `fit/library_embeddings.py` | 4 sessions at a time | 3 | 3 jobs at once |
+
+A flag you give wins (`--pieces 1`). Stage 5 with `--pieces 2` loses only the
+windows across a cut (5 per cut, 15 in all); they span two runs, so they are
+abstained either way, but the platform's macro-F1 counts an abstention as a miss,
+so it reads a little higher than one eval's. A queued job may already be on the
+clock: keep other jobs, `app-serving/` included, off the account while Stages 5
+and 6 run, and run `fit/library_embeddings.py` before starting `app-serving/`,
+since its serving deployment holds one of the 3 slots for as long as it runs.
 
 ## The stages
 
@@ -290,7 +319,8 @@ python3 fit/test.py
 
 1. **Promote** the best trial to a blueprint in the project, `ad-tep-qs-<trial>`
    (the platform's default key; choosing one takes the admin role): its settings
-   and fitted detector become a reusable model. `--trial otr_…` picks another trial.
+   and fitted detector become a reusable model. `--trial otr_…` picks another trial;
+   `--blueprint-key` chooses the key.
 2. **Evaluate** the 3 test slices **once** with the Evals API, with predictions.
 3. **Check** every prediction's gold label against the sidecar, and the offline
    confusion matrix against the platform's, before reporting.
@@ -315,6 +345,9 @@ ones across a gap between runs.
 - **This is the one-shot test.** Once you have seen its number, the setting is
   frozen: tuning it further would make the test number optimistic.
 
+**On the free trial** it runs 6 evals of half a slice each and pools them
+(`--pieces 2`, [above](#on-the-free-trial)): about 3 minutes.
+
 **Writes:** `fit/out/test.json`, `fit/out/test-predictions.ndjson` and
 `fit/out/test_state.json` (the ids, so a rerun resumes instead of testing again).
 
@@ -338,10 +371,13 @@ python3 fit/deliver.py
 4. **Download** each output from `/sessions/{id}/results`, checking it covers its
    input in full.
 
-**Expect:** `package pkg_… (ready) on ad-tep-qs-otr_…`, `batch deployment dpl_… (ready)`, five `session ses_…` lines, five
+**Expect:** `package pkg_… on ad-tep-qs-otr_…`, `batch deployment dpl_…`, five `session ses_…` lines, five
 `verified: output covers the full input (100.0%)`, then `5 outputs in
 eval_out/delivery`. **Writes:** `eval_out/delivery/ad-output-*.csv` and
 `fit/out/deliver_state.json`.
+
+**On the free trial** it runs 3 files at a time (`--parallel 3`,
+[above](#on-the-free-trial)).
 
 ### Stage 7: score the delivery
 
@@ -426,21 +462,23 @@ times below.
    relative), and each run's first sustained alarm (3 consecutive anomaly
    windows).
 5. **Cleanup:** the session is cancelled, the deployment stopped, and the session,
-   deployment and package deleted, however the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
+   deployment and package deleted, however the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second signal waits for it).
+   Each is tried even if one before it fails; anything left stays in
+   `fit/out/serve_state.json` for `fit/cleanup.py`.
 
-**Expect** (ours, 2026-10-30), delivery file 1's fault-free run (sim 96) and its
+**Expect** (ours, 2026-11-12), delivery file 1's fault-free run (sim 96) and its
 IDV 5 run (sim 26), 115 windows each:
 
 ```
-Stage 8: 230 windows of 2 run(s) served in 230 queries, 220 s
+Stage 8: 230 windows of 2 run(s) served in 230 queries, 236 s
   against Stage 6 (batch): predicted_label identical in 230/230, anomaly_score within 1e-4 in 230/230 (max relative difference 1.7e-05); invalid 0
-  latency per query: median 889 ms, p95 1018 ms, max 1862 ms
+  latency per query: median 821 ms, p95 1793 ms, max 1902 ms
   idv_00 sim 96: first sustained alarm, served none; batch none
   idv_05 sim 26: first sustained alarm, served 1.20 h after onset; batch 1.20 h after onset
 ```
 
 - **The served agent gives the delivery's answers:** every label and score, and
-  both runs' first alarms. Each answer comes back in under a second, for a window
+  both runs' first alarms. A median answer comes back in under a second, for a window
   due every 24 minutes.
 - **The alarm time is when the third window over the threshold ends:** 1.20 h
   after onset here. Stage 7 times the first of the three, so it reports IDV 5 at
@@ -613,20 +651,19 @@ curl -s "${ATAI_API_ENDPOINT%/api}/api/agents/deployments?status=ready&limit=100
 
 ## Results, and they reproduce
 
-The numbers above are our run of this branch through Agent Lifecycle 2.0
-(project, packages, deployments, sessions) at step 8, on 2026-10-30. The run
-used an org-admin key, but no step makes an admin-only call (registering a
-blueprint, or choosing a promoted blueprint's key): a rerun with a member key, in
-its own project, gave the same scores in every stage. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
+The numbers above are our run on production through Agent Lifecycle 2.0
+(project, packages, deployments, sessions) at step 8, on 2026-11-12, with a
+member (developer) key in a new project: no step makes an admin-only call
+(registering a blueprint, or choosing a promoted blueprint's key). `fit/out/` and
+`eval_out/` hold that run's ids and outputs; the library view in
+`app-serving/static/` is an earlier run's, as it depends only on the
+configuration. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
 instances.
 
-A rerun on the staging platform, which now serves Agent Lifecycle 2.0 too
-(2026-11-09), gave the same numbers at every stage, Stage 9's app included: the same validation and
-test macro-F1, test predictions, Stage 6 outputs, Stage 7 evaluation and Stage 8
-served CSV byte for byte, and a median of 877 ms a query. `fit/out/` and
-`eval_out/` hold that rerun's ids and outputs; the library view in
-`app-serving/static/` is the earlier run's, as it depends only on the
-configuration.
+Earlier runs, with an org-admin key and with a member key, each in its own
+project, gave the same numbers at every stage, Stage 9's app included: the same
+validation and test macro-F1, test predictions, Stage 6 outputs and Stage 7
+evaluation byte for byte, with medians of 820–890 ms a query.
 
 | stage | measure | result |
 |---|---|---|
@@ -635,7 +672,7 @@ configuration.
 | 5 | test macro-F1 | 0.7331 |
 | 6 | delivery outputs | 5 files, full coverage, step 8 |
 | 7 | detection / false alarms / AUROC at the 1% threshold | 78.5% / 2.11% / 0.903 |
-| 8 | served against batch, 230 windows | every label and score; median 889 ms a query |
+| 8 | served against batch, 230 windows | every label and score; median 821 ms a query |
 
 An earlier run, from its own optimization and blueprint, gave the same Stage 4,
 5 and 8 numbers, and Stage 6 outputs and a Stage 7 evaluation byte-identical to

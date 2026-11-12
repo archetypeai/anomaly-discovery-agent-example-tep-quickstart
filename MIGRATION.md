@@ -2,14 +2,13 @@
 
 How this quickstart moved from bundles and instances to **projects, packages,
 deployments and sessions**, and what to watch for if you move your own scripts.
-Everything below was run end to end on 2026-10-30 with an org-admin key, and again
-on 2026-11-04 with a member key in a new project: the scripts make no admin-only
-call (see 6 below), and the second run reproduced the first's scores, Stages 4-9 and the app.
+Everything below was run end to end on production on 2026-11-12 with a member key
+in a new project, and earlier with an org-admin key: the scripts make no admin-only
+call (see 6 below), and every run reproduced the same scores, Stages 4-9 and the app.
 
-`/api/agents/bundles` and `/api/agents/instances` are being removed: some deployments of
-the platform already answer 404 for them, and the rest keep them only until their next
-platform release. Move to the calls below. A deployment serves the new calls
-when `GET {root}/api/agents/sessions?limit=1` answers 200, not 404.
+`/api/agents/bundles` and `/api/agents/instances` are removed: production answers
+404 for them. Move to the calls below. A deployment serves the new calls when
+`GET {root}/api/agents/sessions?limit=1` answers 200, not 404.
 
 ## Before and after
 
@@ -193,7 +192,7 @@ Statuses: package `building → ready | failed`; deployment `deploying → ready
 | 4 | validation macro-F1, k 5 / k 10 | 0.8547 / 0.8540 | 0.8547 / 0.8540 |
 | 5 | test macro-F1 | 0.7331 | 0.7331 |
 | 7 | detection / false alarms / AUROC | 78.5% / 2.11% / 0.903 | 78.0% / 1.41% / 0.901 |
-| 8 | served against batch | 230/230, median 889 ms | every label and score, at step 1 |
+| 8 | served against batch | 230/230, median 821 ms | every label and score, at step 1 |
 
 The optimization, the test and the delivery's headline are unchanged by the move;
 the false-alarm rate differs because the delivery is now scored at step 8, with

@@ -81,7 +81,7 @@ def main() -> int:
     test = load_state(state_path("test"))
     if test.get("blueprint"):
         print(f"stays: blueprint {test['blueprint']['key']}, optimization {test.get('optimization')} "
-              f"and eval {test.get('eval')}, and the project with its copy of `ad`")
+              f"and eval(s) {', '.join(test.get('evals') or [test.get('eval')])}, and the project with its copy of `ad`")
     if not args.yes:
         print("\nnothing deleted: rerun with --yes")
         return 0

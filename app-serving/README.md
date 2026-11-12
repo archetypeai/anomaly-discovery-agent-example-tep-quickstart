@@ -6,7 +6,7 @@ agent** of the detector Stage 5 promoted, on the Archetype AI platform. The answ
 come back to a flowsheet, 33 process tags, the anomaly score and an embedding space.
 
 > **It holds a serving deployment while it runs,** and gives it back when you stop it.
-> Free-trial accounts serve on CPU only, so answers can be slower.
+> On the free trial it takes one of the 3 jobs an account can run at once.
 
 It serves this repo's winning configuration (k 5) and replays the **delivery** runs
 (Stage 6's 4 files, 84 runs), so every served window can be checked against Stage 6's

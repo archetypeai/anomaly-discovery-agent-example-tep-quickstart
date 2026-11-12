@@ -4,6 +4,9 @@
     python3 fit/app_blueprint.py             # first, once: the winning configuration with embeddings on
     python3 fit/library_embeddings.py        # 40 batch runs (~8 min), then the view
 
+On the free trial (ATAI_API_ENDPOINT on try.archetypeai.app) it runs 3 at a time
+instead of 4, the free trial's limit of jobs at once.
+
 The promoted detector was fitted on the library's 40 fault-free runs at the
 trial's window 48 and step 8, but it is a registry artifact (`aar_…`) with no
 download route, so its reference windows can't be read back. They can be
@@ -36,7 +39,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from atai import REPO, ROLES, agents_base, load_dotenv, load_state, log, manifest, save_state, state_path, upload_all
+from atai import REPO, ROLES, agents_base, free_trial, load_dotenv, load_state, log, manifest, save_state, state_path, upload_all
 from ad_api import (create_package, deploy, deployment, deployment_ready, download_results, end_session,
                     open_session, package_ready, poll_session)
 
@@ -91,7 +94,7 @@ def deliver(m: dict, bp: dict) -> list[Path]:
         log(f"{src.name}: no complete output; rerun to retry")
         return None
 
-    with ThreadPoolExecutor(4) as pool:
+    with ThreadPoolExecutor(3 if free_trial() else 4) as pool:
         got = list(pool.map(one, paths))
     if not all(got):
         sys.exit(f"{got.count(None)} of {len(got)} outputs missing: rerun to resume")

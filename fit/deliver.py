@@ -2,6 +2,7 @@
 """Stage 6 -- deliver: run the promoted blueprint in batch over files with no labels.
 
     python3 fit/deliver.py
+    python3 fit/deliver.py --parallel 3   # 3 sessions at once (the free trial's default)
 
 A package of fit/test.py's promoted blueprint, which already holds the detector
 and every value the trial pinned, `output_score` included. A package adds nothing
@@ -26,7 +27,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from atai import REPO, load_dotenv, load_state, log, manifest, save_state, state_path
+from atai import REPO, free_trial, load_dotenv, load_state, log, manifest, save_state, state_path
 from ad_api import (create_package, deploy, deployment_ready, download_results, end_session, open_session,
                     package_ready, poll_session, upload_file)
 
@@ -39,9 +40,11 @@ lock = threading.Lock()
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--parallel", type=int, default=5)
+    ap.add_argument("--parallel", type=int, help="runs at once (default 5; 3 on the free trial)")
     args = ap.parse_args()
     load_dotenv()
+    if args.parallel is None:
+        args.parallel = 3 if free_trial() else 5
     m = manifest()
     test = load_state(state_path("test"))
     if "blueprint" not in test:
