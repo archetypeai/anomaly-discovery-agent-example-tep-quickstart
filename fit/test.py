@@ -75,7 +75,8 @@ def promote(opt_id: str, trial_id: str | None, key: str | None = None) -> dict:
         "name": f"AD TEP quickstart (w {vals['window_size']}, step {vals['step_size']}, k {vals['n_neighbors']}, "
                 f"{vals['metric']}, PCA {vals['pca_components']}, threshold {vals['threshold']:.3f})",
         "description": f"Promoted from {opt_id}; detector fitted on the 40 fault-free reference sims."}
-    # the platform's key unless one is asked for: choosing it needs the admin role outside projects
+    # The platform's key unless one is asked for: <base key>-<trial id>, so
+    # ad-tep-qs-otr_... (fit/atai.py's BASE_KEY). Choosing one can take the admin role.
     bp = request("POST", url, body={**body, "blueprint_key": key} if key else body)
     log(f"promoted {tid} -> {bp['blueprint_key']} ({bp['id']})")
     return {"id": bp["id"], "key": bp["blueprint_key"], "trial": tid, "values": vals}

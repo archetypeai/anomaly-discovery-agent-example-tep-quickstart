@@ -9,6 +9,9 @@ Training is the library (the 40 fault-free reference sims, labelled by a
 constant); validation is eval slice 01 and val_normal with the `label` column.
 Both come from data/roles/ (prep/build_roles.py).
 
+Every trial searches the quickstart's own copy of `ad`, in its project
+(fit/atai.py's base_blueprint), so what it promotes lands in that project too.
+
 Each option takes one value (pinned in `overrides.values` for every trial) or
 several (searched). `feature_names` is a list, so it can only be pinned: search
 another feature set with --new. Both Optimize legs use the trial's one
@@ -23,8 +26,8 @@ import datetime
 import json
 
 from atai import (COLUMN, NORMAL, OUT, REPO, ROLES, SEARCH, agents_base, aggregate, api_base,
-                  base_values, example, load_dotenv, load_state, log, manifest, request,
-                  save_state, state_path, upload_all, wait)
+                  base_blueprint, base_values, example, load_dotenv, load_state, log, manifest,
+                  request, save_state, state_path, upload_all, wait)
 
 
 def values(text: str, cast) -> list:
@@ -76,9 +79,11 @@ def main() -> int:
         ids = upload_all(lib + val)
         space, pinned = build_space(args)
         stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        bp = request("GET", f"{agents_base()}/blueprints/ad")
+        bp = base_blueprint()
         body = {"name": f"ad-tep {stamp}", "blueprint_id": bp["id"], "primary": args.primary,
-                "overrides": {"values": {**base_values(m), **pinned,
+                # output_score is pinned here because a package can't turn an
+                # output on: the promoted blueprint is what every later stage runs.
+                "overrides": {"values": {**base_values(m), **pinned, "output_score": True,
                                          "feature_names": values(args.features, str)}},
                 "search_space": {"parameters": space}, "budget": {"max_trials": args.trials},
                 "training_examples": [example(p.stem, ids[p], NORMAL) for p in lib],

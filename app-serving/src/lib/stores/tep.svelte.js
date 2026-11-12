@@ -22,8 +22,8 @@ const WS_PORT = env.PUBLIC_MQTT_WS_PORT || '9008';
 const WS_PATH = env.PUBLIC_MQTT_WS_PATH || '/mqtt';
 const MQTT_MODE = env.PUBLIC_MQTT_MODE || 'direct';
 
-/** Scores kept for the trajectory. A run is 960 samples ≈ 225 windows at
- *  step 4, so this holds several runs without a ring buffer mattering. */
+/** Scores kept for the trajectory. A run is 960 samples ≈ 115 windows at
+ *  step 8, so this holds several runs without a ring buffer mattering. */
 const MAX_SCORES = 4000;
 /** Samples kept per channel for the sparklines — one whole run and then some. */
 const MAX_SAMPLES = 1200;
@@ -44,7 +44,7 @@ const TOPICS = ['sensors/tep', 'tep/raw', 'tep/status', 'tep/control', 'ad/resul
  *  that reads `idle` four ticks in five is reporting a dead pipeline. */
 const RATE_WINDOW_MS = 5000;
 
-/** Points kept on the embedding trail. One run at step 4 is ~225 windows, and
+/** Points kept on the embedding trail. One run at step 8 is ~115 windows, and
  *  the trail is the run's path through the detector's space — not a history. */
 const MAX_TRAIL = 400;
 
@@ -450,10 +450,6 @@ class TepStore {
 	}
 	reveal() {
 		this.#publish('reveal');
-	}
-	/** @param {1 | 4} n a query every n samples */
-	setStep(n) {
-		this.#publish('step', n);
 	}
 	/** @param {number} id */
 	select(id) {

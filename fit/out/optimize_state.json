@@ -2,10 +2,10 @@
  "endpoint": "https://platform.u1.archetypeai.app/api",
  "runs": [
   {
-   "optimization": "opt_3w1j08skc29zvtzb7p6bgapmvt",
+   "optimization": "opt_0gm5qjf93g85aaxrn4kkxfzz16",
    "request": {
-    "name": "ad-tep 20261029T054257Z",
-    "blueprint_id": "blp_66zmaafqt987htw5qtstabbgtw",
+    "name": "ad-tep 20261112T141014Z",
+    "blueprint_id": "blp_3zmwknmhxe8vs9cgq0a931h87s",
     "primary": "anomaly.macro_f1",
     "overrides": {
      "values": {
@@ -50,6 +50,7 @@
       "metric": "l2",
       "pca_components": 16,
       "threshold": 1.215,
+      "output_score": true,
       "feature_names": [
        "std",
        "range",

@@ -35,6 +35,45 @@ SEARCH = {"window_size": "48", "step_size": "8", "n_neighbors": "5,10", "metric"
           "trials": 2}
 
 
+PROJECT = "AD TEP quickstart"
+BASE_KEY = "ad-tep-qs"           # promoted trials are keyed <BASE_KEY>-<trial id>
+
+
+def base_blueprint() -> dict:
+    """The quickstart's project and its copy of the canonical `ad` blueprint.
+
+    Everything after it lives in the project: an optimization lands in its
+    blueprint's project, and so do the blueprints it promotes, their packages,
+    deployments and sessions. A deployment needs one, and the canonical `ad`
+    is outside any, so the optimizations search this copy instead. Copying
+    needs no admin role, unlike registering a blueprint.
+
+    Writes fit/out/project_state.json; returns {project, id, key}.
+    """
+    path = state_path("project")
+    state = load_state(path)
+    if "project" not in state:
+        found = [p for p in request("GET", f"{api_base()}/projects?limit=1000")["data"] if p["name"] == PROJECT]
+        state["project"] = found[0]["id"] if found else request(
+            "POST", f"{api_base()}/projects", body={
+                "name": PROJECT, "description": "Anomaly Discovery agent on the Tennessee Eastman process"})["id"]
+        save_state(path, state)
+        log(f"project {state['project']} ({PROJECT})")
+    if "base" not in state:
+        found = [bp for bp in request("GET", f"{agents_base()}/blueprints?project_id={state['project']}&key={BASE_KEY}")["data"]
+                 if bp["blueprint_key"] == BASE_KEY]   # never a promoted ad-tep-qs-otr_…
+        if found:
+            bp = found[0]
+            log(f"reusing {BASE_KEY} in {state['project']} ({bp['id']})")
+        else:
+            bp = request("POST", f"{agents_base()}/blueprints/ad/copy",
+                         body={"project_id": state["project"], "blueprint_key": BASE_KEY})
+            log(f"copied ad into {state['project']} as {BASE_KEY} ({bp['id']})")
+        state["base"] = {"id": bp["id"], "key": bp["blueprint_key"]}
+        save_state(path, state)
+    return {"project": state["project"], **state["base"]}
+
+
 def load_dotenv() -> None:
     """The repo's .env, wherever the script is run from."""
     ad_api.load_dotenv(str(REPO / ".env"))
@@ -113,8 +152,39 @@ def load_state(path: Path) -> dict:
     was = state.get("endpoint")
     if was and deployment(was) != deployment(api_base()):
         sys.exit(f"{path} is from {was}, not {api_base()}: move it aside")
+    check_run_is_yours()
     state["endpoint"] = api_base()
     return state
+
+
+_RUN_CHECKED = False
+
+
+def check_run_is_yours() -> None:
+    """Exit when fit/out/ records a run in a project this key can't see.
+
+    A clone carries this repo's own run in fit/out/: its project, uploads,
+    optimizations and blueprints belong to the account that made them, and
+    answer 404 to anyone else's key. Every stage would then resume or reuse
+    those ids, so stop before the first one does."""
+    global _RUN_CHECKED
+    if _RUN_CHECKED:
+        return
+    _RUN_CHECKED = True
+    recorded = state_path("project")
+    if not recorded.exists():
+        return
+    saved = json.loads(recorded.read_text())
+    if not saved.get("project") or deployment(saved.get("endpoint", "")) != deployment(api_base()):
+        return
+    try:
+        request("GET", f"{api_base()}/projects/{saved['project']}")
+    except SystemExit as e:
+        if "(404)" not in str(e):
+            raise
+        sys.exit(f"fit/out/ records a run in project {saved['project']}, which this API key can't see "
+                 "(it is this repo's run, or another account's). Move fit/out/ and eval_out/ aside, "
+                 "then rerun: Stage 4 finds or creates your own project.")
 
 
 def save_state(path: Path, state: dict) -> None:
