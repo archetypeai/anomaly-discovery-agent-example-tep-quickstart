@@ -37,8 +37,8 @@ import numpy as np
 import pandas as pd
 
 from atai import REPO, ROLES, agents_base, load_dotenv, load_state, log, manifest, save_state, state_path, upload_all
-from ad_api import (create_package, deploy, deployment, deployment_ready, download_results, open_session,
-                    package_ready, poll_session)
+from ad_api import (create_package, deploy, deployment, deployment_ready, download_results, end_session,
+                    open_session, package_ready, poll_session)
 
 OUT = REPO / "fit" / "out" / "library_embeddings"
 VIEW = REPO / "app-serving" / "static"
@@ -81,6 +81,10 @@ def deliver(m: dict, bp: dict) -> list[Path]:
         if download_results(runs[src.stem], str(dst), source_csv=str(src)):
             log(f"{src.name}: done")
             return dst
+        try:
+            end_session(runs[src.stem])            # one that timed out may still be running
+        except SystemExit as e:
+            log(f"{src.name}: could not end {runs[src.stem]}: {str(e).splitlines()[0][:200]}")
         with lock:
             runs.pop(src.stem)
             save()

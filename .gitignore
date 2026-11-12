@@ -28,4 +28,5 @@ plan.md
 fit/out/library_embeddings/
 fit/out/app_serving_state.json
 fit/out/cleanup_state.json
+fit/out/library_state.json
 fit/out/serve_state.json

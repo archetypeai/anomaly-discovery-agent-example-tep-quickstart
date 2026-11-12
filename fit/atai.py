@@ -59,7 +59,8 @@ def base_blueprint() -> dict:
         save_state(path, state)
         log(f"project {state['project']} ({PROJECT})")
     if "base" not in state:
-        found = request("GET", f"{agents_base()}/blueprints?project_id={state['project']}&key={BASE_KEY}")["data"]
+        found = [bp for bp in request("GET", f"{agents_base()}/blueprints?project_id={state['project']}&key={BASE_KEY}")["data"]
+                 if bp["blueprint_key"] == BASE_KEY]   # never a promoted ad-tep-qs-otr_…
         if found:
             bp = found[0]
             log(f"reusing {BASE_KEY} in {state['project']} ({bp['id']})")

@@ -27,8 +27,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from atai import REPO, load_dotenv, load_state, log, manifest, save_state, state_path
-from ad_api import (create_package, deploy, deployment_ready, download_results, open_session, package_ready,
-                    poll_session, upload_file)
+from ad_api import (create_package, deploy, deployment_ready, download_results, end_session, open_session,
+                    package_ready, poll_session, upload_file)
 
 OUT = REPO / "eval_out" / "delivery"
 TIMEOUT_S = 3 * 3600
@@ -94,6 +94,10 @@ def main() -> int:
             log(f"{src.name}: session did not report completed; trying /results anyway")
         if download_results(runs[src.stem], str(dst), source_csv=str(src)):
             return dst
+        try:
+            end_session(runs[src.stem])            # one that timed out may still be running
+        except SystemExit as e:
+            log(f"{src.name}: could not end {runs[src.stem]}: {str(e).splitlines()[0][:200]}")
         with lock:
             runs.pop(src.stem)
         save()

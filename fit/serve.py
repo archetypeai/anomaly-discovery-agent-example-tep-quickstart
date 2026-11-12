@@ -24,7 +24,7 @@ Stage 6's batch output for the same window:
      the first sustained alarm (3 consecutive anomaly windows) of each run,
      served and batch;
   5. the session cancelled, the deployment stopped, and all three deleted, however it went
-     (Ctrl-C, SIGTERM and SIGHUP included; a second Ctrl-C waits for it).
+     (Ctrl-C, SIGTERM and SIGHUP included; a second signal waits for it).
      Their ids are kept in fit/out/serve_state.json until then, so if the
      replay is killed before it can clean up, fit/cleanup.py finds them.
 
@@ -74,7 +74,7 @@ def main() -> int:
     ap.add_argument("--file", default="full_chunk_001", help="a delivery file Stage 6 delivered")
     ap.add_argument("--faults", nargs="+", default=["idv_00", "idv_05"],
                     help="the file's runs to replay, by fault id (idv_00 = fault-free); `all` for every run")
-    ap.add_argument("--windows-per-query", type=int, default=1, help="1 = live, one window per sample (default); up to 16")
+    ap.add_argument("--windows-per-query", type=int, default=1, help="1 = live, one window per step (default); up to 16")
     ap.add_argument("--max-windows", type=int, help="replay only the first N windows of each run")
     args = ap.parse_args()
 
@@ -130,7 +130,8 @@ def main() -> int:
                 body = {"model": MODEL, "query": "", "events": [{"type": "data.numeric_array",
                         "event_data": {"contents": [chunk[:, c].tolist() for c in range(len(channels))]}}]}
                 t = time.time()
-                answer = request("POST", f"{sessions_url(state['session'])}/query", body=body)
+                answer = request("POST", f"{sessions_url(state['session'])}/query", body=body,
+                                 idempotent=True)
                 latency.append(time.time() - t)
                 records = (answer.get("response") or {}).get("data")
                 if not isinstance(records, list) or len(records) != count:
@@ -138,15 +139,29 @@ def main() -> int:
                 got.extend(records)
             log(f"  {fault} (sim {sim}): {n} windows, {time.time() - t_start:.0f} s so far")
     finally:
-        signal.signal(signal.SIGINT, signal.SIG_IGN)     # a second Ctrl-C mustn't cut the cleanup short
-        if state.get("session"):
-            end_session(state["session"])
-        if state.get("deployment"):
-            end_deployment(state["deployment"])
-        if state.get("package"):
-            request("DELETE", packages_url(state["package"]), raw=True)
-        live.unlink(missing_ok=True)
-        log(f"ended and deleted {', '.join(state[k] for k in ('session', 'deployment', 'package') if k in state)}")
+        handlers = {sig: signal.signal(sig, signal.SIG_IGN)   # a second signal mustn't cut the cleanup short
+                    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
+        # Try every step even when one fails: a session that won't delete must not
+        # leave the serving deployment holding its worker.
+        ended, left = [], []
+        for key, end in (("session", end_session), ("deployment", end_deployment),
+                         ("package", lambda p: request("DELETE", packages_url(p), raw=True))):
+            if not state.get(key):
+                continue
+            try:
+                end(state[key])
+                ended.append(state[key])
+            except SystemExit as e:
+                left.append(state[key])
+                log(f"could not end {state[key]}: {str(e).splitlines()[0][:200]}")
+        if ended:
+            log(f"ended and deleted {', '.join(ended)}")
+        if left:
+            log(f"left on the platform: {', '.join(left)}; {live} keeps them for fit/cleanup.py")
+        else:
+            live.unlink(missing_ok=True)
+        for sig, handler in handlers.items():
+            signal.signal(sig, handler)
     elapsed = time.time() - t_start
 
     rows, per_run = [], []

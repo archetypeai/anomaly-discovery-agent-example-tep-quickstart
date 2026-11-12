@@ -5,8 +5,8 @@
 
 A package runs a blueprint exactly as promoted, and Stage 5's blueprint has
 `output_embeddings: false`, so its agents return no embeddings and the app's
-embedding view gets no live trail. Until a package or instance can turn an
-output on, this is the stop-gap: a second optimization that pins every value
+embedding view gets no live trail. A package takes no values, so an output
+is turned on where values are pinned: a second optimization that pins every value
 of Stage 5's winning trial (window, step, k, metric, PCA, threshold, features)
 plus `output_embeddings: true`, on the same library and validation files, with
 one trial. Promoting that trial gives a blueprint that is the winning

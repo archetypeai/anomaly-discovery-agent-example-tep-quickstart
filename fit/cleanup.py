@@ -41,7 +41,8 @@ URLS = {"sessions": sessions_url, "deployments": deployments_url, "packages": pa
 def call(method: str, kind: str, obj: str, suffix: str = "", body=None):
     """None when the object is already gone."""
     try:
-        return request(method, URLS[kind](obj) + suffix, body=body, raw=method == "DELETE")
+        return request(method, URLS[kind](obj) + suffix, body=body, raw=method == "DELETE",
+                       idempotent=True)              # only GET, DELETE, cancel and stop come here
     except SystemExit as e:
         if "(404)" in str(e):
             return None

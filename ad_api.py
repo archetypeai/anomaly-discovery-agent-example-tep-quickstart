@@ -144,26 +144,35 @@ def wait_running(session_id: str, timeout_s: int = 600) -> dict:
 def end_session(session_id: str) -> None:
     """Cancel a session that is still going, then delete it."""
     if request("GET", sessions_url(session_id))["status"] not in TERMINAL:
-        request("POST", f"{sessions_url(session_id)}/cancel", body={})
+        request("POST", f"{sessions_url(session_id)}/cancel", body={}, idempotent=True)
     request("DELETE", sessions_url(session_id), raw=True)
 
 
 def end_deployment(deployment_id: str) -> None:
     """Stop a deployment that is still up, then delete it."""
     if request("GET", deployments_url(deployment_id))["status"] not in ("stopped", "failed"):
-        request("POST", f"{deployments_url(deployment_id)}/stop", body={})
+        request("POST", f"{deployments_url(deployment_id)}/stop", body={}, idempotent=True)
     request("DELETE", deployments_url(deployment_id), raw=True)
 
 
 def request(method: str, url: str, body=None, headers=None, raw: bool = False,
-            retries: int = 4):
+            retries: int = 4, idempotent: bool | None = None):
     """Call the API, retrying transient network failures.
 
     Polls run for hours, and a single DNS hiccup or socket timeout used to kill
     the whole client while the platform job carried on running unattended — the
     job then finished with nobody to download its output. Only *network* errors
     retry; an HTTP status is a real answer from the server and still exits.
+
+    Only idempotent calls retry: GET, HEAD and DELETE, or a POST the caller marks
+    `idempotent` (cancel, stop, a serving query). A create whose response was lost
+    may still have created its object, and resending it would make a second one
+    that nothing records, such as a serving deployment holding a worker.
     """
+    if idempotent is None:
+        idempotent = method in ("GET", "HEAD", "DELETE")
+    if not idempotent:
+        retries = 0
     data = json.dumps(body).encode() if body is not None else None
     for attempt in range(retries + 1):
         req = urllib.request.Request(url, data=data, method=method)
