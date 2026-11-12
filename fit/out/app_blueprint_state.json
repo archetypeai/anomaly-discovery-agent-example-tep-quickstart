@@ -1,11 +1,11 @@
 {
- "endpoint": "https://platform.stage.u1.archetypeai.app/api",
- "source": "ad-tep-qs-otr_1t13xhenak9ccvt5gj6ftk017e",
- "optimization": "opt_59s71dgf5e9zs8knzsm4jm5yfm",
+ "endpoint": "https://platform.u1.archetypeai.app/api",
+ "source": "ad-tep-qs-otr_7qhj0wyyf68g98zfmvpa3jadav",
+ "optimization": "opt_47v8drvdt790c9v2fd4j3s2haq",
  "blueprint": {
-  "id": "blp_709t3jeff18avajb5y14w6pzaf",
-  "key": "ad-tep-qs-otr_436fpc2a5q9kka4hj509k8srcd",
-  "trial": "otr_436fpc2a5q9kka4hj509k8srcd",
+  "id": "blp_2agstgrfqh9hcshsag3dncswgx",
+  "key": "ad-tep-qs-otr_7zxap1vpxb8p1t6mjhgt0xhcfn",
+  "trial": "otr_7zxap1vpxb8p1t6mjhgt0xhcfn",
   "values": {
    "data_columns": [
     "xmeas_1",
