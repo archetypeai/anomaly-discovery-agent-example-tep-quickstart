@@ -1,7 +1,7 @@
 ---
 name: tep-walkthrough
 description: >-
-  Guided, beginner-friendly walkthrough of Archetype AI's chemical plant (Tennessee Eastman, TEP) anomaly discovery quickstart in this repo: an overview, then 3 steps with charts: the data, building the Anomaly Detection Agent with Newton's Optimizations API, then promoting it, running it as batch agents with Omega embeddings on, and charting the anomaly score and a 2-D embedding map. Also sets the repo up first (Git LFS, virtual environment, .env) when it isn't. Use whenever someone asks to set up, try, demo, walk through, explain or "show me" this quickstart, the TEP / chemical plant anomaly example, or anomaly discovery on Newton for a beginner, even if they don't name the skill.
+  Guided, beginner-friendly walkthrough of Archetype AI's chemical plant (Tennessee Eastman, TEP) anomaly discovery quickstart in this repo: an overview, then 3 steps with charts: the data, building the Anomaly Detection Agent with the Archetype platform's Optimizations API (Newton, the world model, embeds the sensor windows), then promoting it, running it as batch agents with Omega embeddings on, and charting the anomaly score and a 2-D embedding map. Also sets the repo up first (Git LFS, virtual environment, .env) when it isn't. Use whenever someone asks to set up, try, demo, walk through, explain or "show me" this quickstart, the TEP / chemical plant anomaly example, or anomaly discovery with Newton or the Archetype platform for a beginner, even if they don't name the skill.
 ---
 
 # TEP quickstart walkthrough
@@ -9,7 +9,10 @@ description: >-
 Walk a beginner through the quickstart: **Step 0**, an overview, then **three steps**,
 pausing for the user to say "next" after each. The audience is new to anomaly detection
 and to Archetype's platform, so use plain language, define terms the first time, and
-keep each step to what it shows. Talking points for every step are in
+keep each step to what it shows. Keep **Newton** (the world model: it embeds sensor
+windows) and the **Archetype platform** (the service and Agent APIs that store, build,
+deploy and run) apart, in the fixed text and in your own answers; the talking points'
+"Terms" section has the rule. Talking points for every step are in
 [references/talking-points.md](references/talking-points.md); read it before Step 0.
 
 Order: Setup (silently, only if needed), Step 0, Step 1, Step 2, Step 3.
@@ -25,8 +28,8 @@ they write goes to `walkthrough_out/` (gitignored).
 - **Fixed text.** Every message of Steps 0-3 is written in the talking points: Steps 0
   and 1, and the start, link, progress and end messages of Steps 2 and 3 (their end text
   as the scripts fill it in). Show each exactly as written, adding nothing before or
-  after. They already say how long each step takes, what runs on Newton and what runs on
-  this machine, and give the console links. Answer questions from the "Only if asked"
+  after. They already say how long each step takes, what runs on the Archetype platform, what
+  Newton does and what runs on this machine, and give the console links. Answer questions from the "Only if asked"
   notes.
 - **Charts inline.** Show every chart in the chat. If an inline visual tool is available
   (for example `show_widget`), pass it the SVG file's contents unchanged; the files are
@@ -71,11 +74,11 @@ first). Then wait for "next".
 ## Step 1: Data (no script, no key)
 
 Nothing runs. Show the talking points' Step 1 text exactly as written, from the line
-**Step 1 of 3: the data** to the line ending "building the Anomaly Detection Agent on Newton." (not
-the "Only if asked" notes below it), and add nothing before or after it: no time estimate and no Newton vs
+**Step 1 of 3: the data** to the line ending "building the Anomaly Detection Agent on the Archetype platform." (not
+the "Only if asked" notes below it), and add nothing before or after it: no time estimate and no platform vs
 Claude Code note (the text already says nothing runs), no chart. Then wait for "next".
 
-## Step 2: Build (Newton, about a minute)
+## Step 2: Build (Archetype platform, about a minute)
 
 Three messages, each shown exactly as written in the talking points' Step 2 section, with
 nothing added before or after:
@@ -84,26 +87,26 @@ nothing added before or after:
    the line ending "reads back the results.", and in the same turn run
    `scripts/step2_optimize.py` (in the background if your environment allows).
 2. **Link.** As soon as the script prints a `console:` line, show the one line
-   "Running on Newton. Follow it live: <that link>", plain, as written. Skip it if the
+   "View live status in the console: <that link>", plain, as written. Skip it if the
    script has already finished by then (it reused a saved run, in seconds): the end
    text carries the link.
 3. **End.** When the script finishes, show `walkthrough_out/step2.md` exactly: the
-   script fills the talking points' end text in from this run (both settings' scores, the
+   script fills the talking points' end text in from this run (the winner's results in plain words, both settings' scores, the
    console link). Then wait for "next".
 
 What the script does: it runs `fit/optimize.py --embeddings`, which creates the project
 `AD TEP quickstart` (or reuses it) with its own copy of the `ad` blueprint, uploads the
 library and validation files and creates an optimization on that copy, with
-`output_score` and `output_embeddings` pinned (a package can't turn them on later). Newton embeds every window with
+`output_score` and `output_embeddings` pinned (a package can't turn them on later). The platform has Newton embed every window with
 Omega, fits the Anomaly Detection Agent (a nearest-neighbour model) on normal runs and
 scores each setting on validation. The repo ships no saved optimization for the mini
 dataset, so a first run starts a fresh one: 52 s on the free trial (2026-11-07: 10 s
-uploading, 40 s on Newton), plus any queue. If `fit/out/optimize_state.json` exists and
+uploading, 40 s on the platform), plus any queue. If `fit/out/optimize_state.json` exists and
 this key can reach it, the script just reports it (seconds); if not, it moves that file
 to `walkthrough_out/` and starts fresh. Answer questions from the talking points' "Only
 if asked" notes.
 
-## Step 3: Run (Newton, about a minute)
+## Step 3: Run (Archetype platform, about a minute)
 
 Four kinds of message, each shown exactly as written in the talking points' Step 3
 section, with nothing added before or after:
@@ -112,7 +115,7 @@ section, with nothing added before or after:
    the line ending "then draws two charts.", and in the same turn run
    `scripts/step3_run.py` in the background (it blocks until every run is downloaded).
 2. **Link.** As soon as the script prints a `console:` line, show the one line
-   "Running on Newton. Follow it live: <that link>", plain, as written.
+   "View live status in the console: <that link>", plain, as written.
 3. **Progress.** When its log shows `1/2 runs done`, show the one line "1 of 2 runs
    done." Not at `2/2`: the end follows. Skip it if you only see it once the script has
    exited.

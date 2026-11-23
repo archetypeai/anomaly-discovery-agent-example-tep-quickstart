@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 3 (Newton): promote the winning trial, package it, deploy the package in batch, and
+"""Step 3 (Archetype platform): promote the winning trial, package it, deploy the package in batch, and
 run a session over one normal run and one faulty run it has never seen.
 
     .venv/bin/python .claude/skills/tep-walkthrough/scripts/step3_run.py

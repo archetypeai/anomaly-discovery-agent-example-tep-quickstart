@@ -28,8 +28,16 @@ SAMPLE_H = 0.05        # one sample every 3 minutes
 RUN_H = 24.0           # every validation, test and delivery run is 24 h long
 
 
-def svg(width: int, height: int, title: str, desc: str, body: str) -> str:
-    """A standalone SVG. Text uses class "ts" so inline hosts theme it; fill is the fallback."""
+HEADING_H = 30         # room a visible heading adds above a chart
+
+
+def svg(width: int, height: int, title: str, desc: str, body: str, heading: str = "") -> str:
+    """A standalone SVG. Text uses class "ts" so inline hosts theme it; fill is the fallback.
+    `heading` is drawn as a visible title above the chart, which moves down to make room."""
+    if heading:
+        body = (f'<text class="th" x="16" y="20" fill="{GREY}" font-size="15" font-weight="500">{heading}</text>'
+                f'<g transform="translate(0,{HEADING_H})">{body}</g>')
+        height += HEADING_H
     return (f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img" '
             f'style="{FONT}"><title>{title}</title><desc>{desc}</desc>{body}</svg>')
 

@@ -88,12 +88,13 @@ def score_chart(runs):
     for n, c in (("normal_run", BLUE), ("fault_run", RED)):
         b.append(polyline([(X(h), Y(s)) for h, s in zip(runs[n]["hours"], runs[n]["score"])], c, 2))
     return svg(w, B + 30, "Anomaly score over time, normal vs faulty run",
-               "The normal run stays near 1; the faulty run climbs far past the threshold after the fault starts.", "".join(b))
+               "The normal run stays near 1; the faulty run climbs far past the threshold after the fault starts.", "".join(b),
+               heading="Anomaly Score from Newton Agent")
 
 
 def pca_chart(P, runs):
     """The two test runs' windows on their own 2 PCA axes, coloured by the agent's verdict:
-    blue = normal, red = anomaly. Circles are the normal run, squares the faulty run."""
+    blue = normal, red = anomaly. Both runs use the same mark: colour alone carries the verdict."""
     w, h, pad = 680, 470, 36
     allp = np.vstack(list(P.values()))
     (x0, y0), (x1, y1) = allp.min(0), allp.max(0)
@@ -102,21 +103,19 @@ def pca_chart(P, runs):
     px = lambda a: w / 2 + (a - cx) * k  # noqa: E731
     py = lambda b: (h - 44) / 2 + 6 - (b - cy) * k  # noqa: E731
     circle = lambda x, y, c: f'<circle cx="{x:.0f}" cy="{y:.0f}" r="3.6" fill="{c}" fill-opacity="0.85"/>'  # noqa: E731
-    square = lambda x, y, c: (f'<rect x="{x - 3.4:.0f}" y="{y - 3.4:.0f}" width="6.8" height="6.8" '  # noqa: E731
-                              f'fill="{c}" fill-opacity="0.85"/>')
     body = []
-    for name, mark in (("normal_run", circle), ("fault_run", square)):
-        body += [mark(px(a), py(b), RED if bad else BLUE)
+    for name in ("normal_run", "fault_run"):
+        body += [circle(px(a), py(b), RED if bad else BLUE)
                  for (a, b), bad in zip(P[name], runs[name]["anomaly"])]
-    legend = [("normal run", circle(0, 0, GREY)), ("faulty run (IDV 1)", square(0, 0, GREY)),
-              ("the agent said normal", circle(0, 0, BLUE)), ("the agent said anomaly", circle(0, 0, RED))]
+    legend = [("normal", circle(0, 0, BLUE)), ("anomaly", circle(0, 0, RED))]
     for i, (s, mark) in enumerate(legend):
-        lx, ly = pad + i * 160, h - 14
+        lx, ly = pad + i * 90, h - 14
         body += [f'<g transform="translate({lx + 4},{ly - 4})">{mark}</g>', text(lx + 14, ly, s)]
     return svg(w, h, "Map of the two new runs' windows",
                "Each dot is one 2.4-hour window, blue where the Anomaly Detection Agent said normal and red "
-               "where it said anomaly. The normal run's circles stay in one blue cluster; the faulty run's "
-               "squares start there, then turn red and move far away after the fault.", "".join(body))
+               "where it said anomaly. The normal run's windows stay in one blue cluster; the faulty run's "
+               "start there, then turn red and move far away after the fault.", "".join(body),
+               heading="Embeddings from Newton")
 
 
 def first_alarm(score, hours, n=3):

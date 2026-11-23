@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 2 (Newton): run fit/optimize.py, then summarise the winning trial.
+"""Step 2 (Archetype platform): run fit/optimize.py, then summarise the winning trial.
 
 fit/optimize.py resumes whatever fit/out/optimize_state.json names, which only works for
 a key in the same org on the same deployment. So first check a saved optimization, if
@@ -99,12 +99,21 @@ def end_text(summary: dict) -> str:
     template = tp.split("<!-- step2-end -->\n", 1)[1].split("<!-- /step2-end -->", 1)[0]
     win, *rest = summary["trials"]
     other = rest[0] if rest else {}
-    pct = lambda v: f"{v:.0%}" if v is not None else "–"          # noqa: E731
     two = lambda v: f"{v:.2f}" if v is not None else "–"          # noqa: E731
+    p, r = win.get("detection_precision"), win.get("detection_recall")
+    if p is None:
+        precision = "**Alarms:** no score came back for how many of its alarms were real."
+    elif p >= 0.995:
+        precision = "**No false alarms.** Every window it flagged really was a fault."
+    else:
+        precision = (f"**{p:.0%} of its alarms were real.** The rest were false alarms: "
+                     "normal windows it flagged by mistake.")
+    recall = ("**Faults caught:** no score came back." if r is None else
+              f"**It caught {r:.0%} of the fault windows**, about {round(r * 10)} in 10.")
+    pct = lambda v: f"{v:.0%}" if v is not None else "–"          # noqa: E731
     return template.format(
-        console=summary["console"],
-        k=win["values"]["n_neighbors"], f1=two(win.get("macro_f1")),
-        recall=pct(win.get("detection_recall")), precision=pct(win.get("detection_precision")),
+        console=summary["console"], precision_sentence=precision, recall_sentence=recall,
+        k=win["values"]["n_neighbors"], f1=two(win.get("macro_f1")), recall=pct(r), precision=pct(p),
         k2=other.get("values", {}).get("n_neighbors", "–"), f1_2=two(other.get("macro_f1")),
         recall_2=pct(other.get("detection_recall")), precision_2=pct(other.get("detection_precision")))
 
