@@ -92,30 +92,140 @@ def score_chart(runs):
                heading="Anomaly Score from Newton Agent")
 
 
+def _loops(F, t, step):
+    """Closed outlines of the region where the grid F >= t (marching squares; F is 0 on its
+    border, so every outline closes). Returns lists of (x, y) in pixels."""
+    ny, nx = F.shape
+    A = F >= t
+    pt, link = {}, {}
+
+    def edge(i, j, horiz):          # the crossing on the edge from (i, j) rightwards or downwards
+        key = (i, j, horiz)
+        if key not in pt:
+            i2, j2 = (i, j + 1) if horiz else (i + 1, j)
+            f = (t - F[i, j]) / (F[i2, j2] - F[i, j])
+            pt[key] = ((j + (j2 - j) * f) * step, (i + (i2 - i) * f) * step)
+        return key
+
+    for i in range(ny - 1):
+        for j in range(nx - 1):
+            tl, tr, br, bl = A[i, j], A[i, j + 1], A[i + 1, j + 1], A[i + 1, j]
+            case = tl * 8 + tr * 4 + br * 2 + bl
+            if case in (0, 15):
+                continue
+            T, R, B, L = (i, j, True), (i, j + 1, False), (i + 1, j, True), (i, j, False)
+            pairs = {1: [(L, B)], 2: [(B, R)], 3: [(L, R)], 4: [(T, R)], 6: [(T, B)], 7: [(L, T)],
+                     8: [(L, T)], 9: [(T, B)], 11: [(T, R)], 12: [(L, R)], 13: [(B, R)], 14: [(L, B)]}
+            if case in (5, 10):     # saddle: join through the middle only if the middle is inside
+                mid = F[i:i + 2, j:j + 2].mean() >= t
+                pairs[5] = [(L, T), (B, R)] if mid else [(L, B), (T, R)]
+                pairs[10] = [(L, B), (T, R)] if mid else [(L, T), (B, R)]
+            for e1, e2 in pairs[case]:
+                k1, k2 = edge(*e1), edge(*e2)
+                link.setdefault(k1, []).append(k2)
+                link.setdefault(k2, []).append(k1)
+    loops, seen = [], set()
+    for start in link:
+        if start in seen:
+            continue
+        loop, prev, cur = [], None, start
+        while cur not in seen:
+            seen.add(cur)
+            loop.append(pt[cur])
+            nxt = [n for n in link[cur] if n != prev] or link[cur]
+            prev, cur = cur, nxt[0]
+        if len(loop) > 3:
+            loops.append(loop)
+    return loops
+
+
+def _smooth_path(loop):
+    """A closed path through the middles of a loop's sides, its corners as curve handles."""
+    n = len(loop)
+    mid = [((loop[i][0] + loop[(i + 1) % n][0]) / 2, (loop[i][1] + loop[(i + 1) % n][1]) / 2) for i in range(n)]
+    d = [f"M{mid[-1][0]:.0f} {mid[-1][1]:.0f}"]
+    d += [f"Q{loop[i][0]:.0f} {loop[i][1]:.0f} {mid[i][0]:.0f} {mid[i][1]:.0f}" for i in range(n)]
+    return "".join(d) + "Z"
+
+
+def _place(ax, ay, tw, th, dots, taken, w, H, radii):
+    """Where to centre a tw x th tag near (ax, ay): the closest spot that is inside the
+    chart, off every other tag and as clear of the dots as it can be."""
+    best, best_score = (ax, ay + radii[0]), -1e9
+    for r in radii:
+        for ang in np.arange(0, 360, 30):
+            cx, cy = ax + r * np.cos(np.radians(ang)), ay + r * np.sin(np.radians(ang))
+            x0, y0, x1, y1 = cx - tw / 2, cy - th / 2, cx + tw / 2, cy + th / 2
+            if x0 < 4 or y0 < 4 or x1 > w - 4 or y1 > H - 4:
+                continue
+            if any(x0 < u1 + 6 and u0 - 6 < x1 and y0 < v1 + 6 and v0 - 6 < y1 for u0, v0, u1, v1 in taken):
+                continue
+            gap = np.hypot(np.maximum.reduce([x0 - dots[:, 0], dots[:, 0] - x1, np.zeros(len(dots))]),
+                           np.maximum.reduce([y0 - dots[:, 1], dots[:, 1] - y1, np.zeros(len(dots))])).min()
+            score = min(gap, 10) - 0.02 * r
+            if score > best_score:
+                best, best_score = (cx, cy), score
+    taken.append((best[0] - tw / 2, best[1] - th / 2, best[0] + tw / 2, best[1] + th / 2))
+    return best
+
+
 def pca_chart(P, runs):
-    """The two test runs' windows on their own 2 PCA axes, coloured by the agent's verdict:
-    blue = normal, red = anomaly. Both runs use the same mark: colour alone carries the verdict."""
-    w, h, pad = 680, 470, 36
+    """The two test runs' windows on their own 2 PCA axes, grouped by the agent's verdict:
+    blue = normal, red = anomaly. Each group is drawn as its windows over soft density
+    contours (where its windows crowd, the colour deepens) with a name tag."""
+    w, h, pad, step, sigma, strip = 680, 470, 56, 8, 22, 40      # strip: the legend's row at the bottom
+    H = h - strip
+    levels = (0.07, 0.16, 0.28, 0.42, 0.58, 0.76)      # contour heights, as shares of a group's peak
     allp = np.vstack(list(P.values()))
     (x0, y0), (x1, y1) = allp.min(0), allp.max(0)
-    span = max(x1 - x0, (y1 - y0) * (w - 2 * pad) / (h - 2 * pad - 44))
+    span = max(x1 - x0, (y1 - y0) * (w - 2 * pad) / (H - 2 * pad))
     k, cx, cy = (w - 2 * pad) / (span * 1.06), (x0 + x1) / 2, (y0 + y1) / 2
-    px = lambda a: w / 2 + (a - cx) * k  # noqa: E731
-    py = lambda b: (h - 44) / 2 + 6 - (b - cy) * k  # noqa: E731
-    circle = lambda x, y, c: f'<circle cx="{x:.0f}" cy="{y:.0f}" r="3.6" fill="{c}" fill-opacity="0.85"/>'  # noqa: E731
-    body = []
-    for name in ("normal_run", "fault_run"):
-        body += [circle(px(a), py(b), RED if bad else BLUE)
-                 for (a, b), bad in zip(P[name], runs[name]["anomaly"])]
-    legend = [("normal", circle(0, 0, BLUE)), ("anomaly", circle(0, 0, RED))]
-    for i, (s, mark) in enumerate(legend):
-        lx, ly = pad + i * 90, h - 14
-        body += [f'<g transform="translate({lx + 4},{ly - 4})">{mark}</g>', text(lx + 14, ly, s)]
+    to_px = lambda p: np.column_stack([w / 2 + (p[:, 0] - cx) * k, H / 2 - (p[:, 1] - cy) * k])  # noqa: E731
+    xy = to_px(allp)
+    bad = np.concatenate([runs[n]["anomaly"] for n in P]).astype(bool)
+
+    gy, gx = np.mgrid[0:H // step + 1, 0:w // step + 1] * step
+    body = [f'<defs><pattern id="dotgrid" width="20" height="20" patternUnits="userSpaceOnUse">'
+            f'<circle cx="10" cy="10" r="1" fill="{GREY}" fill-opacity="0.35"/></pattern></defs>'
+            f'<rect x="0" y="0" width="{w}" height="{H}" fill="url(#dotgrid)"/>']
+    groups = []
+    for label, colour, pts in (("NORMAL OPERATION", BLUE, xy[~bad]), ("ANOMALY", RED, xy[bad])):
+        if not len(pts):
+            continue
+        F = np.exp(-((gx[..., None] - pts[:, 0]) ** 2 + (gy[..., None] - pts[:, 1]) ** 2) / (2 * sigma ** 2)).sum(-1)
+        F[[0, -1], :] = 0
+        F[:, [0, -1]] = 0
+        d = "".join(f'<path d="{"".join(_smooth_path(lp) for lp in _loops(F, F.max() * lv, step))}"/>'
+                    for lv in levels)
+        body.append(f'<g fill="{colour}" fill-opacity="0.1" fill-rule="evenodd">{d}</g>')
+        iy, ix = np.unravel_index(F.argmax(), F.shape)
+        groups.append((label, colour, ix * step, iy * step))
+
+    for colour, pts in ((BLUE, xy[~bad]), (RED, xy[bad])):
+        body.append(f'<g fill="{colour}" fill-opacity="0.9">'
+                    + "".join(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="3"/>' for x, y in pts) + "</g>")
+
+    taken = []
+    for label, colour, gx0, gy0 in groups:  # a name tag beside the group's densest spot
+        tw = 9 * len(label) + 22
+        tx, ty = _place(gx0, gy0, tw, 26, xy, taken, w, H, (44, 58, 72, 90))
+        body.append(
+            f'<rect x="{tx - tw / 2:.0f}" y="{ty - 13:.0f}" width="{tw}" height="26" rx="6" style="fill:var(--surface-2,#ffffff)"/>'
+            f'<rect x="{tx - tw / 2:.0f}" y="{ty - 13:.0f}" width="{tw}" height="26" rx="6" fill="{colour}" fill-opacity="0.12" stroke="{colour}"/>'
+            f'<text x="{tx:.0f}" y="{ty + 5:.0f}" text-anchor="middle" fill="{colour}" font-size="14" letter-spacing="1" '
+            f'style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{label}</text>')
+
+    ly, lx = h - 14, 16
+    for s, mark in (("normal", f'<circle cx="4" cy="-4" r="3.6" fill="{BLUE}"/>'),
+                    ("anomaly", f'<circle cx="4" cy="-4" r="3.6" fill="{RED}"/>')):
+        body += [f'<g transform="translate({lx},{ly})">{mark}</g>', text(lx + 16, ly, s)]
+        lx += 16 + 6.4 * len(s) + 26
     return svg(w, h, "Map of the two new runs' windows",
                "Each dot is one 2.4-hour window, blue where the Anomaly Detection Agent said normal and red "
-               "where it said anomaly. The normal run's windows stay in one blue cluster; the faulty run's "
-               "start there, then turn red and move far away after the fault.", "".join(body),
-               heading="Embeddings from Newton")
+               "where it said anomaly, over soft contours that deepen where a group's windows crowd. The "
+               "normal windows form one tight blue cluster; the anomaly windows spread far away from it.",
+               "".join(body), heading="Embeddings from Newton",
+               subheading="Each dot is 2.4 hours of plant data. Dots close together behaved alike.")
 
 
 def first_alarm(score, hours, n=3):

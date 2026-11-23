@@ -29,15 +29,19 @@ RUN_H = 24.0           # every validation, test and delivery run is 24 h long
 
 
 HEADING_H = 30         # room a visible heading adds above a chart
+SUBHEADING_H = 18      # and a one-line subheading under it
 
 
-def svg(width: int, height: int, title: str, desc: str, body: str, heading: str = "") -> str:
+def svg(width: int, height: int, title: str, desc: str, body: str, heading: str = "", subheading: str = "") -> str:
     """A standalone SVG. Text uses class "ts" so inline hosts theme it; fill is the fallback.
-    `heading` is drawn as a visible title above the chart, which moves down to make room."""
+    `heading` (and `subheading`, a one-line explanation) are drawn above the chart, which
+    moves down to make room."""
     if heading:
-        body = (f'<text class="th" x="16" y="20" fill="{GREY}" font-size="15" font-weight="500">{heading}</text>'
-                f'<g transform="translate(0,{HEADING_H})">{body}</g>')
-        height += HEADING_H
+        top = HEADING_H + (SUBHEADING_H if subheading else 0)
+        sub = (f'<text class="ts" x="16" y="39" fill="{GREY}" font-size="12">{subheading}</text>' if subheading else "")
+        body = (f'<text class="th" x="16" y="20" fill="{GREY}" font-size="15" font-weight="500">{heading}</text>{sub}'
+                f'<g transform="translate(0,{top})">{body}</g>')
+        height += top
     return (f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img" '
             f'style="{FONT}"><title>{title}</title><desc>{desc}</desc>{body}</svg>')
 
