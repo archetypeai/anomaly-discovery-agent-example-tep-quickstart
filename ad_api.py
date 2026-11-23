@@ -186,7 +186,7 @@ def request(method: str, url: str, body=None, headers=None, raw: bool = False,
                 payload = resp.read()
                 return payload if raw else json.loads(payload or b"null")
         except urllib.error.HTTPError as e:
-            sys.exit(f"{method} {url} failed ({e.code}): {e.read().decode(errors='replace')}")
+            sys.exit(_http_failure(f"{method} {url}", url, e))
         except (urllib.error.URLError, TimeoutError, ConnectionError,
                 http.client.HTTPException) as e:
             # http.client.IncompleteRead / RemoteDisconnected: the body was cut off
@@ -198,6 +198,21 @@ def request(method: str, url: str, body=None, headers=None, raw: bool = False,
             print(f"  network error ({e}); retrying in {wait}s "
                   f"[{attempt + 1}/{retries}]")
             time.sleep(wait)
+
+
+def _http_failure(what: str, url: str, e: urllib.error.HTTPError) -> str:
+    """The message for a failed call. A 401 or 403 also says which deployment refused the
+    key and what to do: a key only works on the deployment that issued it, and the usual
+    cause is a free-trial key sent to production or the other way round."""
+    msg = f"{what} failed ({e.code}): {e.read().decode(errors='replace')}"
+    if e.code in (401, 403):
+        host = re.sub(r"^https?://([^/]+).*$", r"\1", url)
+        refused = "rejected your API key" if e.code == 401 else "refused this request for your API key"
+        msg += (f"\n{host} {refused}. A key only works on the deployment that issued it "
+                "(production or the free trial). Run ./setup.sh: it finds the deployment your key "
+                "belongs to and sets ATAI_API_ENDPOINT in .env. If it says every deployment rejected "
+                "the key, check the key itself.")
+    return msg
 
 
 def upload_file(path: str, rename: str | None = None) -> dict:
@@ -219,7 +234,7 @@ def upload_file(path: str, rename: str | None = None) -> dict:
         with urllib.request.urlopen(req) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as e:
-        sys.exit(f"upload of {path} failed ({e.code}): {e.read().decode(errors='replace')}")
+        sys.exit(_http_failure(f"upload of {path}", req.full_url, e))
 
 
 def poll_session(session_id: str, timeout_s: int, interval_s: int = 20) -> str:

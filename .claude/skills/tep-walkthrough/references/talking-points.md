@@ -204,6 +204,9 @@ View live status in the console: {deployment_link}
 <!-- /step3-end -->
 
 Only if asked:
+- `sampling-rate variance` warnings in a run's log or the console are expected: each test
+  file joins its runs with a one-day gap, and the platform marks any window across a gap
+  invalid on purpose, so no window mixes two runs.
 - A sustained alarm is 3 windows in a row over the threshold, so one spike doesn't count.
   Expect the faulty run's first alarm about 1-1.5 h after the fault.
 - A normal run can cross the line now and then: that's a false alarm. The threshold is a

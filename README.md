@@ -81,6 +81,10 @@ cd anomaly-discovery-agent-example-tep-quickstart
 prompt. It finds `ATAI_API_ENDPOINT` by asking production and the free trial which one
 accepts the key, so the same command works for both. Safe to rerun.
 
+**Python 3.10 or newer** is needed (last tested on 3.12). macOS's built-in `python3` is
+3.9, which is too old: install a newer one first (`brew install python`). `setup.sh` uses
+the newest Python it finds and says so if there is none.
+
 Then run every script from the repo root with the environment active
 (`source .venv/bin/activate`). Each script saves its ids in `fit/out/` and resumes from
 them; to start again from scratch, move `fit/out/` and `eval_out/` aside.
@@ -162,6 +166,11 @@ python3 fit/deliver.py
 
 **Expect** (free trial, 2026-11-07, about 1 min): `bundle bnd_…`, `agent agt_…`,
 `verified: output covers the full input (100.0%)`, then `1 outputs in eval_out/delivery`.
+The run's log may also show `sampling-rate variance` warnings, a few per boundary between
+joined runs (for example `5 windows detected with a sampling-rate variance of 4189.0%,
+above the tolerance of 5.0%`). They are expected: those windows straddle the one-day gap
+between two runs and are marked invalid on purpose, so no window mixes two runs. Don't
+raise `sample_rate_interval_tolerance` to silence them.
 **Writes:** `eval_out/delivery/ad-output-delivery.csv`, `fit/out/deliver_state.json`.
 
 ## Stage 7: score the delivery
