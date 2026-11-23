@@ -5,7 +5,9 @@ fit/optimize.py resumes whatever fit/out/optimize_state.json names, which only w
 a key in the same org on the same deployment. So first check a saved optimization, if
 there is one, is reachable with this key:
   * none       -> fit/optimize.py starts a fresh optimization in your org;
-  * reachable  -> fit/optimize.py just reports it (seconds);
+  * reachable  -> fit/optimize.py just reports it (seconds), unless it was made without
+                  `output_embeddings` (plain fit/optimize.py): then another one is added,
+                  since Step 3's map needs the embeddings and a package can't turn them on;
   * not        -> the file is moved to walkthrough_out/ and a fresh one starts.
 Prints the console link as soon as the optimization exists, then the winner, its scores
 and the link as JSON (also walkthrough_out/step2.json), then the talking points' Step 2
@@ -42,6 +44,8 @@ def main() -> int:
     # read the file directly: atai.load_state exits outright on another deployment's state
     state = json.loads(path.read_text()) if path.exists() else {}
     fresh = bool(state.get("runs")) and not reachable(state)
+    add = (bool(state.get("runs")) and not fresh and
+           not state["runs"][-1]["request"]["overrides"]["values"].get("output_embeddings"))
     if fresh:
         OUT.mkdir(exist_ok=True)
         shutil.move(str(path), OUT / "repo_optimize_state.json")
@@ -49,7 +53,10 @@ def main() -> int:
               "walkthrough_out/repo_optimize_state.json; starting a fresh one", flush=True)
     # Stream fit/optimize.py's log, adding the console link as soon as the optimization id
     # appears, and dropping its "next: fit/test.py" hint (in the walkthrough, Step 3 is next).
-    proc = subprocess.Popen([sys.executable, "-u", str(REPO / "fit" / "optimize.py")], cwd=REPO,
+    if add:
+        print("the saved optimization has no embeddings in its output: adding one that does", flush=True)
+    cmd = [sys.executable, "-u", str(REPO / "fit" / "optimize.py"), "--embeddings"] + (["--new"] if add else [])
+    proc = subprocess.Popen(cmd, cwd=REPO,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     linked = False
     for line in proc.stdout:
@@ -70,9 +77,10 @@ def main() -> int:
     ranked = sorted((t for t in trials if t.get("metrics_report")),
                     key=lambda t: t.get("objective_value") or -1, reverse=True)
     summary = {
-        "optimization": opt_id, "status": opt["status"], "fresh_run": fresh or not state.get("runs"),
+        "optimization": opt_id, "status": opt["status"], "fresh_run": fresh or add or not state.get("runs"),
         "console": f"{console_base(api_base())}/optimizations/{opt_id}",
         "pinned": {k: v for k, v in pinned.items() if k not in ("data_columns", "timestamp_column")},
+        "project": load_state(state_path("project")).get("project"),
         "trials": [{"id": t["id"], "values": t["trial_values"]["values"],
                     **{k: round(v, 4) for k, v in aggregate(t["metrics_report"]).items()
                        if k in ("macro_f1", "foreground_macro_f1", "detection_recall", "detection_precision")}}

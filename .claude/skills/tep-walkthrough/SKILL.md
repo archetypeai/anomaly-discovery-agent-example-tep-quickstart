@@ -91,8 +91,10 @@ nothing added before or after:
    script fills the talking points' end text in from this run (both settings' scores, the
    console link). Then wait for "next".
 
-What the script does: it runs `fit/optimize.py`, which uploads the library and validation
-files and creates an optimization on the `ad` blueprint. Newton embeds every window with
+What the script does: it runs `fit/optimize.py --embeddings`, which creates the project
+`AD TEP quickstart` (or reuses it) with its own copy of the `ad` blueprint, uploads the
+library and validation files and creates an optimization on that copy, with
+`output_score` and `output_embeddings` pinned (a package can't turn them on later). Newton embeds every window with
 Omega, fits the Anomaly Detection Agent (a nearest-neighbour model) on normal runs and
 scores each setting on validation. The repo ships no saved optimization for the mini
 dataset, so a first run starts a fresh one: 52 s on the free trial (2026-11-07: 10 s
@@ -123,9 +125,10 @@ If you can't run the script in the background, run it in the foreground and skip
 link and progress messages: the end text carries the link.
 
 What the scripts do: `step3_run.py` promotes Step 2's winning trial to a blueprint
-(reusing it if already promoted; no evaluation), creates one bundle with `output_score`
-and `output_embeddings` on, and runs 2 batch agents at once: the first normal run and
-the IDV 1 run from `tep_test.csv` with labels removed. 0.8 min on the free trial, 2026-11-07. If Step 2 has a new
+(reusing it if already promoted; no evaluation), packages it, deploys the package as
+`batch`, and runs 2 sessions on that deployment at once: the first normal run and
+the IDV 1 run from `tep_test.csv` with labels removed. 0.8 min on the free trial, 2026-11-07
+(measured with bundles, before Agent Lifecycle 2.0; not yet rerun). If Step 2 has a new
 optimization since the last Step 3, it moves the old Step 3 outputs aside and starts
 over. `step3_charts.py` draws a 2-D map of the two test
 runs' windows (PCA fitted on those windows' Omega embeddings plus their per-sensor

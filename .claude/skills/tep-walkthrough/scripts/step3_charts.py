@@ -164,7 +164,7 @@ def end_text(s: dict) -> str:
     map_sentence = (f"The agent marked {nr['red']} of the normal run's {nr['n']} windows red, and "
                     f"{fr['red_after']} of the faulty run's {fr['n_after']} windows after the fault.")
     links = json.loads((DIR / "links.json").read_text())
-    return template.format(map_sentence=map_sentence, score_sentence=score, bundle_link=links["bundle"])
+    return template.format(map_sentence=map_sentence, score_sentence=score, deployment_link=links["deployment"])
 
 if __name__ == "__main__":
     main()

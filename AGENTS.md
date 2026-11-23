@@ -31,5 +31,5 @@ an overview (Step 0), then three steps (data, build, run) with charts, pausing f
 - **Saved runs:** scripts write state to `fit/out/` and `eval_out/` (both gitignored) and
   resume from the ids in them.
 - **Platform cost:** the stages create jobs on Newton under the user's key. Run them when
-  asked, and say how long they'll take first. `fit/cleanup.py --yes` deletes the agents
-  and bundles they leave.
+  asked, and say how long they'll take first. `fit/cleanup.py --yes` deletes the sessions,
+  deployments and packages they leave.

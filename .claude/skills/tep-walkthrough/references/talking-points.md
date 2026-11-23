@@ -15,8 +15,8 @@ Step 2 and 95 min for Step 3's agent runs on the free trial.
 | 0 · Setup | Claude Code (clone, LFS, venv) | 1-3 min | 1-3 min |
 | 1 · Data | Claude Code, locally | seconds | seconds |
 | 2 · Build | Newton: Optimizations API | ~50 s (10 s upload, 40 s fit), plus any queue | not yet timed |
-| 3 · Promote + bundle | Newton | seconds | seconds |
-| 3 · 2 agent runs | Newton: batch agents, both at once | ~1 min | not yet timed |
+| 3 · Promote, package, deploy | Newton | seconds | seconds |
+| 3 · 2 sessions | Newton: one batch session per test run, both at once | ~1 min (measured with bundles, before Agent Lifecycle 2.0) | not yet timed |
 | 3 · Charts | Claude Code: PCA and drawing | seconds | seconds |
 
 Platform times vary with load. The free trial runs on CPU, allows 3 jobs per org at
@@ -30,7 +30,7 @@ only reachable for keys in the repo authors' org; everyone else gets a fresh one
 | Stores the uploaded files | Reads the repo's CSVs and manifest |
 | Embeds every window with Omega 1.5, Archetype's pretrained sensor model (768 numbers per sensor per window) | Cuts the two test runs out of `tep_test.csv` and removes their labels |
 | Fits the Anomaly Detection Agent (per-sensor features + embeddings, PCA, Local Outlier Factor) on normal runs only, and scores each setting on validation | Recomputes the per-sensor features for the map |
-| Promotes the winning trial to a reusable blueprint; creates bundles; runs batch agents and returns per-window scores, labels and embeddings | Fits the 2-D PCA and draws every chart |
+| Promotes the winning trial to a reusable blueprint; packages it, deploys the package in batch and runs a session per file, returning per-window scores, labels and embeddings | Fits the 2-D PCA and draws every chart |
 
 The key point: the model, the fitted Anomaly Detection Agent and the scoring live on Newton and are
 reused by anything that calls it (batch runs, the Evals API, serving one window per
@@ -90,7 +90,7 @@ Before running the script, say this, and no more:
 
 **What it does:** Newton, Archetype AI's platform, learns what normal looks like from the training file, tries 2 settings on the validation file, and keeps the one that best tells normal from faulty. About a minute on the free trial, longer if Newton is busy.
 
-- **On Newton:** stores the 2 files, turns every 2.4-hour window into a fingerprint with Omega (Archetype's pretrained sensor model), fits the Anomaly Detection Agent on normal runs only, and scores each setting.
+- **On Newton:** creates a project, `AD TEP quickstart`, that holds everything this walkthrough makes; stores the 2 files, turns every 2.4-hour window into a fingerprint with Omega (Archetype's pretrained sensor model), fits the Anomaly Detection Agent on normal runs only, and scores each setting.
 - **On this machine:** starts the job and reads back the results.
 
 As soon as the script prints the console link, say this, and no more:
@@ -125,6 +125,10 @@ Only if asked:
   compressed to 16 numbers with PCA.
 - Macro-F1 averages how well it does on normal windows and on fault windows, so neither
   can hide the other.
+- A project is where Newton keeps an agent's parts together: the blueprint it starts
+  from (a copy of Archetype's `ad` blueprint), the optimization, the promoted blueprint,
+  and in Step 3 its package, deployment and sessions. The script creates the project
+  once and reuses it on later runs; it shows under Projects in the console.
 - Only k (the number of neighbours) is searched. The other settings (window 48, step 8,
   PCA 16, threshold 1.215, ...) were chosen earlier on the full dataset.
 - Expect k = 10 to win (macro-F1 0.884 vs 0.853, free trial 2026-11-07); precision 1.00
@@ -138,7 +142,7 @@ Before running the script, say this, and no more:
 
 **What it does:** Newton runs the Anomaly Detection Agent from Step 2 on data it has never seen, and scores every 2.4-hour window: the higher the score, the less it looks like normal. About a minute on the free trial, longer if Newton is busy.
 
-- **On Newton:** saves Step 2's winning setting as a reusable Anomaly Detection Agent, then runs it on 2 test runs it has never seen, both at once: one normal and one with fault IDV 1, with their answers removed. They show whether it catches the fault.
+- **On Newton:** saves Step 2's winning setting as a reusable Anomaly Detection Agent in the project, deploys it, then runs it on 2 test runs it has never seen, both at once: one normal and one with fault IDV 1, with their answers removed. They show whether it catches the fault.
 - **On this machine:** prepares those inputs, then draws two charts.
 
 As soon as the script prints a `console:` line, say this, and no more:
@@ -160,7 +164,7 @@ Show the map, then the score chart, then that file exactly, and no more.
 - **Map (first chart above):** each mark is one 2.4-hour window, circles for the normal run and squares for the faulty run; blue where the agent said normal, red where it said anomaly. {map_sentence}
 - **Anomaly score (second chart above):** {score_sentence}
 
-Console: {bundle_link}
+Console: {deployment_link}
 
 **That's the quickstart.** You built an Anomaly Detection Agent from normal runs only, and ran it on runs it had never seen.
 <!-- /step3-end -->
@@ -178,4 +182,8 @@ Only if asked:
 - Each window's fingerprint is Omega's embedding of every sensor (about 25,000 numbers)
   plus 4 numbers per sensor. The map's two axes keep only ~8% of the variation each; the
   Anomaly Detection Agent itself uses 16 dimensions.
+- In Step 3 Newton makes three things in the project: a package (the promoted blueprint
+  with its models fixed), a batch deployment of that package, and one session per test
+  run. A package takes no settings of its own, so the embeddings the map needs are
+  switched on in Step 2's optimization.
 - The per-run console links are in `walkthrough_out/step3/links.json`.

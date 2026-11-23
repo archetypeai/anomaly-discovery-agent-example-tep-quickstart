@@ -65,6 +65,9 @@ def main() -> int:
     ap.add_argument("--features", default=d["feature_names"])
     ap.add_argument("--primary", default="anomaly.macro_f1")
     ap.add_argument("--trials", type=int, default=d["trials"])
+    ap.add_argument("--embeddings", action="store_true",
+                    help="also pin output_embeddings: every run of the promoted blueprint then returns "
+                         "each window's Omega embeddings (large outputs; the walkthrough's map needs them)")
     ap.add_argument("--new", action="store_true",
                     help="add another optimization; fit/test.py takes the best trial of all")
     args = ap.parse_args()
@@ -84,6 +87,7 @@ def main() -> int:
                 # output_score is pinned here because a package can't turn an
                 # output on: the promoted blueprint is what every later stage runs.
                 "overrides": {"values": {**base_values(m), **pinned, "output_score": True,
+                                         **({"output_embeddings": True} if args.embeddings else {}),
                                          "feature_names": values(args.features, str)}},
                 "search_space": {"parameters": space}, "budget": {"max_trials": args.trials},
                 "training_examples": [example(p.stem, ids[p], NORMAL) for p in lib],
