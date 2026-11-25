@@ -6,14 +6,9 @@
 
 It starts from the packages the stages recorded in fit/out/:
 
-  Stage 8   fit/serve.py's, if it was killed before it could delete them
-            (serve_state.json).
-  Stage 9   the serving bridge's, if app-serving/ was killed before it could
-            delete them (app_serving_state.json): a serving deployment holds a
-            worker until it is stopped. And fit/library_embeddings.py's
-            (library_state.json; the embeddings are already on disk).
-  Stage 6   the delivery's (deliver_state.json). Its outputs are already in
-            eval_out/delivery/.
+  Stage 6       the delivery's (deliver_state.json). Its outputs are already in
+                eval_out/delivery/.
+  Walkthrough   Step 3's (walkthrough_out/step3/state.json).
 
 For each package it lists the package's deployments and their sessions, so a
 session or deployment a stage never got to record is found too. Sessions go
@@ -23,16 +18,16 @@ it is deleted, and an id already gone counts as done. Progress goes to
 fit/out/cleanup_state.json, so a rerun picks up where it stopped.
 
 What stays: the project, its copy of `ad`, the promoted blueprint, and the
-optimization and eval the README cites; fit/app_blueprint.py's blueprint and
-optimization too. After a cleanup, rerunning fit/deliver.py needs
+optimization and eval. After a cleanup, rerunning fit/deliver.py needs
 fit/out/deliver_state.json moved aside, since its package is gone.
 """
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
-from atai import load_dotenv, load_state, log, request, save_state, state_path
+from atai import REPO, load_dotenv, load_state, log, request, save_state, state_path
 from ad_api import TERMINAL, deployments_url, packages_url, sessions_url
 
 URLS = {"sessions": sessions_url, "deployments": deployments_url, "packages": packages_url}
@@ -60,10 +55,12 @@ def main() -> int:
     args = ap.parse_args()
     load_dotenv()
 
-    states = {"serve": "Stage 8", "app_serving": "Stage 9", "library": "Stage 9", "deliver": "Stage 6"}
+    walk_path = REPO / "walkthrough_out" / "step3" / "state.json"
+    walk = json.loads(walk_path.read_text()) if walk_path.exists() else {}
+    packages = {"Stage 6": load_state(state_path("deliver")).get("package"),
+                "Walkthrough": walk.get("package")}
     targets = []                                   # (stage, kind, id), each before what it holds
-    for name, stage in states.items():
-        pkg = load_state(state_path(name)).get("package")
+    for stage, pkg in packages.items():
         if not pkg or not call("GET", "packages", pkg):
             continue
         deployments = listing("deployments", package_id=pkg)
@@ -75,7 +72,7 @@ def main() -> int:
     done = load_state(done_path)
     gone = set(done.get("deleted", []))
     todo = [t for t in targets if t[2] not in gone]
-    for stage in ("Stage 9", "Stage 8", "Stage 6"):
+    for stage in ("Stage 6", "Walkthrough"):
         mine = [t for t in todo if t[0] == stage]
         print(f"{stage}: " + ", ".join(f"{sum(t[1] == kind for t in mine)} {kind}" for kind in URLS) + " to delete")
     test = load_state(state_path("test"))
@@ -110,9 +107,6 @@ def main() -> int:
             print(f"  {kind}/{obj}: {why}")
         print("a session holds its deployment, and a deployment its package: "
               "delete what holds them, then rerun")
-    else:
-        for name in ("serve", "app_serving"):
-            state_path(name).unlink(missing_ok=True)
     log("done")
     return 0
 
