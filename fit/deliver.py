@@ -4,14 +4,16 @@
     python3 fit/deliver.py
     python3 fit/deliver.py --parallel 3   # 3 sessions at once (the free trial's default)
 
-A package of fit/test.py's promoted blueprint, which already holds the Anomaly
-Detection Agent and every value the trial pinned, `output_score` included. A package
-adds nothing (it has no values), so delivery runs at the trial's own step 8, the
-step Optimize chose and the eval scored: one score every 8 samples (24 minutes).
-The package is deployed as `batch`, and a session on that deployment runs over
-each delivery file. The input is data/roles/delivery/tep_delivery.csv (4 runs:
-2 normal, IDV 1, IDV 10), which carries no label column: the labels stay in
-data/roles/labels/ until Stage 7 reads them.
+A package of fit/test.py's promoted blueprint, which already holds the detector
+and every value the trial pinned, `output_score` included. A package adds nothing
+(it has no values), so delivery runs at the trial's own step 8, the step Optimize
+chose and the eval scored: one score every 8 samples (24 minutes). The package is
+deployed as `batch`, and a session on that deployment runs over each delivery
+chunk and val_normal, all five at once. The inputs are data/roles/delivery/, which carry no label column: the labels
+stay in data/roles/labels/ until Stage 7 reads them.
+
+val_normal (ten fault-free runs from the validation role) is delivered too:
+Stage 7 sets the 1%-false-alarm threshold from its scores.
 
 Writes eval_out/delivery/ad-output-*.csv and fit/out/deliver_state.json (resume:
 finished outputs are skipped, started sessions are polled, not started again).
@@ -75,7 +77,7 @@ def main() -> int:
 
     files = [REPO / "data" / "roles" / f["file"] for f in m["delivery"]]
     if not files:
-        raise SystemExit("no delivery files in data/roles/manifest.json")
+        raise SystemExit("no delivery files in the manifest: run prep/build_roles.py")
     OUT.mkdir(parents=True, exist_ok=True)
 
     def one(src: Path) -> Path | None:

@@ -2,14 +2,15 @@
 """Stage 7 — score downloaded AD outputs against the TEP labels. Offline.
 
     python3 fit/evaluate_detection.py \
-        --platform-output eval_out/delivery/ad-output-delivery.csv --threshold 1.215
-
-(fit/score_delivery.py calls it this way.)
+        --platform-output eval_out/ad-output-eval_slice_02.csv \
+                          eval_out/ad-output-eval_slice_03.csv \
+                          eval_out/ad-output-eval_slice_04.csv \
+        --val-output eval_out/ad-output-val_normal.csv --threshold 1.5
 
 No API key, no network. Reads the platform's per-window rows
 (`finish_timestamp, start_timestamp, predicted_label, invalid, anomaly_score`),
-drops INVALID windows (seams), joins each window to the label of its END row
-(data/roles/labels/tep_<role>_labels.csv), and reports, per IDV, pooled over files:
+drops INVALID windows (seams), joins each window to the label of its END row,
+and reports — per IDV, pooled over slices —
 
     detection rate    fraction of post-onset windows over the threshold
     sims detected     runs with a sustained crossing (`--sustain` consecutive)
@@ -18,8 +19,11 @@ drops INVALID windows (seams), joins each window to the label of its END row
 
 plus the false-alarm rate on normal windows (fault-free sims + pre-onset rows).
 
-With `--val-output` (the output for a normal-only file), a second threshold is
-reported too, calibrated on it to a target false-alarm rate (`--far`).
+Two thresholds are reported when `--val-output` is given: the detector's own
+(`--threshold`, the value baked into the artifact) and one CALIBRATED on the
+held-out normal run to a target false-alarm rate (`--far`). The second is the
+literature's convention and is what makes the PCA side-by-side fair — both
+detectors are then read at the same FAR.
 """
 from __future__ import annotations
 
@@ -36,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from tep_common import (REPO, calibrate_threshold, format_table, jsonable, load_baseline,
                         load_labels, pool, series_metrics)
 
-NAME_RE = re.compile(r"ad-output-(\w+)$")   # ad-output-delivery -> tep_delivery_labels.csv
+NAME_RE = re.compile(r"(eval_slice_\d\d|val_normal|full_chunk_\d+)")
 
 
 def read_output(path: Path):
@@ -57,8 +61,8 @@ def read_output(path: Path):
 def target_of(path: Path) -> str:
     m = NAME_RE.search(path.stem)
     if not m:
-        raise SystemExit(f"cannot infer the role from '{path.name}': name outputs "
-                         f"ad-output-<role>.csv, e.g. ad-output-delivery.csv")
+        raise SystemExit(f"cannot infer the slice from '{path.name}' — name outputs "
+                         f"like ad-output-eval_slice_02.csv")
     return m.group(1)
 
 
@@ -66,9 +70,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--platform-output", nargs="+", type=Path, required=True)
     ap.add_argument("--val-output", type=Path, default=None,
-                    help="AD output for a normal-only file: calibrates a FAR threshold")
+                    help="AD output for tep_val_normal.csv — calibrates the FAR threshold")
     ap.add_argument("--threshold", type=float, default=None,
-                    help="the Anomaly Detection Agent's own threshold (from the artifact / fit record)")
+                    help="the detector's own threshold (from the artifact / fit record)")
     ap.add_argument("--far", type=float, default=0.01)
     ap.add_argument("--sustain", type=int, default=3)
     ap.add_argument("--baseline", type=Path, default=None,
@@ -104,7 +108,7 @@ def main() -> int:
             print(f"{args.val_output.name}: {len(vscore):,} windows, {vinv} invalid; FAR at "
                   f"threshold {args.threshold} = {val_far*100:.2f}%; threshold for "
                   f"{args.far:.0%} FAR = {cal:.3f}")
-        # An Anomaly Detection Agent whose baked-in threshold IS the calibrated one (Stage 5) would print
+        # A detector whose baked-in threshold IS the calibrated one (Stage 5) would print
         # the same table twice; report the second only when it differs.
         if abs(cal - args.threshold) > 1e-3:
             runs["calibrated"] = cal
