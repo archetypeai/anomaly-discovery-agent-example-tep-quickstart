@@ -3,6 +3,16 @@
 .env.*
 !.env.example
 
+# Model weights
+*.safetensors
+
+# Raw data: prep/download.py fetches it from Harvard Dataverse (5.7 GB of CSV)
+data/raw/
+
+
+# Logs
+fit/out/*.log
+
 # Python
 __pycache__/
 *.py[cod]
@@ -23,9 +33,3 @@ fit/out/serve_state.json
 
 # Stage 5 on the free trial: the test slices cut into pieces, rebuilt by fit/test.py
 fit/out/test-pieces/
-# Run outputs: the ids and results of your own runs
-fit/out/
-eval_out/
-
-# The Claude Code walkthrough skill (.claude/skills/tep-walkthrough): its charts and run outputs
-walkthrough_out/

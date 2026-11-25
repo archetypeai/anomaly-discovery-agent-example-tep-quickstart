@@ -1,236 +1,710 @@
 # Anomaly Discovery on the Tennessee Eastman Process: quickstart
 
-Build an **Anomaly Detection Agent** on Newton, Archetype AI's platform, that watches a
-simulated chemical plant and raises an alarm when it stops running normally. It learns
-from **normal operation only**: no fault is labelled, collected or shown to it before it
-is deployed.
+## TL;DR
 
-Each 2.4-hour window of the plant's 33 sensors is embedded with Omega 1.5, Archetype's
-pretrained sensor model, fused with per-sensor statistics, and scored by a Local Outlier
-Factor (LOF) model: the further a window is from the normal windows it learned, the
-higher its anomaly score.
+- **What:** an agent that watches a chemical plant's 33 process variables,
+  sampled every 3 minutes, and every 24 minutes scores how far the process has
+  moved from normal over the last 2.4 hours. It is fitted
+  on **normal operation only**: no fault is labelled, collected or shown to it
+  before deployment. Each window is embedded with frozen Omega 1.5, fused with
+  per-channel statistics, and scored by a Local Outlier Factor detector.
+- **Data:** the Tennessee Eastman Process, Rieth et al. (2017) release
+  ([public domain](#data-attribution)): one simulated plant, run many times,
+  with 20 kinds of fault.
+  - **Training and scoring:** 40 fault-free runs (training), then incidents
+    of every fault type, split into validation and test.
+  - **Delivery:** 84 more runs of the plant, 80 of them faulty, with their
+    labels held back.
+- **The lifecycle:**
 
-| stage | what happens | script | time (free trial) |
-|---|---|---|---|
-| setup | Git LFS data, Python environment, API key | `./setup.sh` | 1-3 min |
-| 4 | **build:** fit on the normal runs, score 2 settings on validation (Optimizations API) | `fit/optimize.py` | ~1 min |
-| 5 | **promote** the best setting to a blueprint, **test** it once (Evals API) | `fit/test.py` | about 1 min |
-| 6 | **deliver:** run it as a batch agent over the delivery file | `fit/deliver.py` | about 1 min |
-| 7 | **score** the delivery against the held-back labels | `fit/score_delivery.py` | seconds |
+| stage | what happens | time |
+|---|---|---|
+| 0 | download the dataset (1.4 GB) and convert it | ~7 min |
+| 1a–1c | check the raw data, cut it into runs, check again | ~50 s |
+| 2–3 | build the files the platform receives, and check them | ~1 s |
+| 4 | **Optimize:** fit on the normal runs, score 2 settings on validation | 6 min |
+| 5 | **promote** the best setting to a blueprint, **test** it once with the Evals API | 3 min |
+| 6 | **deliver:** package that blueprint, deploy it in batch, run a session over each delivery file | 2–9 min |
+| 7 | **score** the delivery against the held-back labels | seconds |
+| 8 | **serve:** the same package deployed for serving, answering one window per query in a session, checked against Stage 6 | ~4 min |
+| 9 | optional: **watch it live**, the delivery replayed through a serving session ([`app-serving/`](app-serving/README.md)) | ~5 min once (the app's blueprint), then ~2 min a run |
 
-Stages 1-3 (downloading the dataset and building the role files) are already done: their
-output is in `data/roles/`.
+  About **30 minutes** end to end, 21 of them on the platform. Platform times
+  vary with load; Stages 4–9 were measured on production on 2026-11-12.
 
-## Walk through it with Claude Code
+- **One configuration throughout.** Stage 4's optimization chooses the
+  configuration, and every later stage runs exactly what it chose, step
+  included: the eval, the delivery, serving and the app all score a window every
+  8 samples (24 minutes). A package runs a promoted blueprint as it is, with no
+  per-run overrides, so anything a later stage needs, such as scores in the
+  output, is pinned in Stage 4's optimization.
 
-The repo carries a Claude Code skill, [`tep-walkthrough`](.claude/skills/tep-walkthrough/SKILL.md),
-that sets the repo up and walks a newcomer through it: an overview, the data, building
-the Anomaly Detection Agent (Stage 4), then running it on two test runs it has never
-seen, with charts. About 5 minutes in all. In the repo, ask Claude Code:
+- **The platform lifecycle** (Agent Lifecycle 2.0): everything lives in one
+  **project**. The quickstart copies the canonical `ad` blueprint into it,
+  optimizes the copy, promotes the best trial, tests it, then **packages** it
+  (models resolved once), **deploys** the package as `batch` or `serving`, and
+  runs **sessions** on the deployment: a batch session runs over input files, a
+  serving session answers `/query`. No step makes an admin-only call. Moving from
+  bundles and instances: [MIGRATION.md](MIGRATION.md).
 
-```text
-/tep-walkthrough
+```mermaid
+flowchart LR
+  p["project"] --> c["copy of <code>ad</code>"] --> o["optimization<br/>Stage 4"] --> b["promoted blueprint<br/>Stage 5, + eval"]
+  b --> k["package"]
+  k --> db["deployment: batch"] --> sb["a session per file<br/>Stages 6, 9 library"]
+  k --> ds["deployment: serving"] --> ss["a session, <code>/query</code><br/>Stage 8, the app"]
 ```
 
-From anywhere else, in Claude Code or another coding agent (it clones the repo first):
+- **Skip the 1.4 GB download:** Stage 1's prepared files and the role files are
+  in the repo, in Git LFS. See [Shortcuts](#shortcuts-skip-the-download).
+- **On the free trial** (`try.archetypeai.app`) the same commands work, with no
+  extra flags; Stages 4–8 take about **16 minutes** there. See
+  [On the free trial](#on-the-free-trial).
 
-```text
-Clone https://github.com/archetypeai/anomaly-discovery-agent-example-tep-quickstart.git into a new folder and follow .claude/skills/tep-walkthrough/SKILL.md.
-```
+## The scenario
 
-Other agents find it through [`AGENTS.md`](AGENTS.md). The key is never typed into the
-chat: set `ATAI_API_KEY` in your shell first, or run `./setup.sh` in a terminal when the
-walkthrough asks.
+- **A plant has normal operation on record and no labelled fault library**: the
+  faults that will happen have not happened yet. Here that record is 40
+  fault-free runs of the Tennessee Eastman Process, 25 hours each.
+- **Settings are chosen on the plant's incident record** (validation): one run of
+  every fault type, plus ten more fault-free runs.
+- **We report how the agent does on incidents it has never seen** (the test), once.
+- **We then run it over more of the plant's operation** (the delivery), with
+  its labels hidden, and score the outputs afterwards: how many faults it
+  catches, how soon, and how often it fires on normal operation.
 
-## The data
+### The plant and its faults
 
-The Tennessee Eastman Process (Downs & Vogel, 1993), Rieth et al. (2017) release
-([public domain](#data-attribution)): a closed-loop simulation of a chemical plant, run
-many times, with 20 kinds of fault. This repo uses a small sample of it, so every stage
-runs in minutes: 33 sensors (22 measurements, 11 controller outputs), one reading every
-3 minutes, 17 runs.
+A closed-loop simulation of a chemical plant (Downs & Vogel, 1993): five units
+(reactor, condenser, separator, compressor, stripper), 41 measurements and 11
+controller outputs, sampled every 3 minutes. Controllers compensate for
+disturbances, so several faults show mainly in what the controllers *do*. This
+example uses 33 variables: the 22 continuous measurements and the 11 controller
+outputs. The other 19, laboratory analysers, update only every 6–15 minutes.
 
-| role | file | runs | rows (normal / anomaly) | used in |
-|---|---|---|---|---|
-| training (library) | `tep_library.csv` | 5 normal runs, 24.8 h each | 2,480 / 0 | 4: every setting is fitted on it |
-| validation | `tep_validation.csv` | 2 normal runs, IDV 1, IDV 10; 24 h each | 1,280 / 640 | 4: picks the setting |
-| test | `tep_test.csv` | 2 normal runs, IDV 1, IDV 10; 24 h each | 1,280 / 640 | 5: scored once |
-| delivery | `tep_delivery.csv` | 2 normal runs, IDV 1, IDV 10; 24 h each | 1,280 / 640 | 6: run without labels; 7: scored |
+The 20 faults (IDV 1–20): step changes (1–7), random variations (8–12), a slow
+drift (13), sticking valves (14, 15) and five undisclosed mechanisms (16–20). The
+literature agrees that **IDV 3, 9 and 15 are essentially undetectable**: under
+control, their effect sits below the measurement noise. Every faulty run is
+48 hours: 8 hours of normal operation, then the fault.
 
-- **Faulty runs** are normal for 8 hours, then the fault starts. **IDV 1** (a step in
-  the feed mix) leaves the normal range within an hour and stays out: easy. **IDV 10**
-  (random feed-temperature variation) swings in and out of it: hard.
-- **Labels:** validation and test carry a `label` column (`anomaly` from hour 8 of a
-  faulty run, `normal` elsewhere). The delivery has none: its labels are held back in
-  `data/roles/labels/` until Stage 7.
-- **Each file joins its runs** with a one-day gap in the timestamps. Newton marks any
-  window across a gap invalid, so no window mixes two runs. No run is in two files.
-- **Values are z-scored** with the training runs' statistics, so 0 is a sensor's usual
-  level.
+### The runs, and what each role's files are
+
+Each simulation run is independent (its own noise and disturbance seeds), so the
+**run** is the unit no two roles share.
+
+| role | runs | files | rows (normal / anomaly) | labels | used in |
+|---|---|---|---|---|---|
+| library (training) | 40 fault-free 25 h runs | 40, one per run | 20,000 / 0 | all `normal`, by a constant | 4: every trial |
+| validation | 10 fault-free 48 h runs (`val_normal`) + slice 01: 1 fault-free run and run 1 of each of the 20 faults | 2 | 13,760 / 16,000 | `label` column | 4: scores each trial; 7: sets the threshold |
+| test | slices 02–04: 3 fault-free runs and runs 2–4 of each fault | 3 | 12,480 / 48,000 | `label` column | 5: scored once |
+| delivery | 4 fault-free runs and 4 runs of each fault, drawn with a seed | 4 | 16,640 / 64,000 | none (held back in `_labels.csv` sidecars) | 6: run; 7: scored against the held-back labels |
+
+- **`label`** is `anomaly` from a faulty run's onset (hour 8) and `normal`
+  everywhere else, so a faulty run's first 8 hours count as normal operation.
+- **Slices and delivery chunks** each join 21 runs into one file, with a one-day
+  gap in the timestamps between runs. The platform marks any window across a gap
+  invalid instead of mixing two runs.
+- **The library is one file per run, 40 runs.**
+  - *One file per run* because runs are separate simulations: joined into one
+    file, the windows across each boundary would be lost (about 200 in all at
+    window 48, step 8). It also keeps each run identifiable, which is how Stage 3
+    proves no run is in two roles.
+  - *40 runs* because one 500-row run is short (the preflight wants about 2,000
+    rows), and 40 give 2,280 windows: well above what the detector's k ≤ 20
+    neighbours and 20 PCA components need, and still a fit of about a minute.
+    Fits slow to 12–20 minutes above about 3,200 windows. The dataset has 500 fault-free 25-hour runs; the other 460 are
+    unused.
 
 ## Setup
 
 ```sh
 git clone https://github.com/archetypeai/anomaly-discovery-agent-example-tep-quickstart.git   # needs Git LFS
 cd anomaly-discovery-agent-example-tep-quickstart
-./setup.sh
+python3 -m venv .venv
+source .venv/bin/activate          # every later command assumes this
+pip install -r requirements.txt    # numpy, pandas, pyreadr
+cp .env.example .env               # then set ATAI_API_KEY (needed from Stage 4 on)
 ```
 
-`setup.sh` fetches the data (Git LFS), creates `.venv`, installs `requirements.txt`
-(numpy, pandas) and writes `.env` with `ATAI_API_KEY`, from your environment or a hidden
-prompt. It finds `ATAI_API_ENDPOINT` by asking production and the free trial which one
-accepts the key, so the same command works for both. Safe to rerun.
+- **The API key** can have any role: no stage needs an org admin. Your platform
+  deployment must serve the lifecycle APIs; `curl -s -o /dev/null -w '%{http_code}\n'
+  "${ATAI_API_ENDPOINT%/api}/api/agents/sessions?limit=1" -H "Authorization: Bearer
+  $ATAI_API_KEY"` should print `200`.
+- **A variable already set in your shell wins over `.env`,** in the Python stages
+  and in `app-serving/`. If your shell profile exports `ATAI_API_KEY` or
+  `ATAI_API_ENDPOINT` for another deployment, unset them for this repo
+  (`env -u ATAI_API_KEY -u ATAI_API_ENDPOINT python3 …`).
+- **The project** is created by Stage 4 the first time, named `AD TEP quickstart`
+  (`PROJECT` in `fit/atai.py`), or reused if you already have one of that name.
+  Its id and its copy of `ad` are kept in `fit/out/project_state.json`. The one
+  committed here is this repo's run: move `fit/out/` and `eval_out/` aside before
+  your own (see [The stages](#the-stages)).
 
-**Python 3.10 or newer** is needed (last tested on 3.12). macOS's built-in `python3` is
-3.9, which is too old: install a newer one first (`brew install python`). `setup.sh` uses
-the newest Python it finds and says so if there is none.
+### Shortcuts: skip the download
 
-Then run every script from the repo root with the environment active
-(`source .venv/bin/activate`). Each script saves its ids in `fit/out/` and resumes from
-them; to start again from scratch, move `fit/out/` and `eval_out/` aside.
+Both Stage 1's output (`data/prepared/`, 66 MB) and Stage 2's (`data/roles/`,
+70 MB, largely the same files) are in the repo, in Git LFS; a clone fetches
+them (`git lfs pull` if it did not).
 
-**On the free trial** (`try.archetypeai.app`) jobs run on CPU, 3 at a time, and stop
-after 2 hours. The scripts detect it from the endpoint and say when they change a
-default for it.
+- **Skip Stages 0–2:** `data/roles/` holds everything Stages 3–7 read: the
+  library, validation and test files, the delivery files and every label
+  sidecar.
 
-## Stage 4: build (Optimize)
+  ```sh
+  python3 prep/preflight_roles.py    # Stage 3: 180,835 checks passed
+  ```
+
+- **Skip Stages 0–1** and build the role files yourself:
+
+  ```sh
+  python3 prep/run_preflight.py --window-size 48 --step-size 8   # 1c, to confirm
+  python3 prep/build_roles.py                                    # Stage 2
+  python3 prep/preflight_roles.py                                # Stage 3
+  ```
+
+Then go to [Stage 4](#stage-4-optimize).
+
+### On the free trial
+
+The free trial (`ATAI_API_ENDPOINT=https://try.archetypeai.app/api`, in
+`.env.example`) runs at most 3 jobs per org at once and stops every job after 2
+hours (`DeadlineExceeded`, with no output). `fit/atai.py`'s `free_trial()` is true
+when the endpoint's host is `try.archetypeai.app` (a free-trial key works nowhere
+else), and then these defaults change, each script saying so when it starts:
+
+| stage | default | free-trial default | why |
+|---|---|---|---|
+| 5 `fit/test.py` | one eval of the 3 test slices | `--pieces 2`: each slice cut in two at run boundaries, 6 evals, 3 at a time, pooled | keeps each eval well inside 2 hours |
+| 6 `fit/deliver.py` | `--parallel 5` | `--parallel 3` | 3 jobs at once |
+| 9 `fit/library_embeddings.py` | 4 sessions at a time | 3 | 3 jobs at once |
+
+A flag you give wins (`--pieces 1`). Stage 5 with `--pieces 2` loses only the
+windows across a cut (5 per cut, 15 in all); they span two runs, so they are
+abstained either way, but the platform's macro-F1 counts an abstention as a miss,
+so it reads a little higher than one eval's. A queued job may already be on the
+clock: keep other jobs, `app-serving/` included, off the account while Stages 5
+and 6 run, and run `fit/library_embeddings.py` before starting `app-serving/`,
+since its serving deployment holds one of the 3 slots for as long as it runs.
+
+## The stages
+
+**Before your first run, and to run again from scratch,** move `fit/out/` and
+`eval_out/` aside: they hold this repo's run (state files with its ids), and with
+them every stage resumes that run instead of starting yours. Its project and
+blueprints belong to the account that made them, so a stage stops at once when
+your key can't see the recorded project. Without `fit/out/project_state.json`,
+Stage 4 finds your `AD TEP quickstart` project by name, or creates it, and reuses
+its copy of `ad`. Every script runs from the repo root and is safe to rerun.
+
+### Stage 0: download
+
+```sh
+python3 prep/download.py          # 1.4 GB from Harvard Dataverse, MD5-checked → data/raw/ (5.7 GB of CSV)
+```
+
+Four files, by their Dataverse file id, each checked against the MD5 the dataset
+publishes, then converted from R's `.RData` to CSV. The release can only be
+downloaded whole: the faulty 48-hour file alone is 837 MB.
+
+### Stage 1: check, prepare, check again
+
+```sh
+python3 prep/run_preflight.py --raw                        # 1a: the raw files, read-only
+python3 prep/prepare_tep.py                                # 1b: library, validation and test files (38 MB)
+python3 prep/prepare_full_eval.py                          # 1b: the delivery files (28 MB)
+python3 prep/run_preflight.py --window-size 48 --step-size 8   # 1c: the prepared files, read-only
+```
+
+- **1a** runs Archetype AI's preflight checks on one fault-free run, and a purity
+  and staircase check on each file. **Expect:** `6 PASS, 3 WARN, 0 FAIL, 1 INFO`
+  on the fault-free training file, and one `analyser_staircase` WARN on each of
+  the other three. Each WARN prescribes a prep decision: z-score every channel,
+  build the library from many short runs, drop the 19 analyser channels.
+- **1b** cuts 66 MB out of the raw 5.7 GB into `data/prepared/`: 40 of the
+  500 fault-free 25-hour runs, 18 of the 500 fault-free 48-hour runs and 8 runs of
+  each fault, on 33 of the 52 variables (the faulty 25-hour file is not used). It
+  z-scores every channel with the library runs' statistics only, gives each row a
+  timestamp (180 s apart within a run, a day's gap between runs) and writes a
+  label sidecar per file. **Expect:** `channels: 33   wrote data/prepared/{40 reference
+  files, tep_val_normal, 4 eval slices, …}`, then `wrote 4 chunks (4 faulty + 0
+  normal-only), 80,640 rows`.
+- **1c** re-checks the prepared files. **Expect:** 40 checks `PASS` and one WARN
+  (`nshot_support`: each 500-row run is short on its own, which is why the library
+  is 40 of them). It predicts **940 invalid windows per slice** at window 48: the
+  windows that cross a gap between runs.
+
+### Stage 2: build the role files
+
+```sh
+python3 prep/build_roles.py           # → data/roles/
+```
+
+Assigns Stage 1's files to roles; nothing is re-cut. The library files are
+linked as they are; validation and test get a `label` column from their
+sidecars; the delivery files (the 4 chunks and `val_normal`, which Stage 7 needs
+to set its threshold) keep no label column; every sidecar goes to
+`data/roles/labels/`. **Expect:**
+
+```
+library: 40 files, 20,000 rows, all normal
+validation: tep_eval_slice_01.csv 4,160 normal / 16,000 anomaly rows
+validation: tep_val_normal.csv 9,600 normal / 0 anomaly rows
+test: tep_eval_slice_02.csv 4,160 normal / 16,000 anomaly rows
+test: tep_eval_slice_03.csv 4,160 normal / 16,000 anomaly rows
+test: tep_eval_slice_04.csv 4,160 normal / 16,000 anomaly rows
+delivery: 4 chunks + val_normal under data/roles/delivery, labels held back in data/roles/labels
+```
+
+### Stage 3: check the role files against the platform's rules
+
+```sh
+python3 prep/preflight_roles.py
+```
+
+It checks:
+- every row's label against its sidecar, and only `normal` / `anomaly`;
+- both classes in validation and in test (macro-F1 scores a missing class 0);
+- no label column in the delivery files, the manifest's channels in each, and a
+  sidecar for each;
+- no run in two roles (a run is its source file and its id). `val_normal` is the
+  one file in two: delivered only so Stage 7 can set its threshold, never scored
+  as delivery.
+- the manifest against the files on disk.
+
+**Expect:** `218 simulation runs, each in one role`, then `180,835 checks passed`.
+
+### Stage 4: Optimize
 
 ```sh
 python3 fit/optimize.py
 ```
 
-1. **Upload** the training and validation files (cached in `fit/out/uploads.json`).
-2. **Optimize** on the `ad` blueprint: every training row is a `normal` example; the
-   validation file is scored on its `label` column, each window by its last row. Newton
-   embeds every window with Omega, fits the Anomaly Detection Agent on the training runs
-   and scores each setting on validation.
-3. **Search space:** window 48 (2.4 h), step 8 (a verdict every 24 min), L2, PCA 16,
-   threshold 1.215, features `std,range,slope,median`, with **k = 5** and **k = 10**
-   neighbours.
+1. **Project:** create the project `AD TEP quickstart` (or reuse yours of that
+   name) and copy the canonical `ad` blueprint into it as `ad-tep-qs`
+   (`POST /api/projects`, `POST /api/agents/blueprints/ad/copy`). An
+   optimization lands in its blueprint's project, and so does everything made
+   from it; a deployment needs one. **Writes:** `fit/out/project_state.json`.
+2. **Upload** the 40 library files and 2 validation files once. The ids are cached
+   in `fit/out/uploads.json`.
+3. **Optimize:** create an optimization on that copy. Every library row is
+   a training example labelled `normal`; each validation file is scored on its
+   `label` column, each window by its last row. The platform embeds every window
+   with Omega 1.5, fits the detector on the library and reports macro-F1 on
+   validation.
+4. **Search space:** two settings, window 48, step 8, L2, PCA 16, threshold
+   1.215, features `std,range,slope,median`, `output_score` on, with **k = 5** and **k = 10**: the
+   winner of an earlier 24-trial search on this data, where k was 10. A space with
+   fewer points than the budget runs every point. The step chosen here is the
+   step every later stage uses: window 48 at step 8 means a score every 24
+   minutes, from the eval to the app.
 
-**Expect** (free trial, 2026-11-07, 52 s):
+**Expect:** `uploading 42 of 42 files (16 MB)`, `2 trial(s), searching
+['n_neighbors']`, then the ranking. Ours:
 
 ```
-otr_…  completed {"n_neighbors": 10}  macro_f1 0.8839  foreground_macro_f1 0.8732  detection_recall 0.7750  detection_precision 1.0000
-otr_…  completed {"n_neighbors": 5}   macro_f1 0.8532  foreground_macro_f1 0.8310  detection_recall 0.7375  detection_precision 0.9516
+otr_…  completed {"n_neighbors": 5}   macro_f1 0.8547  foreground_macro_f1 0.8723  detection_recall 0.7805  detection_precision 0.9886
+otr_…  completed {"n_neighbors": 10}  macro_f1 0.8540  foreground_macro_f1 0.8703  detection_recall 0.7720  detection_precision 0.9974
 ```
 
-k = 10 wins. Most missed fault windows are IDV 10's. Try other settings with `--new` and
-`--window`, `--step`, `--k`, `--metric`, `--pca`, `--threshold LOW:HIGH`, `--features`,
-`--trials`. **Writes:** `fit/out/optimize_<id>.json`, `fit/out/optimize_state.json`.
+k = 5 wins by 0.0007, a tie in practice. Try others with `--new` and
+`--window`, `--step`, `--k`, `--metric`, `--pca`, `--threshold LOW:HIGH`,
+`--features`, `--trials`. **Writes:** `fit/out/optimize_<optimization id>.json`.
 
-## Stage 5: promote, then test once
+### Stage 5: promote, then test once
 
 ```sh
 python3 fit/test.py
 ```
 
-1. **Promote** the best trial to a blueprint, `ad-<trial>`: its settings and fitted
-   Anomaly Detection Agent become a reusable model. `--trial otr_…` picks another trial.
-2. **Evaluate** the test file **once** with the Evals API, with predictions.
-3. **Check** every prediction's label against the sidecar, and the confusion matrix
-   against Newton's, before reporting.
+1. **Promote** the best trial to a blueprint in the project, `ad-tep-qs-<trial>`
+   (the platform's default key; choosing one takes the admin role): its settings
+   and fitted detector become a reusable model. `--trial otr_…` picks another trial;
+   `--blueprint-key` chooses the key.
+2. **Evaluate** the 3 test slices **once** with the Evals API, with predictions.
+3. **Check** every prediction's gold label against the sidecar, and the offline
+   confusion matrix against the platform's, before reporting.
 
-**Expect** (free trial, 2026-11-07, about 1 min):
+**Expect** (ours):
 
 ```
-eval evl_…  blueprint ad-otr_…  (window 48, step 8, threshold 1.215; 15 abstained)
-  platform: macro-F1 0.7512  anomaly F1 0.6667  recall 0.5000  precision 1.0000
-  false alarms, fault-free run             0 /    110  0.0000
-  false alarms, faulty runs, first 8 h     0 /     30  0.0000
-  window detection per IDV (mean 0.500):
-    idv_01     40 /    40  1.000
-    idv_10      0 /    40  0.000
+eval evl_…  blueprint ad-tep-qs-otr_…  (window 48, step 8, threshold 1.215; 300 abstained)
+  platform: macro-F1 0.7331  anomaly F1 0.8733  recall 0.7800  precision 0.9919
+  false alarms, fault-free run            18 /    345  0.0522
+  false alarms, faulty runs, first 8 h    20 /    900  0.0222
+  window detection per IDV (mean 0.780):
 ```
 
-- **IDV 1 is caught in every window after the fault, IDV 10 in none.** This test run of
-  IDV 10 stays inside the normal range at this threshold: the hard fault, as on
-  validation. No normal window raised a false alarm.
-- **The 15 abstained windows** are the ones across a gap between runs.
+then one line per fault type: IDV 1, 4–7, 11, 12 and 14 at 99–100%, IDV 10 and 16
+at 49% and 35%, IDV 3, 9 and 15 at about 1%. The 300 abstained windows are the
+ones across a gap between runs.
 
-This is the one-shot test: once you have seen its number, the setting is frozen, since
-tuning it further would make the test number optimistic. **Writes:** `fit/out/test.json`,
-`fit/out/test-predictions.ndjson`, `fit/out/test_state.json`.
+- **Macro-F1 is lower than on validation (0.855) because of the class mix,** not
+  the detector: the test is 21% normal rows, validation 46%. Anomaly F1 is about
+  the same on both (0.873 and 0.872).
+- **This is the one-shot test.** Once you have seen its number, the setting is
+  frozen: tuning it further would make the test number optimistic.
 
-## Stage 6: deliver
+**On the free trial** it runs 6 evals of half a slice each and pools them
+(`--pieces 2`, [above](#on-the-free-trial)): about 3 minutes.
+
+**Writes:** `fit/out/test.json`, `fit/out/test-predictions.ndjson` and
+`fit/out/test_state.json` (the ids, so a rerun resumes instead of testing again).
+
+### Stage 6: deliver
 
 ```sh
 python3 fit/deliver.py
 ```
 
-1. **Bundle** Stage 5's blueprint with scores in the output. On production it adds
-   `step_size: 1`, a score for every 3-minute sample; on the free trial it keeps the
-   trial's step (8), a score every 24 minutes (`--step 1` to override).
-2. **Run** it over `tep_delivery.csv`, uploaded without labels.
-3. **Download** the output, checking it covers the whole input.
+1. **Package** Stage 5's blueprint as it is (`POST /api/agents/packages`, target
+   `platform`): the encoder and the fitted detector are resolved once, so every
+   run of it is the same. It runs at the optimized step 8, a score every 24
+   minutes, the same windows Stage 5's eval scored, with `output_score` on as
+   Stage 4 pinned it.
+2. **Deploy** it as `batch` (`POST /api/agents/deployments`); a batch deployment
+   is ready at once.
+3. **Run** a session on it (`POST /api/agents/sessions`, the file as a source
+   connector) over each of `data/roles/delivery/`'s files: the 4 delivery files
+   and `val_normal`, all five at once, each uploaded without labels. Each session
+   is a batch job, followed with `/sessions/{id}/events`.
+4. **Download** each output from `/sessions/{id}/results`, checking it covers its
+   input in full.
 
-**Expect** (free trial, 2026-11-07, about 1 min): `bundle bnd_…`, `agent agt_…`,
-`verified: output covers the full input (100.0%)`, then `1 outputs in eval_out/delivery`.
-The run's log may also show `sampling-rate variance` warnings, a few per boundary between
-joined runs (for example `5 windows detected with a sampling-rate variance of 4189.0%,
-above the tolerance of 5.0%`). They are expected: those windows straddle the one-day gap
-between two runs and are marked invalid on purpose, so no window mixes two runs. Don't
-raise `sample_rate_interval_tolerance` to silence them.
-**Writes:** `eval_out/delivery/ad-output-delivery.csv`, `fit/out/deliver_state.json`.
+**Expect:** `package pkg_… on ad-tep-qs-otr_…`, `batch deployment dpl_…`, five `session ses_…` lines, five
+`verified: output covers the full input (100.0%)`, then `5 outputs in
+eval_out/delivery`. **Writes:** `eval_out/delivery/ad-output-*.csv` and
+`fit/out/deliver_state.json`.
 
-## Stage 7: score the delivery
+**On the free trial** it runs 3 files at a time (`--parallel 3`,
+[above](#on-the-free-trial)).
+
+### Stage 7: score the delivery
 
 ```sh
 python3 fit/score_delivery.py
 ```
 
-Pairs each window with the held-back label of its last row (invalid windows, those
-across a gap, are left out) and reports, per fault type, the detection rate (share of
-windows after the fault over the threshold), runs detected (3 windows in a row over it,
-so one spike doesn't count), the delay to that detection and AUROC; and the false-alarm
-rate on normal windows.
+- **Pairing:** each window is paired with the held-back label of its last row;
+  windows the platform marked invalid (100 per file at step 8, the windows that
+  span two runs) are left out.
+- **Two thresholds:** the trial's own (1.215, what the agent's labels used) and
+  one set to a **1% false-alarm rate on `val_normal`**'s scores, the convention
+  TEP papers use.
+- **Reported, per fault type:** detection rate (share of post-onset windows over
+  the threshold), runs detected (3 consecutive windows over it, 48 minutes apart
+  end to end at step 8, so one spike does not count), delay to the first of those
+  windows, and AUROC; overall, the false-alarm rate on normal windows.
 
-**Expect** (free trial, 2026-11-07):
+**Expect** (ours), at the 1%-false-alarm threshold:
 
 ```
-ad-output-delivery.csv: 220 windows, 15 invalid  score median 1.073  p99 7.631  max 7.985
-
-=== AD agent — artifact threshold 1.215, sustain 3 ===
-  IDV    type                              det%      sims  delay h  AUROC
-  idv_01 step  A/C feed ratio             100.0       1/1     0.00  1.000
-  idv_10 rand  C feed temp                 62.5       1/1     6.40  0.851
-
-  false-alarm rate on normal windows: 0.71%  (1 / 140)
-  mean detection rate: 81.2%   sims detected: 2/2   macro AUROC: 0.925
+ad-output-val_normal.csv: 1,150 windows, 45 invalid; FAR at threshold 1.215 = 1.48%; threshold for 1% FAR = 1.219
+=== AD agent — calibrated threshold 1.219, sustain 3 ===
+  idv_01 step  A/C feed ratio              99.8       4/4     0.00  1.000
+  …
+  false-alarm rate on normal windows: 2.11%  (35 / 1,660)
+  mean detection rate: 78.5%  (excl. 3/9/15: 92.0%)   sims detected: 70/80   macro AUROC: 0.903
 ```
 
-- **Both faults are caught** in the delivery: IDV 1 at once, IDV 10 after 6.4 hours, with
-  62.5% of its windows over the threshold. IDV 10's runs differ: the test run's stayed
-  below it.
-- **One false alarm** in 140 normal windows (0.71%).
-- **At step 8 a window ends every 24 minutes,** so the delay is in steps of 0.4 h.
+- **Every detectable fault type is caught in all 4 of its runs**, 17 of 17. IDV 3,
+  9 and 15 are the misses (1–2% of windows, near-chance AUROC); a "detection" there
+  is a false alarm that happens to fall after onset.
+- **Step faults are caught at the first window after onset** (IDV 1, 4, 5, 6, 7
+  and 14 at 0.00 h; delays are counted in 24-minute steps). The slow ones take
+  hours (IDV 13's drift 2.2 h, IDV 10 7.6 h, IDV 16 9.2 h).
+- **The delivery reads like the test:** 78.5% mean window detection, against
+  78.0% on the test.
+- **False alarms:** 2.11% on the delivery's normal windows (35 of 1,660), against
+  the 1% the threshold was set to on `val_normal`. At step 8 there are 8 times
+  fewer normal windows to set and check it on, so both numbers are coarser.
+- **Against a step-1 delivery** (one score every 3 minutes, which the bundle version
+  of this quickstart made with a per-run override): the same label in every shared window and the same
+  detection rate and AUROC within 0.5 points; slow faults' delays read up to a
+  few hours longer, because each is timed in 24-minute steps.
 
 **Writes:** `eval_out/delivery/evaluation.json`.
 
-## Clean up
+### Stage 8: serve it, one window per query
+
+```sh
+python3 fit/serve.py                          # delivery file 1's fault-free run and IDV 5
+python3 fit/serve.py --faults idv_01 idv_19   # other runs of the file; --file full_chunk_002 for another file
+python3 fit/serve.py --windows-per-query 16   # up to 16 consecutive windows per query
+```
+
+Stage 6 delivers in batch: upload a file, run an agent over it, download the output
+when the run is done. **Agent serving** keeps an agent loaded and answers a window
+of samples in one round trip, with no upload, queue or polling: what a plant
+historian would call every 24 minutes (8 samples) with the latest 48 samples.
+Free-trial accounts serve on CPU only, so expect slower answers there than the
+times below.
+
+1. **A package of Stage 5's blueprint, as it is** (`POST /api/agents/packages`):
+   the same detector, encoder and values. A package carries no values: the agent
+   is exactly what Stage 5 promoted. For serving, the platform supplies the
+   serving connectors itself: an `atai-records` endpoint that answers one named
+   record per window.
+2. **A serving deployment and a session on it**: `POST /api/agents/deployments`
+   with `kind: "serving"` places the agent on a worker and loads it (ready within
+   seconds); `POST /api/agents/sessions` opens a session on it, which answers over
+   `POST /api/agents/sessions/{id}/query` once it is `running`. The deployment
+   holds the agent; a session is a client's handle on it, and several can share
+   one deployment.
+3. **Each run replayed at the optimized step,** a query every 8 samples, so the
+   served windows are exactly Stage 6's. Every query carries the latest 48
+   samples of the 33 tags, one list per tag, and gets one record back:
+   `{"anomaly_score": …, "predicted_label": "normal", "invalid": "false",
+   "start_timestamp": 0, "finish_timestamp": 47}`. A served agent keeps nothing
+   between queries, so a query holds the whole window, and the timestamps are
+   sample positions within it.
+4. **Every answer against Stage 6:** the label, the score (to within 10⁻⁴
+   relative), and each run's first sustained alarm (3 consecutive anomaly
+   windows).
+5. **Cleanup:** the session is cancelled, the deployment stopped, and the session,
+   deployment and package deleted, however the replay ends (Ctrl-C, SIGTERM and SIGHUP included; a second signal waits for it).
+   Each is tried even if one before it fails; anything left stays in
+   `fit/out/serve_state.json` for `fit/cleanup.py`.
+
+**Expect** (ours, 2026-11-12), delivery file 1's fault-free run (sim 96) and its
+IDV 5 run (sim 26), 115 windows each:
+
+```
+Stage 8: 230 windows of 2 run(s) served in 230 queries, 236 s
+  against Stage 6 (batch): predicted_label identical in 230/230, anomaly_score within 1e-4 in 230/230 (max relative difference 1.7e-05); invalid 0
+  latency per query: median 821 ms, p95 1793 ms, max 1902 ms
+  idv_00 sim 96: first sustained alarm, served none; batch none
+  idv_05 sim 26: first sustained alarm, served 1.20 h after onset; batch 1.20 h after onset
+```
+
+- **The served agent gives the delivery's answers:** every label and score, and
+  both runs' first alarms. A median answer comes back in under a second, for a window
+  due every 24 minutes.
+- **The alarm time is when the third window over the threshold ends:** 1.20 h
+  after onset here. Stage 7 times the first of the three, so it reports IDV 5 at
+  0.00 h; the two are 48 minutes apart at step 8.
+- **A score can now and then differ by a step.** Serving and batch embeddings
+  differ by about 2×10⁻⁴, and with k = 5 that is occasionally enough to change
+  which reference window is the 5th nearest. This run had none. The labels and
+  the alarm times are what should match.
+- **One window per query is the way to serve it.** `--windows-per-query 16` sends
+  16 consecutive windows (168 samples) and gets 16 answers, but each query took
+  about 11 s, and in a live plant it would mean waiting 6 hours of samples before
+  asking.
+
+**Writes:** `eval_out/serving/serve_<file>_<runs>_wpq<N>.{csv,json}` (a row per
+window; a summary).
+
+### Stage 9 (optional): watch it live, served from the platform
+
+```sh
+python3 fit/app_blueprint.py          # after each Stage 5: its configuration with embeddings on (~5 min)
+python3 fit/library_embeddings.py     # optional: the embedding view, already committed (~10–20 min)
+cd app-serving && npm install
+npm run dev                           # broker + serving bridge + replayer + web
+open http://localhost:5180
+```
+
+[`app-serving/`](app-serving/README.md) replays Stage 6's delivery runs, one at a
+time, as if the plant were running now, and sends every window to a **serving
+session** on a serving deployment of Stage 5's configuration: an agent that stays loaded on the platform and
+answers a window in one round trip, under a second, every 8 samples, the step
+Stage 4 chose. A flowsheet, the 33 tags, the anomaly score and an embedding space
+show the answers as they come. The app holds a serving deployment while it runs and
+gives it back on `npm run stop`.
+
+- **A small Node bridge** keeps the latest 48 samples, sends each window as one
+  query, and publishes the answer to the browser. It holds the API key, which never
+  reaches the browser.
+- **The embedding space** needs the windows the detector was fitted on, but the
+  promoted detector can't be downloaded and the APIs return no embeddings. So
+  `fit/library_embeddings.py` recomputes them through the app's blueprint: a
+  package, one batch deployment, a session per library run (40), 2,280 windows,
+  then PCA 1–2. The result,
+  `app-serving/static/detector-view.{json,bin}`, is committed and depends only on
+  the configuration, so it needs rerunning only if Stage 4 picks a different window
+  or step.
+- **The app's own blueprint, and why it is a second one.** The app and the library
+  view need each window's embeddings, which an agent returns only when its
+  blueprint has `output_embeddings: true`. Stages 4–8 keep it off (on, every
+  delivery file would grow to hundreds of MB: one delivery file's output was 327
+  MB). A bundle could switch it on for one run; a package has no values, so an
+  output is on or off in the blueprint itself, from the moment it is promoted.
+  Registering an edited copy of Stage 5's blueprint takes the admin role, and
+  copying it with `output_embeddings: true` as an override is refused (a blueprint
+  with a fitted detector takes no value override), so
+  `fit/app_blueprint.py` gets there without one: a 1-trial optimization in the
+  same project with every winning value pinned plus `output_embeddings: true`,
+  promoted like Stage 5's. The trial refits the detector on the same library; its
+  validation score is printed next to the winner's (0.8547 for both). See
+  [app-serving/README.md](app-serving/README.md#the-apps-blueprint-the-winning-configuration-with-embeddings-on).
+- **It belongs to one Stage 5 blueprint.** `fit/app_blueprint.py` records which
+  promoted blueprint it copied (`source` in `fit/out/app_blueprint_state.json`),
+  and `fit/library_embeddings.py` and the bridge use it only while that is still
+  the blueprint in `fit/out/test_state.json`, so the view and the live answers
+  never come from a different configuration than the delivery's. After a new Stage
+  5, run `fit/app_blueprint.py` again: `fit/library_embeddings.py` stops with
+  `no app-serving blueprint for this promoted blueprint` until you do, and the
+  bridge serves Stage 5's blueprint without embeddings.
+- **Pace:** a window every 8 samples, the optimized step that every stage uses,
+  so the app's alarms are Stage 6's, window for window; a run takes about 2
+  minutes.
+
+The reference library comes out at 2,280 windows scored 0.949–1.108, all under the
+1.215 threshold, as the detector's own normal data should be. Stopping the app
+(`npm run stop`, or Ctrl-C once) cancels the bridge's session, stops its deployment,
+and deletes them and the package.
+Without `fit/app_blueprint.py`'s blueprint, the bridge serves Stage 5's, which has
+no embeddings, and the page's live embedding trail stays empty.
+
+### Try the lifecycle by hand
+
+Stages 6 and 8 do this in Python; here it is with `curl`, one object at a time,
+from Stage 5's promoted blueprint. Run it from the repo root after Stage 5, with
+`jq` installed.
+
+```sh
+set -a; source .env; set +a                                  # the key and endpoint into the shell
+A="${ATAI_API_ENDPOINT%/api}/api/agents"; H="Authorization: Bearer $ATAI_API_KEY"; J="Content-Type: application/json"
+BP=$(jq -r .blueprint.id fit/out/test_state.json)            # Stage 5's promoted blueprint (blp_…)
+```
+
+1. **Package it.** The package lands in the blueprint's project, and
+   `resolved_models` shows the encoder (`mdl_…`) and the fitted detector (`aar_…`)
+   pinned for every run.
+
+   ```sh
+   PKG=$(curl -s -X POST "$A/packages" -H "$H" -H "$J" \
+     -d "{\"blueprint_ids\":[\"$BP\"],\"target\":{\"kind\":\"platform\"},\"name\":\"by hand\"}" | jq -r .id)
+   curl -s "$A/packages/$PKG" -H "$H" | jq '{status, project_id, blueprints}'    # until "ready"
+   ```
+
+2. **Batch: a deployment, and a session over one file.** The session runs as a
+   job; follow it, then download its output.
+
+   ```sh
+   DB=$(curl -s -X POST "$A/deployments" -H "$H" -H "$J" -d "{\"package_id\":\"$PKG\",\"kind\":\"batch\"}" | jq -r .id)
+   FID=$(curl -s -X POST "${ATAI_API_ENDPOINT%/api}/api/files" -H "$H" -F "file=@data/roles/delivery/tep_val_normal.csv" | jq -r .file_id)
+   SB=$(curl -s -X POST "$A/sessions" -H "$H" -H "$J" \
+     -d "{\"deployment_id\":\"$DB\",\"connectors\":{\"source\":[{\"type\":\"file\",\"id\":\"$FID\",\"format\":\"csv\"}]}}" | jq -r .id)
+   curl -s "$A/sessions/$SB" -H "$H" | jq '{status, error}'                     # until "completed", about a minute
+   curl -s "$A/sessions/$SB/events" -H "$H" | jq -r '.data[].message'
+   REF=$(curl -s "$A/sessions/$SB/results" -H "$H" | jq -r '.data[0].data.ref')
+   curl -s "${ATAI_API_ENDPOINT%/api}$REF" -H "$H" | head -5                   # the ref already starts with /api
+   ```
+
+3. **Serving: a deployment, and a session you query.** The deployment loads the
+   agent on a worker; the session is your handle on it. A query carries one
+   whole window, 48 samples of the 33 tags, one list per tag.
+
+   ```sh
+   DS=$(curl -s -X POST "$A/deployments" -H "$H" -H "$J" -d "{\"package_id\":\"$PKG\",\"kind\":\"serving\"}" | jq -r .id)
+   curl -s "$A/deployments/$DS" -H "$H" | jq .status                          # until "ready", seconds
+   SS=$(curl -s -X POST "$A/sessions" -H "$H" -H "$J" -d "{\"deployment_id\":\"$DS\"}" | jq -r .id)
+   curl -s "$A/sessions/$SS" -H "$H" | jq .status                             # until "running"
+   Q=$(mktemp)
+   python3 -c "
+   import csv, json
+   rows = list(csv.DictReader(open('data/roles/delivery/tep_val_normal.csv')))[:48]
+   tags = json.load(open('data/roles/manifest.json'))['channels']
+   print(json.dumps({'model': 'tep-ad', 'query': '', 'events': [{'type': 'data.numeric_array',
+         'event_data': {'contents': [[float(r[t]) for r in rows] for t in tags]}}]}))" > "$Q"
+   curl -s -X POST "$A/sessions/$SS/query" -H "$H" -H "$J" -d @"$Q" | jq '{status, query_response_time_ms, response}'
+   ```
+
+   A second session on the same `$DS` shares the same loaded agent. Cancelling a
+   session leaves the deployment `ready`, holding its worker, until it is stopped.
+
+4. **Clean up:** sessions, then deployments, then the package; each holds the next.
+
+   ```sh
+   curl -s -X POST "$A/sessions/$SS/cancel" -H "$H" -H "$J" -d '{}' > /dev/null
+   for s in $SS $SB; do curl -s -X DELETE "$A/sessions/$s" -H "$H"; done
+   for d in $DS $DB; do
+     curl -s -X POST "$A/deployments/$d/stop" -H "$H" -H "$J" -d '{}' > /dev/null
+     curl -s -X DELETE "$A/deployments/$d" -H "$H"
+   done
+   curl -s -X DELETE "$A/packages/$PKG" -H "$H"
+   ```
+
+### Clean up the platform
 
 ```sh
 python3 fit/cleanup.py           # list what would be deleted, and what stays
 python3 fit/cleanup.py --yes     # delete it
 ```
 
-Deletes the agents and bundles left on Newton by Stage 6 and by the walkthrough's
-Step 3. The promoted blueprint, the optimization and the eval stay.
+[`fit/cleanup.py`](fit/cleanup.py) deletes the sessions, deployments and packages this
+quickstart left on the platform, starting from the packages the stages recorded in
+`fit/out/`: Stage 6's delivery; Stage 8's if `fit/serve.py` was killed before its own
+cleanup; and Stage 9's serving bridge leftovers and `fit/library_embeddings.py`'s.
+For each package it lists the deployments and their sessions, so ones a stage never
+recorded are found too. The project, its copy of `ad`, the promoted blueprints, the
+optimizations and the eval stay. Don't run it while `fit/serve.py` or `app-serving/`
+is running. To check that no serving deployment of yours is still holding a worker:
+
+```sh
+set -a; source .env; set +a
+curl -s "${ATAI_API_ENDPOINT%/api}/api/agents/deployments?status=ready&limit=100" -H "Authorization: Bearer $ATAI_API_KEY" \
+  | jq -c '.data[] | select(.kind=="serving") | {id, package_id, project_id, created_at}'
+```
+
+## Results, and they reproduce
+
+The numbers above are our run on production through Agent Lifecycle 2.0
+(project, packages, deployments, sessions) at step 8, on 2026-11-12, with a
+member (developer) key in a new project: no step makes an admin-only call
+(registering a blueprint, or choosing a promoted blueprint's key). `fit/out/` and
+`eval_out/` hold that run's ids and outputs; the library view in
+`app-serving/static/` is an earlier run's, as it depends only on the
+configuration. [MIGRATION.md](MIGRATION.md) covers the move from bundles and
+instances.
+
+Earlier runs, with an org-admin key and with a member key, each in its own
+project, gave the same numbers at every stage, Stage 9's app included: the same
+validation and test macro-F1, test predictions, Stage 6 outputs and Stage 7
+evaluation byte for byte, with medians of 820–890 ms a query.
+
+| stage | measure | result |
+|---|---|---|
+| 1–3 | delivery rows; runs in a role; role checks | 80,640; 218; 180,835 passed |
+| 4 | validation macro-F1, k 5 / k 10 | 0.8547 / 0.8540 |
+| 5 | test macro-F1 | 0.7331 |
+| 6 | delivery outputs | 5 files, full coverage, step 8 |
+| 7 | detection / false alarms / AUROC at the 1% threshold | 78.5% / 2.11% / 0.903 |
+| 8 | served against batch, 230 windows | every label and score; median 821 ms a query |
+
+An earlier run, from its own optimization and blueprint, gave the same Stage 4,
+5 and 8 numbers, and Stage 6 outputs and a Stage 7 evaluation byte-identical to
+this run's. Some runs differ in a few scores' last digits, enough to flip IDV 9's
+one borderline "detection" (a false alarm after onset) at the trial's threshold. On
+bundles with a step-1 delivery, the same prep scores 78.0% / 1.41% / 0.901.
+
+So the prep, the platform and the scoring are deterministic here, up to those
+near-tie score differences. If your run gives different numbers, something
+differs in your data or setup, and the expected outputs above show at which stage.
 
 ## Repo layout
 
 | path | what it is |
 |---|---|
-| `setup.sh`, `requirements.txt`, `.env.example` | setup |
-| `data/roles/` | the role files, their label sidecars and `manifest.json` (Git LFS) |
-| `ad_api.py`, `fit/atai.py` | stdlib platform helpers: requests, uploads, polling, resume state |
+| `prep/download.py` | Stage 0: the Dataverse download, MD5-checked, and RData → CSV |
+| `prep/run_preflight.py`, `prep/preflight_tep.py`, `prep/preflight_static.py` | Stages 1a and 1c |
+| `prep/prepare_tep.py`, `prep/prepare_full_eval.py` | Stage 1b: library, validation and test files; the delivery files |
+| `prep/build_roles.py`, `prep/preflight_roles.py` | Stages 2 and 3 |
+| `ad_api.py`, `fit/atai.py` | stdlib platform helpers: the project, packages, deployments and sessions, uploads, polling, resume state |
 | `fit/optimize.py` | Stage 4 |
 | `fit/test.py` | Stage 5 |
 | `fit/deliver.py` | Stage 6 |
 | `fit/score_delivery.py`, `fit/evaluate_detection.py`, `fit/tep_common.py` | Stage 7 |
-| `fit/cleanup.py` | delete the agents and bundles left on Newton |
-| `.claude/skills/tep-walkthrough/` | the Claude Code walkthrough; it writes to `walkthrough_out/` |
-| `AGENTS.md` | notes for other coding agents |
+| `fit/serve.py` | Stage 8: the promoted blueprint served, delivery runs replayed one window per query, every answer checked against Stage 6 |
+| `fit/app_blueprint.py`, `fit/library_embeddings.py`, `app-serving/` | Stage 9: the app's blueprint (embeddings on); the reference library's embeddings; the live app, served from the platform ([README](app-serving/README.md)) |
+| `fit/cleanup.py` | delete the sessions, deployments and packages Stages 6, 8 and 9 left on the platform (`--yes`) |
+| `MIGRATION.md` | moving from bundles and instances to projects, packages, deployments and sessions |
+| `eval_out/serving/` | Stage 8's replay: a row per window, served against batch, and a summary |
+| `data/prepared/` | Stage 1's output: library, validation, test and delivery files with their label sidecars (Git LFS) |
+| `data/roles/` | Stage 2's output: the role files and label sidecars Stages 3–7 read (Git LFS) |
+| `fit/out/`, `eval_out/delivery/` | this repo's run: state, results and the delivered outputs |
 
 ## Licence
 
@@ -253,8 +727,7 @@ Simulation Data for Anomaly Detection Evaluation**:
 - **No endorsement:** neither the authors nor Pacific Science & Engineering
   Group, Inc. are involved in this example or endorse it.
 
-**What was changed** (the files in `data/roles/`): 17 runs were selected and cut to
-their first 24 hours (training runs: 496 rows); 33 of the 52 variables were kept; every
-channel was z-scored with the training runs' statistics; timestamps were added (180 s
-per sample, a day's gap between runs); runs were joined into one file per role, with
-labels derived from the documented fault onset.
+**What was changed** (the files in `data/prepared/` and `data/roles/`): a subset of runs was selected; 33 of the 52 variables were
+kept; every channel was z-scored with the library runs' statistics; timestamps
+were added (180 s per sample, a day's gap between runs); runs were joined into
+the files described above, with labels derived from the documented fault onset.

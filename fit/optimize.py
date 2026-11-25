@@ -5,9 +5,9 @@
     python3 fit/optimize.py --new --window 32,48,64 --k 5,10,20 --trials 6
                                                      # add another optimization
 
-Training is the library (tep_library.csv: 5 fault-free runs, labelled by a
-constant); validation is tep_validation.csv, scored on its `label` column.
-Both come from data/roles/.
+Training is the library (the 40 fault-free reference sims, labelled by a
+constant); validation is eval slice 01 and val_normal with the `label` column.
+Both come from data/roles/ (prep/build_roles.py).
 
 Every trial searches the quickstart's own copy of `ad`, in its project
 (fit/atai.py's base_blueprint), so what it promotes lands in that project too.
@@ -65,9 +65,6 @@ def main() -> int:
     ap.add_argument("--features", default=d["feature_names"])
     ap.add_argument("--primary", default="anomaly.macro_f1")
     ap.add_argument("--trials", type=int, default=d["trials"])
-    ap.add_argument("--embeddings", action="store_true",
-                    help="also pin output_embeddings: every run of the promoted blueprint then returns "
-                         "each window's Omega embeddings (large outputs; the walkthrough's map needs them)")
     ap.add_argument("--new", action="store_true",
                     help="add another optimization; fit/test.py takes the best trial of all")
     args = ap.parse_args()
@@ -87,7 +84,6 @@ def main() -> int:
                 # output_score is pinned here because a package can't turn an
                 # output on: the promoted blueprint is what every later stage runs.
                 "overrides": {"values": {**base_values(m), **pinned, "output_score": True,
-                                         **({"output_embeddings": True} if args.embeddings else {}),
                                          "feature_names": values(args.features, str)}},
                 "search_space": {"parameters": space}, "budget": {"max_trials": args.trials},
                 "training_examples": [example(p.stem, ids[p], NORMAL) for p in lib],
@@ -102,7 +98,7 @@ def main() -> int:
 
     ok = True
     for run in state["runs"]:
-        opt = wait("optimizations", run["optimization"], every_s=10)
+        opt = wait("optimizations", run["optimization"], every_s=30)
         trials = request("GET", f"{agents_base()}/optimizations/{opt['id']}/trials?limit=1000")["data"]
         (OUT / f"optimize_{opt['id']}.json").write_text(
             json.dumps({"optimization": opt, "trials": trials}, indent=1))
